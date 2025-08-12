@@ -1,0 +1,90 @@
+/* Sentiment Trends Styles */
+
+/* Force black color for sentiment values */
+.sentiment-value {
+  color: black !important;
+}
+
+/* Container Hover Effect */
+.sentiment-trends-container {
+  transition: all 0.3s ease;
+}
+
+/* Chart Container */
+.chart-container canvas {
+  max-height: 100% !important;
+}
+
+/* Filter Button Hover States */
+.sentiment-filter-btn {
+  transition: all 0.2s ease;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sentiment-filter-btn:focus {
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
+}
+
+/* Trend Badge Animation */
+.trend-badge {
+  animation: fadeInScale 0.4s ease-out;
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .sentiment-trends-container {
+    padding: 16px !important;
+  }
+  
+  .chart-container {
+    height: 280px !important;
+    min-height: 280px !important;
+  }
+  
+  .sentiment-insights-grid {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .sentiment-header {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 16px;
+  }
+  
+  .sentiment-filters {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Chart Legend Styling */
+.chartjs-legend {
+  margin-top: 16px !important;
+}
+
+/* Improve Chart Visibility on Dark Mode */
+@media (prefers-color-scheme: dark) {
+  .sentiment-trends-container {
+    background-color: #1f2937 !important;
+    border-color: #374151 !important;
+  }
+  
+  .sentiment-trends-container h3 {
+    color: #f3f4f6 !important;
+  }
+  
+  /* Don't override paragraph colors - let inline styles handle them */
+}
