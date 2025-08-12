@@ -99,6 +99,14 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
   };
 
   useEffect(() => {
+    // Reset all state when reviews change (e.g., due to date filtering)
+    setCategorizedReviews([]);
+    setIssueAnalysis(null);
+    setIssueDistribution(null);
+    setCategorizeProgress(0);
+    setIsCategorizingComplete(false);
+    setDisplayedReviews(20);
+    
     if (reviews && reviews.length > 0) {
       analyzeAllReviews();
     }
@@ -108,6 +116,9 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
     setLoading(true);
     setCategorizeProgress(0);
     setIsCategorizingComplete(false);
+    
+    // Clear any previous categorized reviews completely
+    setCategorizedReviews([]);
     
     try {
       // Skip API calls if no API key is configured
@@ -323,9 +334,12 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
     }));
   };
 
+  // Ensure we only show reviews that are in the current filtered set
+  const reviewsToShow = categorizedReviews.slice(0, reviews.length);
+  
   const filteredReviews = selectedCategories.length === 0 
-    ? categorizedReviews 
-    : categorizedReviews.filter(review => 
+    ? reviewsToShow 
+    : reviewsToShow.filter(review => 
         selectedCategories.some(cat => 
           review.primaryCategory === cat || 
           review.categories?.includes(cat)
@@ -333,9 +347,12 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
       );
 
   const getCategoryCount = (category) => {
-    return categorizedReviews.filter(r => 
-      r.primaryCategory === category || r.categories?.includes(category)
-    ).length;
+    // Only count from the categorized reviews that are actually in the current filtered set
+    return categorizedReviews
+      .slice(0, reviews.length) // Ensure we don't count more than the filtered reviews
+      .filter(r => 
+        r.primaryCategory === category || r.categories?.includes(category)
+      ).length;
   };
 
   // Calculate total reviews across all categories
@@ -360,16 +377,16 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [displayedReviews, filteredReviews.length]);
 
-  // Reset displayed reviews when filters change
+  // Reset displayed reviews when filters change or reviews prop changes
   useEffect(() => {
     setDisplayedReviews(20);
-  }, [selectedCategories]);
+  }, [selectedCategories, reviews]);
 
   return (
     <div className="review-display-container">
       {/* Header Section */}
       <div className="review-display-header">
-        <h2 className="header-title">LATEST REVIEWS ({categorizedReviews.length} Total)</h2>
+        <h2 className="header-title">LATEST REVIEWS ({reviews.length} Total)</h2>
         <div className="header-actions">
           <button 
             className="filter-toggle-btn"
@@ -402,17 +419,17 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
       {showFilters && (
         <div className="category-filters-section">
           <div className="issue-summary">
-            {(issueAnalysis?.urgentIssues?.length > 0 || issueDistribution?.bySeverity?.critical > 0) && (
+            {categorizedReviews.slice(0, reviews.length).filter(r => r.severity === 'critical').length > 0 && (
               <div className="urgent-issues-banner">
                 <AlertTriangle size={16} />
                 <span>
-                  {issueAnalysis?.urgentIssues?.length || issueDistribution?.bySeverity?.critical || 0} Urgent Issues Detected
+                  {categorizedReviews.slice(0, reviews.length).filter(r => r.severity === 'critical').length} Urgent Issues Detected
                 </span>
               </div>
             )}
-            {loading && !isCategorizingComplete && (
+            {loading && !isCategorizingComplete && reviews.length > 0 && (
               <div className="categorization-progress">
-                Categorizing {categorizedReviews.length} of {reviews.length} reviews...
+                Categorizing {Math.min(categorizedReviews.length, reviews.length)} of {reviews.length} reviews...
               </div>
             )}
           </div>
@@ -486,25 +503,25 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
               <div className="stat-item">
                 <span className="stat-label">Critical Issues</span>
                 <span className="stat-value critical">
-                  {issueDistribution.bySeverity.critical}
+                  {categorizedReviews.slice(0, reviews.length).filter(r => r.severity === 'critical').length}
                 </span>
               </div>
               <div className="stat-item">
                 <span className="stat-label">High Priority</span>
                 <span className="stat-value high">
-                  {issueDistribution.bySeverity.high}
+                  {categorizedReviews.slice(0, reviews.length).filter(r => r.severity === 'high').length}
                 </span>
               </div>
               <div className="stat-item">
                 <span className="stat-label">Negative Reviews</span>
                 <span className="stat-value negative">
-                  {categorizedReviews.filter(r => r.sentiment === 'negative').length}
+                  {categorizedReviews.slice(0, reviews.length).filter(r => r.sentiment === 'negative').length}
                 </span>
               </div>
               <div className="stat-item">
                 <span className="stat-label">Actionable</span>
                 <span className="stat-value actionable">
-                  {categorizedReviews.filter(r => r.isActionable).length}
+                  {categorizedReviews.slice(0, reviews.length).filter(r => r.isActionable).length}
                 </span>
               </div>
             </div>
@@ -513,10 +530,10 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
           {/* Category Count Validation */}
           {isCategorizingComplete && (
             <div style={{ marginTop: '12px', fontSize: '12px', color: '#6b7280' }}>
-              Total categorized: {getTotalCategorized()} / {categorizedReviews.length} reviews
-              {getTotalCategorized() !== categorizedReviews.length && (
+              Total categorized: {Math.min(getTotalCategorized(), reviews.length)} / {reviews.length} reviews
+              {getTotalCategorized() < reviews.length && (
                 <span style={{ color: '#dc2626', marginLeft: '8px' }}>
-                  ({categorizedReviews.length - getTotalCategorized()} uncategorized)
+                  ({reviews.length - getTotalCategorized()} uncategorized)
                 </span>
               )}
             </div>
@@ -526,7 +543,22 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
 
       {/* Reviews List */}
       <div className="reviews-list">
-        {filteredReviews.slice(0, displayedReviews).map((review, index) => (
+        {filteredReviews.slice(0, Math.min(displayedReviews, filteredReviews.length)).map((review, index) => {
+          // Double-check that this review is actually from the current filtered set
+          const reviewDate = review.date || review.Date || review['Review Date'];
+          const reviewContent = review.content || review['Review Text'] || review.Body || '';
+          
+          // Find if this review exists in the original filtered reviews
+          const isInFilteredSet = reviews.some(r => {
+            const rDate = r.date || r.Date || r['Review Date'];
+            const rContent = r.content || r['Review Text'] || r.Body || '';
+            return rDate === reviewDate && rContent === reviewContent;
+          });
+          
+          // Only render if the review is actually in the filtered set
+          if (!isInFilteredSet) return null;
+          
+          return (
           <div key={index} className={`review-card ${review.severity}`}>
             <div className="review-header">
               <div className="review-rating">
@@ -602,7 +634,8 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
               )}
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
 
       {loading && categorizedReviews.length === 0 && (
@@ -633,10 +666,10 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
       )}
 
       {/* Show categorization status */}
-      {!isCategorizingComplete && categorizedReviews.length > 0 && (
+      {!isCategorizingComplete && categorizedReviews.length > 0 && reviews.length > 0 && (
         <div className="categorization-status">
           <RefreshCw size={16} className="spin" />
-          <span>Categorizing reviews... {categorizeProgress}% ({categorizedReviews.length}/{reviews.length})</span>
+          <span>Categorizing reviews... {categorizeProgress}% ({Math.min(categorizedReviews.length, reviews.length)}/{reviews.length})</span>
         </div>
       )}
     </div>

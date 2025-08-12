@@ -1691,6 +1691,117 @@ html {
   box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.3);
 }
 
+/* Date range display */
+.date-range-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  z-index: 100000; /* Very high z-index to ensure it's above everything */
+}
+
+.filter-group {
+  position: relative;
+  overflow: visible;
+}
+
+.analytics-card {
+  overflow: visible;
+}
+
+.date-range-display {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background-color: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.date-range-display.clickable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.date-range-display.clickable:hover {
+  background-color: #e5e7eb;
+  border-color: #d1d5db;
+}
+
+.date-range-display.clickable:active {
+  background-color: #d1d5db;
+  transform: translateY(1px);
+}
+
+.date-range-label {
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.date-range-value {
+  color: #111827;
+  font-weight: 600;
+}
+
+.clear-date-range {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: #ef4444;
+  border: none;
+  border-radius: 50%;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-left: -8px;
+}
+
+.clear-date-range:hover {
+  background: #dc2626;
+  transform: scale(1.1);
+}
+
+.date-range-popup {
+  position: fixed;
+  top: auto;
+  right: auto;
+  left: auto;
+  bottom: auto;
+  z-index: 999999; /* Even higher z-index */
+  margin-top: 8px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  padding: 0;
+  min-width: 600px;
+  max-width: 90vw;
+  /* Position will be set by JavaScript */
+}
+
+.date-range-popup .date-range-content {
+  border: none;
+  box-shadow: none;
+  background: transparent;
+}
+
+.date-range-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 999998; /* One less than the popup */
+  background: transparent;
+  cursor: default;
+}
+
 /* Dark mode support */
 @media (prefers-color-scheme: dark) {
   .modern-dashboard {
@@ -1721,5 +1832,36 @@ html {
   
   .review-text {
     color: #cbd5e1;
+  }
+
+  .date-range-display {
+    background-color: #374151;
+    border-color: #4b5563;
+  }
+
+  .date-range-display.clickable:hover {
+    background-color: #4b5563;
+    border-color: #6b7280;
+  }
+
+  .date-range-display.clickable:active {
+    background-color: #6b7280;
+  }
+
+  .date-range-label {
+    color: #9ca3af;
+  }
+
+  .date-range-value {
+    color: #e5e7eb;
+  }
+
+  .date-range-popup {
+    background: #1e293b;
+    border-color: #334155;
+  }
+
+  .date-range-popup .date-range-content {
+    background: transparent;
   }
 }

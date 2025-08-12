@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import './DateRangeCalendar.css';
 
-const DateRangeCalendar = ({ reviews, onDateRangeChange, initialRange }) => {
+const DateRangeCalendar = ({ reviews, onDateRangeChange, initialRange, showDisplay = true, inline = false }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedRange, setSelectedRange] = useState(() => {
@@ -129,13 +129,19 @@ const DateRangeCalendar = ({ reviews, onDateRangeChange, initialRange }) => {
     setSelectedRange(newRange);
     setSelectingStart(true);
     onDateRangeChange(newRange);
-    setIsOpen(false);
+    // Only close if not inline mode (let parent handle closing in inline mode)
+    if (!inline) {
+      setIsOpen(false);
+    }
   };
 
   const handleDateClick = (date) => {
     if (selectingStart) {
-      setSelectedRange({ start: date, end: null });
+      const newRange = { start: date, end: null };
+      setSelectedRange(newRange);
       setSelectingStart(false);
+      // Notify parent of partial selection but don't close
+      onDateRangeChange(newRange);
     } else {
       const start = selectedRange.start;
       const end = date;
@@ -148,7 +154,10 @@ const DateRangeCalendar = ({ reviews, onDateRangeChange, initialRange }) => {
       setSelectedRange(finalRange);
       onDateRangeChange(finalRange);
       setSelectingStart(true);
-      setIsOpen(false);
+      // Only close if not inline mode (let parent handle closing in inline mode)
+      if (!inline) {
+        setIsOpen(false);
+      }
     }
   };
 
@@ -215,13 +224,19 @@ const DateRangeCalendar = ({ reviews, onDateRangeChange, initialRange }) => {
       <div className="calendar-month">
         <div className="calendar-header">
           {monthOffset === 0 && (
-            <button className="nav-button" onClick={() => navigateMonth(-1)}>
+            <button className="nav-button" onClick={(e) => {
+              e.stopPropagation();
+              navigateMonth(-1);
+            }}>
               <ChevronLeft size={16} />
             </button>
           )}
           <h3 className="month-title">{monthName}</h3>
           {monthOffset === 1 && (
-            <button className="nav-button" onClick={() => navigateMonth(1)}>
+            <button className="nav-button" onClick={(e) => {
+              e.stopPropagation();
+              navigateMonth(1);
+            }}>
               <ChevronRight size={16} />
             </button>
           )}
@@ -245,7 +260,12 @@ const DateRangeCalendar = ({ reviews, onDateRangeChange, initialRange }) => {
               <button
                 key={index}
                 className={`calendar-day ${!isCurrentMonth ? 'other-month' : ''} ${isToday ? 'today' : ''} ${isSelected ? 'selected' : ''} ${isHovered ? 'hovered' : ''} ${isOutsideDataRange ? 'disabled' : ''}`}
-                onClick={() => !isOutsideDataRange && handleDateClick(date)}
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevent event bubbling
+                  if (!isOutsideDataRange) {
+                    handleDateClick(date);
+                  }
+                }}
                 onMouseEnter={() => !isOutsideDataRange && setHoveredDate(date)}
                 onMouseLeave={() => setHoveredDate(null)}
                 disabled={isOutsideDataRange}
@@ -296,25 +316,57 @@ const DateRangeCalendar = ({ reviews, onDateRangeChange, initialRange }) => {
 
   return (
     <div className="date-range-filter">
-      <div 
-        ref={displayRef}
-        className="date-range-display" 
-        onClick={(e) => {
-          e.stopPropagation();
-          setIsOpen(prev => !prev);
-        }}
-        style={{ cursor: 'pointer' }}
-        tabIndex={0}
-        role="button"
-        aria-label="Select date range"
-        aria-expanded={isOpen}
-      >
-        <Calendar size={16} />
-        <span className="date-range-text">{formatDateRange()}</span>
-        <ChevronRight size={16} className={`chevron ${isOpen ? 'open' : ''}`} />
-      </div>
+      {showDisplay && (
+        <div 
+          ref={displayRef}
+          className="date-range-display" 
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsOpen(prev => !prev);
+          }}
+          style={{ cursor: 'pointer' }}
+          tabIndex={0}
+          role="button"
+          aria-label="Select date range"
+          aria-expanded={isOpen}
+        >
+          <Calendar size={16} />
+          <span className="date-range-text">{formatDateRange()}</span>
+          <ChevronRight size={16} className={`chevron ${isOpen ? 'open' : ''}`} />
+        </div>
+      )}
       
-      {isOpen && createPortal(
+      {/* Inline calendar content */}
+      {inline && (
+        <div className="date-range-content">
+          <div className="presets-section">
+            <h4>Quick Select</h4>
+            <div className="presets-list">
+              {presets.map((preset, index) => (
+                <button
+                  key={index}
+                  className="preset-button"
+                  onClick={(e) => {
+                    e.stopPropagation(); // Prevent event bubbling
+                    handlePresetClick(preset);
+                  }}
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          
+          <div className="calendar-section">
+            <div className="calendars-container">
+              {renderCalendar(0)}
+              {renderCalendar(1)}
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {!inline && isOpen && createPortal(
         <>
           <div 
             className="date-range-backdrop" 
@@ -348,7 +400,10 @@ const DateRangeCalendar = ({ reviews, onDateRangeChange, initialRange }) => {
                   <button
                     key={index}
                     className="preset-button"
-                    onClick={() => handlePresetClick(preset)}
+                    onClick={(e) => {
+                      e.stopPropagation(); // Prevent event bubbling
+                      handlePresetClick(preset);
+                    }}
                   >
                     {preset.label}
                   </button>
@@ -384,7 +439,8 @@ const DateRangeCalendar = ({ reviews, onDateRangeChange, initialRange }) => {
               <div className="calendar-actions">
                 <button 
                   className="cancel-button" 
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
                     setSelectedRange(initialRange || { start: null, end: null });
                     setSelectingStart(true);
                     setIsOpen(false);
@@ -394,7 +450,8 @@ const DateRangeCalendar = ({ reviews, onDateRangeChange, initialRange }) => {
                 </button>
                 <button 
                   className="apply-button"
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
                     onDateRangeChange(selectedRange);
                     setIsOpen(false);
                   }}

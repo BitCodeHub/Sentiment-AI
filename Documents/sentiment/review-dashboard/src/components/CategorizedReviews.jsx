@@ -36,12 +36,18 @@ const CategorizedReviews = ({ reviews, limit = 10, searchTerm = '' }) => {
   const [loading, setLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [categoryStats, setCategoryStats] = useState({});
+  const [displayedReviews, setDisplayedReviews] = useState(20);
 
   useEffect(() => {
     if (reviews && reviews.length > 0) {
       categorizeAllReviews();
     }
   }, [reviews]);
+
+  // Reset displayed reviews when reviews or category filter changes
+  useEffect(() => {
+    setDisplayedReviews(20);
+  }, [reviews, selectedCategory]);
 
   const highlightSearchTerm = (text, searchTerm) => {
     if (!searchTerm || searchTerm.trim() === '') {
@@ -63,7 +69,7 @@ const CategorizedReviews = ({ reviews, limit = 10, searchTerm = '' }) => {
     setLoading(true);
     try {
       // Process reviews in batches to avoid overwhelming the API
-      const reviewsToProcess = reviews.slice(0, limit);
+      const reviewsToProcess = reviews; // Process all filtered reviews, not just first 10
       const categorized = [];
       const stats = {};
 
@@ -168,7 +174,7 @@ const CategorizedReviews = ({ reviews, limit = 10, searchTerm = '' }) => {
 
       {/* Categorized Reviews List */}
       <div className="space-y-4">
-        {filteredReviews.map((review, index) => (
+        {filteredReviews.slice(0, displayedReviews).map((review, index) => (
           <div
             key={index}
             className="border rounded-lg p-4 hover:shadow-md transition-shadow"
@@ -230,6 +236,18 @@ const CategorizedReviews = ({ reviews, limit = 10, searchTerm = '' }) => {
           </div>
         ))}
       </div>
+
+      {/* Load More Button */}
+      {displayedReviews < filteredReviews.length && !loading && (
+        <div className="text-center py-6">
+          <button
+            onClick={() => setDisplayedReviews(prev => Math.min(prev + 20, filteredReviews.length))}
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Load More Reviews ({displayedReviews} of {filteredReviews.length})
+          </button>
+        </div>
+      )}
 
       {!loading && filteredReviews.length === 0 && (
         <div className="text-center py-8 text-gray-500">

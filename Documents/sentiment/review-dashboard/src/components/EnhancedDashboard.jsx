@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
@@ -11,7 +12,7 @@ import { Alert, AlertDescription } from './ui/alert';
 import { 
   TrendingUp, TrendingDown, AlertCircle, Brain, 
   Sparkles, Target, Shield, Zap, Search, Filter,
-  ChevronDown, ChevronUp, X, Download, RefreshCw
+  ChevronDown, ChevronUp, X, Download, RefreshCw, Calendar
 } from 'lucide-react';
 import { analyzeReviews } from '../services/aiAnalysis';
 import { performDeepAnalysis } from '../services/deepAnalysis';
@@ -20,6 +21,7 @@ import AIInsights from './AIInsights';
 import CategorizedReviews from './CategorizedReviews';
 import ReviewDisplay from './ReviewDisplay';
 import SentimentTrends from './SentimentTrends';
+import DateRangeCalendar from './DateRangeCalendar';
 import './EnhancedDashboard.css';
 
 const COLORS = ['#10b981', '#f59e0b', '#ef4444', '#6366f1', '#8b5cf6'];
@@ -47,6 +49,43 @@ const EnhancedDashboard = ({ data, isLoading }) => {
     ai: true
   });
   const [useEnhancedReviewDisplay, setUseEnhancedReviewDisplay] = useState(true);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [selectedDateRange, setSelectedDateRange] = useState({ start: null, end: null });
+  const dateRangeRef = useRef(null);
+
+  // Calculate date range from all reviews
+  const dateRange = useMemo(() => {
+    if (!data?.reviews || data.reviews.length === 0) return null;
+    
+    const dates = data.reviews
+      .map(review => {
+        const dateValue = review.date || review.Date || review['Review Date'];
+        if (!dateValue) return null;
+        
+        const date = new Date(dateValue);
+        return isNaN(date.getTime()) ? null : date;
+      })
+      .filter(date => date !== null);
+    
+    if (dates.length === 0) return null;
+    
+    const minDate = new Date(Math.min(...dates));
+    const maxDate = new Date(Math.max(...dates));
+    
+    const formatDate = (date) => {
+      return date.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric', 
+        year: 'numeric' 
+      });
+    };
+    
+    return {
+      start: formatDate(minDate),
+      end: formatDate(maxDate),
+      display: `${formatDate(minDate)} - ${formatDate(maxDate)}`
+    };
+  }, [data?.reviews]);
 
   // Filter reviews based on search and filters
   const filteredReviews = useMemo(() => {
@@ -66,9 +105,30 @@ const EnhancedDashboard = ({ data, isLoading }) => {
         (review.sentiment?.toLowerCase() || '') === selectedSentiment ||
         (review.Sentiment?.toLowerCase() || '') === selectedSentiment;
       
-      return matchesSearch && matchesRating && matchesSentiment;
+      // Date range filtering
+      const matchesDateRange = (() => {
+        if (!selectedDateRange.start && !selectedDateRange.end) return true;
+        
+        const reviewDate = new Date(review.date || review.Date || review['Review Date']);
+        if (isNaN(reviewDate.getTime())) return true; // Include reviews with invalid dates
+        
+        const startDate = selectedDateRange.start ? new Date(selectedDateRange.start) : null;
+        const endDate = selectedDateRange.end ? new Date(selectedDateRange.end) : null;
+        
+        if (startDate && endDate) {
+          return reviewDate >= startDate && reviewDate <= endDate;
+        } else if (startDate) {
+          return reviewDate >= startDate;
+        } else if (endDate) {
+          return reviewDate <= endDate;
+        }
+        
+        return true;
+      })();
+      
+      return matchesSearch && matchesRating && matchesSentiment && matchesDateRange;
     });
-  }, [data?.reviews, searchTerm, selectedRating, selectedSentiment]);
+  }, [data?.reviews, searchTerm, selectedRating, selectedSentiment, selectedDateRange]);
 
   // Calculate sentiment breakdown for filtered reviews
   const filteredSentimentBreakdown = useMemo(() => {
@@ -109,6 +169,57 @@ const EnhancedDashboard = ({ data, isLoading }) => {
     
     return distribution;
   }, [filteredReviews]);
+
+  // Click outside handler for the popup
+  useEffect(() => {
+    if (!showDatePicker) return;
+    
+    const handleClickOutside = (event) => {
+      const popup = document.querySelector('.date-range-popup');
+      const button = dateRangeRef.current;
+      
+      // Don't close if clicking the button or inside the popup
+      if ((button && button.contains(event.target)) || 
+          (popup && popup.contains(event.target))) {
+        return;
+      }
+      
+      setShowDatePicker(false);
+    };
+    
+    // Add a small delay to prevent immediate closing
+    const timer = setTimeout(() => {
+      document.addEventListener('click', handleClickOutside);
+    }, 100);
+    
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [showDatePicker]);
+
+  // Handle date range changes
+  const handleDateRangeChange = useCallback((dateRange) => {
+    setSelectedDateRange(dateRange);
+    // Only close the popup if both start and end dates are selected or it's a preset
+    if (dateRange.start && dateRange.end) {
+      // Small delay to ensure click event completes before closing
+      setTimeout(() => {
+        setShowDatePicker(false);
+      }, 100);
+    }
+  }, []);
+
+  const handleDateRangeClick = useCallback((e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setShowDatePicker(!showDatePicker);
+  }, [showDatePicker]);
+
+  const clearDateRange = useCallback(() => {
+    setSelectedDateRange({ start: null, end: null });
+    setShowDatePicker(false);
+  }, []);
 
   const triggerAIAnalysis = useCallback(async () => {
     if (!filteredReviews || filteredReviews.length === 0) return;
@@ -242,6 +353,80 @@ const EnhancedDashboard = ({ data, isLoading }) => {
             <option value="neutral">Neutral</option>
             <option value="negative">Negative</option>
           </select>
+          {dateRange && (
+            <div className="date-range-container" ref={dateRangeRef}>
+              <div 
+                className="date-range-display clickable" 
+                onClick={(e) => handleDateRangeClick(e)}
+                title="Click to filter by date range"
+              >
+                <Calendar size={16} />
+                <span className="date-range-label">Date Range:</span>
+                <span className="date-range-value">
+                  {selectedDateRange.start && selectedDateRange.end 
+                    ? `${new Date(selectedDateRange.start).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} - ${new Date(selectedDateRange.end).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+                    : dateRange.display
+                  }
+                </span>
+                <ChevronDown size={16} style={{
+                  transform: showDatePicker ? 'rotate(180deg)' : 'rotate(0deg)',
+                  transition: 'transform 0.2s ease'
+                }} />
+              </div>
+              {selectedDateRange.start || selectedDateRange.end ? (
+                <button 
+                  className="clear-date-range"
+                  onClick={clearDateRange}
+                  title="Clear date filter"
+                >
+                  <X size={14} />
+                </button>
+              ) : null}
+              {showDatePicker && createPortal(
+                <div
+                  style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    zIndex: 999998,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+                    pointerEvents: 'none' // Let clicks pass through the backdrop
+                  }}
+                >
+                  <div 
+                    className="date-range-popup"
+                    style={{
+                      position: 'relative',
+                      zIndex: 999999,
+                      background: 'white',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '12px',
+                      boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+                      minWidth: '600px',
+                      maxWidth: '90vw',
+                      maxHeight: '80vh',
+                      overflow: 'auto',
+                      pointerEvents: 'auto' // Re-enable clicks for the popup
+                    }}
+                  >
+                    <DateRangeCalendar
+                      reviews={data.reviews}
+                      onDateRangeChange={handleDateRangeChange}
+                      initialRange={selectedDateRange}
+                      showDisplay={false}
+                      inline={true}
+                    />
+                  </div>
+                </div>,
+                document.body
+              )}
+            </div>
+          )}
         </div>
       </div>
 
