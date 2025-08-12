@@ -70,14 +70,54 @@ const EnhancedDashboard = ({ data, isLoading }) => {
     });
   }, [data?.reviews, searchTerm, selectedRating, selectedSentiment]);
 
+  // Calculate sentiment breakdown for filtered reviews
+  const filteredSentimentBreakdown = useMemo(() => {
+    const breakdown = { positive: 0, neutral: 0, negative: 0 };
+    
+    filteredReviews.forEach(review => {
+      const sentiment = (review.sentiment || review.Sentiment || 'neutral').toLowerCase();
+      if (sentiment === 'positive') breakdown.positive++;
+      else if (sentiment === 'negative') breakdown.negative++;
+      else breakdown.neutral++;
+    });
+    
+    return breakdown;
+  }, [filteredReviews]);
+
+  // Calculate average rating for filtered reviews
+  const filteredAvgRating = useMemo(() => {
+    if (filteredReviews.length === 0) return 0;
+    
+    const totalRating = filteredReviews.reduce((sum, review) => {
+      const rating = review.rating || review.Rating || 0;
+      return sum + rating;
+    }, 0);
+    
+    return totalRating / filteredReviews.length;
+  }, [filteredReviews]);
+
+  // Calculate rating distribution for filtered reviews
+  const filteredRatingDistribution = useMemo(() => {
+    const distribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    
+    filteredReviews.forEach(review => {
+      const rating = review.rating || review.Rating || 0;
+      if (rating >= 1 && rating <= 5) {
+        distribution[rating]++;
+      }
+    });
+    
+    return distribution;
+  }, [filteredReviews]);
+
   const triggerAIAnalysis = useCallback(async () => {
-    if (!data?.reviews || data.reviews.length === 0) return;
+    if (!filteredReviews || filteredReviews.length === 0) return;
     
     setIsAnalyzing(true);
     setError(null);
     
     try {
-      const insights = await analyzeReviews(data.reviews);
+      const insights = await analyzeReviews(filteredReviews);
       setAiInsights(insights);
       setShowAIInsights(true);
     } catch (err) {
@@ -86,16 +126,16 @@ const EnhancedDashboard = ({ data, isLoading }) => {
     } finally {
       setIsAnalyzing(false);
     }
-  }, [data?.reviews]);
+  }, [filteredReviews]);
 
   const triggerDeepAnalysis = useCallback(async () => {
-    if (!data?.reviews || data.reviews.length === 0) return;
+    if (!filteredReviews || filteredReviews.length === 0) return;
     
     setIsDeepAnalyzing(true);
     setError(null);
     
     try {
-      const insights = await performDeepAnalysis(data.reviews);
+      const insights = await performDeepAnalysis(filteredReviews);
       setDeepInsights(insights);
       setShowDeepInsights(true);
     } catch (err) {
@@ -104,16 +144,26 @@ const EnhancedDashboard = ({ data, isLoading }) => {
     } finally {
       setIsDeepAnalyzing(false);
     }
-  }, [data?.reviews]);
+  }, [filteredReviews]);
 
   const triggerExecutiveAnalysis = useCallback(async () => {
-    if (!data?.reviews || data.reviews.length === 0) return;
+    if (!filteredReviews || filteredReviews.length === 0) return;
     
     setIsExecutiveAnalyzing(true);
     setError(null);
     
     try {
-      const result = await performExecutiveAnalysis(data.reviews, data);
+      // Create a data object with filtered reviews
+      const filteredData = {
+        ...data,
+        reviews: filteredReviews,
+        summary: {
+          ...data.summary,
+          totalReviews: filteredReviews.length
+        },
+        sentimentBreakdown: filteredSentimentBreakdown
+      };
+      const result = await performExecutiveAnalysis(filteredReviews, filteredData);
       setExecutiveAnalysis(result);
       setShowExecutiveAnalysis(true);
     } catch (err) {
@@ -122,7 +172,7 @@ const EnhancedDashboard = ({ data, isLoading }) => {
     } finally {
       setIsExecutiveAnalyzing(false);
     }
-  }, [data]);
+  }, [filteredReviews, data, filteredSentimentBreakdown]);
 
   const toggleSection = (section) => {
     setExpandedSections(prev => ({
@@ -162,7 +212,6 @@ const EnhancedDashboard = ({ data, isLoading }) => {
       <div className="analytics-card">
         <div className="filter-group">
           <div className="search-input-wrapper">
-            <Search className="search-icon" />
             <input
               type="text"
               placeholder="Search reviews..."
@@ -202,14 +251,14 @@ const EnhancedDashboard = ({ data, isLoading }) => {
           <div className="stat-header">
             <h3 className="stat-title">Average Rating</h3>
             <div className="stat-icon">
-              {summary.avgRating >= 4 ? (
+              {filteredAvgRating >= 4 ? (
                 <TrendingUp className="h-4 w-4" />
               ) : (
                 <TrendingDown className="h-4 w-4" />
               )}
             </div>
           </div>
-          <div className="stat-value">{summary.avgRating.toFixed(2)}</div>
+          <div className="stat-value">{filteredAvgRating.toFixed(2)}</div>
           <p className="stat-change">Out of 5.0</p>
         </div>
 
@@ -220,8 +269,8 @@ const EnhancedDashboard = ({ data, isLoading }) => {
               <Filter className="h-4 w-4" />
             </div>
           </div>
-          <div className="stat-value">{summary.totalReviews.toLocaleString()}</div>
-          <p className="stat-change">{filteredReviews.length} matching filters</p>
+          <div className="stat-value">{filteredReviews.length.toLocaleString()}</div>
+          <p className="stat-change">of {summary.totalReviews.toLocaleString()} total</p>
         </div>
 
         <div className="stat-card sentiment-score">
@@ -232,10 +281,10 @@ const EnhancedDashboard = ({ data, isLoading }) => {
             </div>
           </div>
           <div className="stat-value">
-            {data.sentimentBreakdown ? 
-              Math.round((data.sentimentBreakdown.positive / summary.totalReviews) * 100) : 0}%
+            {filteredReviews.length > 0 ? 
+              Math.round((filteredSentimentBreakdown.positive / filteredReviews.length) * 100) : 0}%
           </div>
-          <p className="stat-change positive">{data.sentimentBreakdown?.positive || 0} positive reviews</p>
+          <p className="stat-change positive">{filteredSentimentBreakdown.positive} positive reviews</p>
         </div>
 
         <div className="stat-card response-rate">
@@ -261,7 +310,7 @@ const EnhancedDashboard = ({ data, isLoading }) => {
         <div className="analytics-actions">
           <button
               onClick={triggerAIAnalysis}
-              disabled={isAnalyzing || !data.reviews || data.reviews.length === 0}
+              disabled={isAnalyzing || !filteredReviews || filteredReviews.length === 0}
               className="analytics-action-btn primary"
             >
               {isAnalyzing ? (
@@ -279,7 +328,7 @@ const EnhancedDashboard = ({ data, isLoading }) => {
 
             <button
               onClick={triggerDeepAnalysis}
-              disabled={isDeepAnalyzing || !data.reviews || data.reviews.length === 0}
+              disabled={isDeepAnalyzing || !filteredReviews || filteredReviews.length === 0}
               className="analytics-action-btn"
             >
               {isDeepAnalyzing ? (
@@ -297,7 +346,7 @@ const EnhancedDashboard = ({ data, isLoading }) => {
 
             <button
               onClick={triggerExecutiveAnalysis}
-              disabled={isExecutiveAnalyzing || !data.reviews || data.reviews.length === 0}
+              disabled={isExecutiveAnalyzing || !filteredReviews || filteredReviews.length === 0}
               className="analytics-action-btn"
             >
               {isExecutiveAnalyzing ? (
@@ -349,11 +398,11 @@ const EnhancedDashboard = ({ data, isLoading }) => {
           <div className="chart-container">
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={[
-                { rating: '5★', count: summary.distribution[5] || 0 },
-                { rating: '4★', count: summary.distribution[4] || 0 },
-                { rating: '3★', count: summary.distribution[3] || 0 },
-                { rating: '2★', count: summary.distribution[2] || 0 },
-                { rating: '1★', count: summary.distribution[1] || 0 },
+                { rating: '5★', count: filteredRatingDistribution[5] || 0 },
+                { rating: '4★', count: filteredRatingDistribution[4] || 0 },
+                { rating: '3★', count: filteredRatingDistribution[3] || 0 },
+                { rating: '2★', count: filteredRatingDistribution[2] || 0 },
+                { rating: '1★', count: filteredRatingDistribution[1] || 0 },
               ]}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="rating" />
@@ -367,7 +416,7 @@ const EnhancedDashboard = ({ data, isLoading }) => {
       )}
 
       {/* Sentiment Analysis */}
-      {expandedSections.sentiment && data.sentimentBreakdown && (
+      {expandedSections.sentiment && filteredReviews.length > 0 && (
         <div className="analytics-card col-span-6">
           <div className="analytics-header" style={{ cursor: 'pointer' }} onClick={() => toggleSection('sentiment')}>
             <h3 className="analytics-title">
@@ -380,9 +429,9 @@ const EnhancedDashboard = ({ data, isLoading }) => {
               <PieChart>
                 <Pie
                   data={[
-                    { name: 'Positive', value: data.sentimentBreakdown.positive || 0 },
-                    { name: 'Neutral', value: data.sentimentBreakdown.neutral || 0 },
-                    { name: 'Negative', value: data.sentimentBreakdown.negative || 0 },
+                    { name: 'Positive', value: filteredSentimentBreakdown.positive || 0 },
+                    { name: 'Neutral', value: filteredSentimentBreakdown.neutral || 0 },
+                    { name: 'Negative', value: filteredSentimentBreakdown.negative || 0 },
                   ]}
                   cx="50%"
                   cy="50%"
@@ -410,17 +459,17 @@ const EnhancedDashboard = ({ data, isLoading }) => {
         </div>
       )}
 
-      {data.reviews && data.reviews.length > 0 && (
+      {filteredReviews && filteredReviews.length > 0 && (
         <>
           {/* Sentiment Trends Analysis - Display Above Reviews */}
-          <SentimentTrends reviews={data.reviews} />
+          <SentimentTrends reviews={filteredReviews} />
           
           {/* Review Display Section */}
           <div className="review-display-section">
             {useEnhancedReviewDisplay ? (
-              <ReviewDisplay reviews={data.reviews} />
+              <ReviewDisplay reviews={filteredReviews} searchTerm={searchTerm} />
             ) : (
-              <CategorizedReviews reviews={data.reviews} />
+              <CategorizedReviews reviews={filteredReviews} searchTerm={searchTerm} />
             )}
           </div>
         </>

@@ -59,7 +59,7 @@ const categoryConfig = {
   }
 };
 
-const ReviewDisplay = ({ reviews }) => {
+const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
   const [categorizedReviews, setCategorizedReviews] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState([]);
@@ -292,6 +292,22 @@ const ReviewDisplay = ({ reviews }) => {
     return stars;
   };
 
+  const highlightSearchTerm = (text, searchTerm) => {
+    if (!searchTerm || searchTerm.trim() === '') {
+      return text;
+    }
+
+    const parts = text.split(new RegExp(`(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'));
+    
+    return parts.map((part, index) => 
+      part.toLowerCase() === searchTerm.toLowerCase() ? (
+        <span key={index} className="search-highlight">{part}</span>
+      ) : (
+        part
+      )
+    );
+  };
+
   const toggleCategory = (category) => {
     setSelectedCategories(prev => 
       prev.includes(category) 
@@ -519,7 +535,7 @@ const ReviewDisplay = ({ reviews }) => {
               <div className="review-meta">
                 <span className="review-date">{formatDate(review.date || review.Date)}</span>
                 <span className="review-separator">•</span>
-                <span className="review-author">{review.author || review.Author || 'Anonymous'}</span>
+                <span className="review-author">{highlightSearchTerm(review.author || review.Author || 'Anonymous', searchTerm)}</span>
                 {(review.version || review.Version || review['App Version']) && (
                   <>
                     <span className="review-separator">•</span>
@@ -548,7 +564,7 @@ const ReviewDisplay = ({ reviews }) => {
             </div>
 
             <div className="review-content">
-              <p>{review.content || review['Review Text'] || review.Body}</p>
+              <p>{highlightSearchTerm(review.content || review['Review Text'] || review.Body || '', searchTerm)}</p>
               {/* Additional metadata */}
               {(review.helpful || review['Helpful Count']) > 0 && (
                 <div className="review-helpful">

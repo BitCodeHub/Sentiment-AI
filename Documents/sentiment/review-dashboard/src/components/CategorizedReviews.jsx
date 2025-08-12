@@ -31,7 +31,7 @@ const priorityColors = {
   low: 'bg-green-100 text-green-800 border-green-200'
 };
 
-const CategorizedReviews = ({ reviews, limit = 10 }) => {
+const CategorizedReviews = ({ reviews, limit = 10, searchTerm = '' }) => {
   const [categorizedReviews, setCategorizedReviews] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
@@ -42,6 +42,22 @@ const CategorizedReviews = ({ reviews, limit = 10 }) => {
       categorizeAllReviews();
     }
   }, [reviews]);
+
+  const highlightSearchTerm = (text, searchTerm) => {
+    if (!searchTerm || searchTerm.trim() === '') {
+      return text;
+    }
+
+    const parts = text.split(new RegExp(`(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'));
+    
+    return parts.map((part, index) => 
+      part.toLowerCase() === searchTerm.toLowerCase() ? (
+        <span key={index} className="search-highlight">{part}</span>
+      ) : (
+        part
+      )
+    );
+  };
 
   const categorizeAllReviews = async () => {
     setLoading(true);
@@ -183,7 +199,7 @@ const CategorizedReviews = ({ reviews, limit = 10 }) => {
             </div>
 
             <p className="text-sm text-gray-700 mb-3 line-clamp-3">
-              {review.content || review['Review Text'] || review.Body}
+              {highlightSearchTerm(review.content || review['Review Text'] || review.Body || '', searchTerm)}
             </p>
 
             <div className="flex flex-wrap gap-1">
