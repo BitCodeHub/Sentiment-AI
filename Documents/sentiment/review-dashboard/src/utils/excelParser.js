@@ -145,6 +145,16 @@ const processReviewData = (rawData) => {
                 row.Locale ||
                 row['Review Language'] ||
                 'English',
+      // App name variations
+      appName: row['App Name'] || 
+               row.App || 
+               row.Application ||
+               row['Application Name'] ||
+               row['Product Name'] ||
+               row.Product ||
+               row['App Title'] ||
+               row['App'] ||
+               '',
       ...row // Include all original fields for debugging
     };
     

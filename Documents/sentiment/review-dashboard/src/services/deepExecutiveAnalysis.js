@@ -1,5 +1,6 @@
 // Deep Executive Analysis Service - Real Data Driven Insights
 import OpenAI from 'openai';
+import { rateLimiter } from './rateLimiter';
 
 const openai = new OpenAI({
   apiKey: import.meta.env.VITE_OPENAI_API_KEY,
@@ -35,21 +36,23 @@ async function analyzeWithGPT(reviews, analysisType, prompt) {
       date: r.date || r.Date || r.created_at || ''
     }));
 
-    const response = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
-      messages: [
-        {
-          role: 'system',
-          content: 'You are an expert business analyst specializing in mobile app analytics and revenue impact analysis. Provide data-driven insights based on actual review content.'
-        },
-        {
-          role: 'user',
-          content: `${prompt}\n\nReviews to analyze:\n${JSON.stringify(reviewTexts, null, 2)}`
-        }
-      ],
-      temperature: 0.3,
-      max_tokens: 2000
-    });
+    const response = await rateLimiter.addRequest(async () => 
+      openai.chat.completions.create({
+        model: 'gpt-3.5-turbo',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are an expert business analyst specializing in mobile app analytics and revenue impact analysis. Provide data-driven insights based on actual review content.'
+          },
+          {
+            role: 'user',
+            content: `${prompt}\n\nReviews to analyze:\n${JSON.stringify(reviewTexts, null, 2)}`
+          }
+        ],
+        temperature: 0.3,
+        max_tokens: 2000
+      })
+    );
 
     const result = JSON.parse(response.choices[0].message.content);
     analysisCache.set(cacheKey, result);

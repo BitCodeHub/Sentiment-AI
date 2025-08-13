@@ -6,6 +6,7 @@ import Dashboard from './components/Dashboard';
 import EnhancedDashboard from './components/EnhancedDashboard';
 import TopicDetailView from './components/TopicDetailView';
 import ErrorBoundary from './components/ErrorBoundary';
+import RateLimitNotification from './components/RateLimitNotification';
 import { parseExcelFile, aggregateData } from './utils/excelParser';
 import { downloadSampleExcel } from './utils/sampleDataGenerator';
 import { Loader, Download } from 'lucide-react';
@@ -74,6 +75,7 @@ function App() {
   return (
     <Router>
       <div className="app">
+        <RateLimitNotification />
         <Routes>
           <Route path="/" element={
             !data ? (
@@ -131,4 +133,4 @@ function App() {
   );
 }
 
-export default App
+export default App;

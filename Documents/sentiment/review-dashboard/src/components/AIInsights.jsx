@@ -99,6 +99,17 @@ const AIInsights = ({ analysis, insights, loading }) => {
         )}
       </div>
 
+      {/* Overall Sentiment */}
+      {analysis?.overallSentiment && (
+        <div className="overall-sentiment-card card">
+          <div className="insight-header">
+            <TrendingUp className="icon-neutral" size={20} />
+            <h3>Overall Sentiment Analysis</h3>
+          </div>
+          <p className="insight-summary">{analysis.overallSentiment}</p>
+        </div>
+      )}
+
       {/* Recommendations */}
       {analysis?.recommendations && (
         <div className="recommendations-section card">

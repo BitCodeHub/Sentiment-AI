@@ -1,0 +1,146 @@
+/* Error Display Styles */
+.error-display {
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #fee2e2;
+  padding: 16px 20px;
+  margin: 16px 0;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.error-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.error-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.error-icon.rate-limit {
+  color: #f59e0b;
+}
+
+.error-icon.auth {
+  color: #8b5cf6;
+}
+
+.error-icon.service {
+  color: #6366f1;
+}
+
+.error-icon.network {
+  color: #3b82f6;
+}
+
+.error-icon.generic {
+  color: #ef4444;
+}
+
+.error-text {
+  flex: 1;
+}
+
+.error-title {
+  font-weight: 600;
+  font-size: 14px;
+  color: #1e293b;
+  margin: 0 0 4px 0;
+}
+
+.error-message {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.error-dismiss {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.error-dismiss:hover {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+/* Type-specific styling */
+.error-display.rate-limit {
+  background: #fffbeb;
+  border-color: #fef3c7;
+}
+
+.error-display.auth {
+  background: #faf5ff;
+  border-color: #ede9fe;
+}
+
+.error-display.service {
+  background: #eef2ff;
+  border-color: #e0e7ff;
+}
+
+.error-display.network {
+  background: #eff6ff;
+  border-color: #dbeafe;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .error-display {
+    background: #1e293b;
+    border-color: #334155;
+  }
+  
+  .error-title {
+    color: #f1f5f9;
+  }
+  
+  .error-message {
+    color: #cbd5e1;
+  }
+  
+  .error-dismiss:hover {
+    background: #334155;
+    color: #e2e8f0;
+  }
+  
+  .error-display.rate-limit {
+    background: #451a03;
+    border-color: #78350f;
+  }
+  
+  .error-display.auth {
+    background: #2e1065;
+    border-color: #4c1d95;
+  }
+  
+  .error-display.service {
+    background: #1e1b4b;
+    border-color: #312e81;
+  }
+  
+  .error-display.network {
+    background: #0c4a6e;
+    border-color: #075985;
+  }
+}

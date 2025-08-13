@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import { rateLimiter } from './rateLimiter';
 
 // Initialize OpenAI client
 const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
@@ -147,19 +148,21 @@ Provide a comprehensive analysis in this exact JSON format:
   }
 }`;
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4-turbo-preview",
-      messages: [{ 
-        role: "system", 
-        content: "You are an expert mobile app analyst specializing in automotive apps. Provide detailed, actionable insights based on real user feedback. Compare with actual competitor apps and industry standards."
-      }, {
-        role: "user", 
-        content: prompt 
-      }],
-      temperature: 0.7,
-      max_tokens: 4000,
-      response_format: { type: "json_object" }
-    });
+    const response = await rateLimiter.addRequest(async () => 
+      openai.chat.completions.create({
+        model: "gpt-4-turbo-preview",
+        messages: [{ 
+          role: "system", 
+          content: "You are an expert mobile app analyst specializing in automotive apps. Provide detailed, actionable insights based on real user feedback. Compare with actual competitor apps and industry standards."
+        }, {
+          role: "user", 
+          content: prompt 
+        }],
+        temperature: 0.7,
+        max_tokens: 4000,
+        response_format: { type: "json_object" }
+      })
+    );
 
     return JSON.parse(response.choices[0].message.content);
   } catch (error) {
@@ -229,13 +232,15 @@ Provide analysis in this JSON format:
   }
 }`;
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
-      messages: [{ role: "user", content: prompt }],
-      temperature: 0.7,
-      max_tokens: 2000,
-      response_format: { type: "json_object" }
-    });
+    const response = await rateLimiter.addRequest(async () => 
+      openai.chat.completions.create({
+        model: "gpt-3.5-turbo",
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.7,
+        max_tokens: 2000,
+        response_format: { type: "json_object" }
+      })
+    );
 
     const condensedAnalysis = JSON.parse(response.choices[0].message.content);
     

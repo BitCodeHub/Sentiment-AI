@@ -14,14 +14,16 @@ import {
   Sparkles, Target, Shield, Zap, Search, Filter,
   ChevronDown, ChevronUp, X, Download, RefreshCw, Calendar
 } from 'lucide-react';
-import { analyzeReviews } from '../services/aiAnalysis';
+import { analyzeReviews, generateInsights } from '../services/aiAnalysis';
 import { performDeepAnalysis } from '../services/deepAnalysis';
 import { performExecutiveAnalysis } from '../services/executiveAnalysis';
+import { getErrorMessage } from '../utils/errorHandler';
 import AIInsights from './AIInsights';
 import CategorizedReviews from './CategorizedReviews';
 import ReviewDisplay from './ReviewDisplay';
 import SentimentTrends from './SentimentTrends';
 import DateRangeCalendar from './DateRangeCalendar';
+import ErrorDisplay from './ErrorDisplay';
 import './EnhancedDashboard.css';
 
 const COLORS = ['#10b981', '#f59e0b', '#ef4444', '#6366f1', '#8b5cf6'];
@@ -36,11 +38,15 @@ const EnhancedDashboard = ({ data, isLoading }) => {
   const [error, setError] = useState(null);
   const [selectedTimeRange, setSelectedTimeRange] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedRating, setSelectedRating] = useState('all');
-  const [selectedSentiment, setSelectedSentiment] = useState('all');
-  const [showAIInsights, setShowAIInsights] = useState(false);
-  const [showDeepInsights, setShowDeepInsights] = useState(false);
-  const [showExecutiveAnalysis, setShowExecutiveAnalysis] = useState(false);
+  const [selectedFilter, setSelectedFilter] = useState('all');
+  const [metadataFilters, setMetadataFilters] = useState({
+    appName: 'all',
+    device: 'all',
+    version: 'all',
+    os: 'all',
+    platform: 'all'
+  });
+  // Removed modal states - Analysis now shows inline
   const [expandedSections, setExpandedSections] = useState({
     summary: true,
     distribution: true,
@@ -48,10 +54,74 @@ const EnhancedDashboard = ({ data, isLoading }) => {
     trends: true,
     ai: true
   });
-  const [useEnhancedReviewDisplay, setUseEnhancedReviewDisplay] = useState(true);
+  // Enhanced review display is always enabled
+  const useEnhancedReviewDisplay = true;
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDateRange, setSelectedDateRange] = useState({ start: null, end: null });
   const dateRangeRef = useRef(null);
+
+  // Count active filters
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (selectedFilter !== 'all') count++;
+    if (searchTerm) count++;
+    if (selectedDateRange.start || selectedDateRange.end) count++;
+    
+    Object.entries(metadataFilters).forEach(([key, value]) => {
+      if (value !== 'all') count++;
+    });
+    
+    return count;
+  }, [selectedFilter, searchTerm, selectedDateRange, metadataFilters]);
+
+  // Reset all filters
+  const resetAllFilters = useCallback(() => {
+    setSearchTerm('');
+    setSelectedFilter('all');
+    setSelectedDateRange({ start: null, end: null });
+    setMetadataFilters({
+      appName: 'all',
+      device: 'all',
+      version: 'all',
+      os: 'all',
+      platform: 'all'
+    });
+  }, []);
+
+  // Extract unique metadata values from all reviews
+  const metadataOptions = useMemo(() => {
+    if (!data?.reviews || data.reviews.length === 0) return {};
+    
+    const options = {
+      appName: new Set(['all']),
+      device: new Set(['all']),
+      version: new Set(['all']),
+      os: new Set(['all']),
+      platform: new Set(['all'])
+    };
+    
+    data.reviews.forEach(review => {
+      // Add values including empty strings to properly track all reviews
+      options.appName.add(review.appName || '(No App Name)');
+      options.device.add(review.device || '(No Device)');
+      options.version.add(review.version || '(No Version)');
+      options.os.add(review.os || '(No OS)');
+      options.platform.add(review.platform || '(Unknown Platform)');
+    });
+    
+    // Convert sets to sorted arrays
+    Object.keys(options).forEach(key => {
+      const values = Array.from(options[key]);
+      // Sort, keeping 'all' at the beginning
+      options[key] = values.sort((a, b) => {
+        if (a === 'all') return -1;
+        if (b === 'all') return 1;
+        return a.localeCompare(b);
+      });
+    });
+    
+    return options;
+  }, [data?.reviews]);
 
   // Calculate date range from all reviews
   const dateRange = useMemo(() => {
@@ -97,13 +167,42 @@ const EnhancedDashboard = ({ data, isLoading }) => {
         (review['Review Text']?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
         (review.Body?.toLowerCase() || '').includes(searchTerm.toLowerCase());
       
-      const matchesRating = selectedRating === 'all' || 
-        review.rating === parseInt(selectedRating) ||
-        review.Rating === parseInt(selectedRating);
+      // Handle combined rating/sentiment filter
+      const matchesFilter = (() => {
+        if (selectedFilter === 'all') return true;
+        
+        // Check if it's a rating filter (1-5)
+        if (['1', '2', '3', '4', '5'].includes(selectedFilter)) {
+          return review.rating === parseInt(selectedFilter) ||
+                 review.Rating === parseInt(selectedFilter);
+        }
+        
+        // Check if it's a sentiment filter
+        if (['positive', 'neutral', 'negative'].includes(selectedFilter)) {
+          return (review.sentiment?.toLowerCase() || '') === selectedFilter ||
+                 (review.Sentiment?.toLowerCase() || '') === selectedFilter;
+        }
+        
+        return true;
+      })();
       
-      const matchesSentiment = selectedSentiment === 'all' || 
-        (review.sentiment?.toLowerCase() || '') === selectedSentiment ||
-        (review.Sentiment?.toLowerCase() || '') === selectedSentiment;
+      // Check metadata filters
+      const matchesMetadata = Object.keys(metadataFilters).every(key => {
+        const filterValue = metadataFilters[key];
+        if (filterValue === 'all') return true;
+        
+        // Get the actual value from the review, applying same transformation as in metadata options
+        let reviewValue = review[key];
+        
+        // Apply the same transformation as we do when building the options
+        if (key === 'appName') reviewValue = reviewValue || '(No App Name)';
+        else if (key === 'device') reviewValue = reviewValue || '(No Device)';
+        else if (key === 'version') reviewValue = reviewValue || '(No Version)';
+        else if (key === 'os') reviewValue = reviewValue || '(No OS)';
+        else if (key === 'platform') reviewValue = reviewValue || '(Unknown Platform)';
+        
+        return reviewValue === filterValue;
+      });
       
       // Date range filtering
       const matchesDateRange = (() => {
@@ -126,9 +225,9 @@ const EnhancedDashboard = ({ data, isLoading }) => {
         return true;
       })();
       
-      return matchesSearch && matchesRating && matchesSentiment && matchesDateRange;
+      return matchesSearch && matchesFilter && matchesMetadata && matchesDateRange;
     });
-  }, [data?.reviews, searchTerm, selectedRating, selectedSentiment, selectedDateRange]);
+  }, [data?.reviews, searchTerm, selectedFilter, metadataFilters, selectedDateRange]);
 
   // Calculate sentiment breakdown for filtered reviews
   const filteredSentimentBreakdown = useMemo(() => {
@@ -228,16 +327,23 @@ const EnhancedDashboard = ({ data, isLoading }) => {
     setError(null);
     
     try {
-      const insights = await analyzeReviews(filteredReviews);
-      setAiInsights(insights);
-      setShowAIInsights(true);
+      // Get review analysis
+      const analysis = await analyzeReviews(filteredReviews);
+      
+      // Generate strategic insights based on aggregated data
+      const insights = await generateInsights(data);
+      
+      // Store both analysis and insights
+      setAiInsights({ analysis, insights });
+      // Analysis results now display inline automatically
     } catch (err) {
       console.error('AI Analysis error:', err);
-      setError(`Failed to generate AI insights: ${err.message}`);
+      const errorInfo = getErrorMessage(err);
+      setError(errorInfo);
     } finally {
       setIsAnalyzing(false);
     }
-  }, [filteredReviews]);
+  }, [filteredReviews, data]);
 
   const triggerDeepAnalysis = useCallback(async () => {
     if (!filteredReviews || filteredReviews.length === 0) return;
@@ -248,10 +354,11 @@ const EnhancedDashboard = ({ data, isLoading }) => {
     try {
       const insights = await performDeepAnalysis(filteredReviews);
       setDeepInsights(insights);
-      setShowDeepInsights(true);
+      // Deep analysis results now display inline automatically
     } catch (err) {
       console.error('Deep Analysis error:', err);
-      setError(`Failed to perform deep analysis: ${err.message}`);
+      const errorInfo = getErrorMessage(err);
+      setError(errorInfo);
     } finally {
       setIsDeepAnalyzing(false);
     }
@@ -276,10 +383,11 @@ const EnhancedDashboard = ({ data, isLoading }) => {
       };
       const result = await performExecutiveAnalysis(filteredReviews, filteredData);
       setExecutiveAnalysis(result);
-      setShowExecutiveAnalysis(true);
+      // Executive analysis results now display inline automatically
     } catch (err) {
       console.error('Executive Analysis error:', err);
-      setError(`Failed to generate executive analysis: ${err.message}`);
+      const errorInfo = getErrorMessage(err);
+      setError(errorInfo);
     } finally {
       setIsExecutiveAnalyzing(false);
     }
@@ -331,28 +439,110 @@ const EnhancedDashboard = ({ data, isLoading }) => {
               className="search-input"
             />
           </div>
+          
+          {/* Combined Rating/Sentiment Filter */}
           <select
-            value={selectedRating}
-            onChange={(e) => setSelectedRating(e.target.value)}
+            value={selectedFilter}
+            onChange={(e) => setSelectedFilter(e.target.value)}
             className="filter-select"
           >
-            <option value="all">All Ratings</option>
-            <option value="5">5 Stars</option>
-            <option value="4">4 Stars</option>
-            <option value="3">3 Stars</option>
-            <option value="2">2 Stars</option>
-            <option value="1">1 Star</option>
+            <option value="all">All Reviews</option>
+            <optgroup label="Ratings">
+              <option value="5">⭐⭐⭐⭐⭐ 5 Stars</option>
+              <option value="4">⭐⭐⭐⭐ 4 Stars</option>
+              <option value="3">⭐⭐⭐ 3 Stars</option>
+              <option value="2">⭐⭐ 2 Stars</option>
+              <option value="1">⭐ 1 Star</option>
+            </optgroup>
+            <optgroup label="Sentiments">
+              <option value="positive">😊 Positive</option>
+              <option value="neutral">😐 Neutral</option>
+              <option value="negative">😞 Negative</option>
+            </optgroup>
           </select>
-          <select
-            value={selectedSentiment}
-            onChange={(e) => setSelectedSentiment(e.target.value)}
-            className="filter-select"
+          
+          {/* Metadata Filters */}
+          {metadataOptions.appName && metadataOptions.appName.length > 2 && (
+            <select
+              value={metadataFilters.appName}
+              onChange={(e) => setMetadataFilters(prev => ({ ...prev, appName: e.target.value }))}
+              className="filter-select"
+              title="Filter by app name"
+            >
+              <option value="all">All Apps</option>
+              {metadataOptions.appName.slice(1).map(appName => (
+                <option key={appName} value={appName}>{appName}</option>
+              ))}
+            </select>
+          )}
+          
+          {metadataOptions.device && metadataOptions.device.length > 2 && (
+            <select
+              value={metadataFilters.device}
+              onChange={(e) => setMetadataFilters(prev => ({ ...prev, device: e.target.value }))}
+              className="filter-select"
+              title="Filter by device"
+            >
+              <option value="all">All Devices</option>
+              {metadataOptions.device.slice(1).map(device => (
+                <option key={device} value={device}>{device}</option>
+              ))}
+            </select>
+          )}
+          
+          {metadataOptions.version && metadataOptions.version.length > 2 && (
+            <select
+              value={metadataFilters.version}
+              onChange={(e) => setMetadataFilters(prev => ({ ...prev, version: e.target.value }))}
+              className="filter-select"
+              title="Filter by app version"
+            >
+              <option value="all">All Versions</option>
+              {metadataOptions.version.slice(1).map(version => (
+                <option key={version} value={version}>v{version}</option>
+              ))}
+            </select>
+          )}
+          
+          {metadataOptions.platform && metadataOptions.platform.length > 2 && (
+            <select
+              value={metadataFilters.platform}
+              onChange={(e) => setMetadataFilters(prev => ({ ...prev, platform: e.target.value }))}
+              className="filter-select"
+              title="Filter by platform"
+            >
+              <option value="all">All Platforms</option>
+              {metadataOptions.platform.slice(1).map(platform => (
+                <option key={platform} value={platform}>{platform}</option>
+              ))}
+            </select>
+          )}
+          
+          {metadataOptions.os && metadataOptions.os.length > 2 && (
+            <select
+              value={metadataFilters.os}
+              onChange={(e) => setMetadataFilters(prev => ({ ...prev, os: e.target.value }))}
+              className="filter-select"
+              title="Filter by OS version"
+            >
+              <option value="all">All OS</option>
+              {metadataOptions.os.slice(1).map(os => (
+                <option key={os} value={os}>{os}</option>
+              ))}
+            </select>
+          )}
+          
+          {/* Active Filters Count */}
+          <div 
+            className={`active-filters-count ${activeFilterCount === 0 ? 'inactive' : ''}`}
+            onClick={activeFilterCount > 0 ? resetAllFilters : undefined}
+            title={activeFilterCount > 0 ? 'Click to reset all filters' : 'No active filters'}
           >
-            <option value="all">All Sentiments</option>
-            <option value="positive">Positive</option>
-            <option value="neutral">Neutral</option>
-            <option value="negative">Negative</option>
-          </select>
+            <Filter size={14} />
+            <span>{activeFilterCount} Filter{activeFilterCount !== 1 ? 's' : ''}</span>
+            {activeFilterCount > 0 && <X size={12} />}
+          </div>
+          
           {dateRange && (
             <div className="date-range-container" ref={dateRangeRef}>
               <div 
@@ -484,90 +674,6 @@ const EnhancedDashboard = ({ data, isLoading }) => {
         </div>
       </div>
 
-      {/* AI Analysis Buttons */}
-      <div className="analytics-card" style={{ marginBottom: '24px' }}>
-        <div className="analytics-header">
-          <h3 className="analytics-title">
-            <Brain className="inline-block mr-2" style={{ width: '20px', height: '20px', color: '#8b5cf6' }} />
-            AI-Powered Analysis
-          </h3>
-        </div>
-        <div className="analytics-actions">
-          <button
-              onClick={triggerAIAnalysis}
-              disabled={isAnalyzing || !filteredReviews || filteredReviews.length === 0}
-              className="analytics-action-btn primary"
-            >
-              {isAnalyzing ? (
-                <>
-                  <RefreshCw style={{ width: '16px', height: '16px', animation: 'spin 1s linear infinite' }} />
-                  <span>Analyzing...</span>
-                </>
-              ) : (
-                <>
-                  <Sparkles style={{ width: '16px', height: '16px' }} />
-                  <span>Generate AI Insights</span>
-                </>
-              )}
-            </button>
-
-            <button
-              onClick={triggerDeepAnalysis}
-              disabled={isDeepAnalyzing || !filteredReviews || filteredReviews.length === 0}
-              className="analytics-action-btn"
-            >
-              {isDeepAnalyzing ? (
-                <>
-                  <RefreshCw style={{ width: '16px', height: '16px', animation: 'spin 1s linear infinite' }} />
-                  <span>Deep Analysis...</span>
-                </>
-              ) : (
-                <>
-                  <Zap style={{ width: '16px', height: '16px' }} />
-                  <span>Deep Analysis</span>
-                </>
-              )}
-            </button>
-
-            <button
-              onClick={triggerExecutiveAnalysis}
-              disabled={isExecutiveAnalyzing || !filteredReviews || filteredReviews.length === 0}
-              className="analytics-action-btn"
-            >
-              {isExecutiveAnalyzing ? (
-                <>
-                  <RefreshCw style={{ width: '16px', height: '16px', animation: 'spin 1s linear infinite' }} />
-                  <span>Generating Report...</span>
-                </>
-              ) : (
-                <>
-                  <Shield style={{ width: '16px', height: '16px' }} />
-                  <span>Executive Analysis</span>
-                </>
-              )}
-            </button>
-        </div>
-
-        {error && (
-          <div className="alert alert-error" style={{ marginTop: '16px' }}>
-            <AlertCircle style={{ width: '16px', height: '16px' }} />
-            <span>{error}</span>
-          </div>
-        )}
-        
-        {/* Review Display Toggle */}
-        <div style={{ marginTop: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <label style={{ fontSize: '14px', color: '#6b7280' }}>
-            <input
-              type="checkbox"
-              checked={useEnhancedReviewDisplay}
-              onChange={(e) => setUseEnhancedReviewDisplay(e.target.checked)}
-              style={{ marginRight: '8px' }}
-            />
-            Use Enhanced Review Display
-          </label>
-        </div>
-      </div>
 
       {/* Charts Grid */}
       <div className="dashboard-analytics-grid">
@@ -637,10 +743,184 @@ const EnhancedDashboard = ({ data, isLoading }) => {
       )}
       </div>
 
-      {/* AI Components */}
-      {showAIInsights && aiInsights && (
-        <div style={{ marginBottom: '24px' }}>
-          <AIInsights insights={aiInsights} onClose={() => setShowAIInsights(false)} />
+      {/* AI Analysis Results - Displayed inline below buttons */}
+      {(aiInsights || deepInsights || executiveAnalysis) && (
+        <div className="ai-analysis-results-container" style={{ marginTop: '24px', marginBottom: '24px' }}>
+          {aiInsights && (
+            <div className="ai-analysis-result-section">
+              <div className="ai-result-header">
+                <Sparkles style={{ width: '20px', height: '20px', color: '#8b5cf6' }} />
+                <h3>AI Insights Analysis</h3>
+                <button 
+                  className="close-analysis-btn"
+                  onClick={() => setAiInsights(null)}
+                  title="Close analysis"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+              <AIInsights 
+                analysis={aiInsights?.analysis} 
+                insights={aiInsights?.insights}
+                loading={isAnalyzing}
+              />
+            </div>
+          )}
+          
+          {deepInsights && (
+            <div className="ai-analysis-result-section">
+              <div className="ai-result-header">
+                <Zap style={{ width: '20px', height: '20px', color: '#f59e0b' }} />
+                <h3>Deep Analysis Results</h3>
+                <button 
+                  className="close-analysis-btn"
+                  onClick={() => setDeepInsights(null)}
+                  title="Close analysis"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+              <div className="deep-analysis-content">
+                {deepInsights.themes && deepInsights.themes.length > 0 && (
+                  <div className="analysis-section">
+                    <h4 className="analysis-subtitle">Key Themes</h4>
+                    <div className="themes-grid">
+                      {deepInsights.themes.map((theme, index) => (
+                        <div key={index} className="theme-card">
+                          <div className="theme-header">
+                            <span className="theme-name">{theme.name}</span>
+                            <span className="theme-count">{theme.count} mentions</span>
+                          </div>
+                          <p className="theme-description">{theme.description}</p>
+                          {theme.examples && theme.examples.length > 0 && (
+                            <div className="theme-examples">
+                              <span className="examples-label">Examples:</span>
+                              <ul>
+                                {theme.examples.slice(0, 2).map((example, idx) => (
+                                  <li key={idx}>"{example}"</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {deepInsights.summary && (
+                  <div className="analysis-section">
+                    <h4 className="analysis-subtitle">Summary</h4>
+                    <p className="analysis-text">{deepInsights.summary}</p>
+                  </div>
+                )}
+                
+                {deepInsights.recommendations && deepInsights.recommendations.length > 0 && (
+                  <div className="analysis-section">
+                    <h4 className="analysis-subtitle">Recommendations</h4>
+                    <div className="recommendations-list">
+                      {deepInsights.recommendations.map((rec, index) => (
+                        <div key={index} className="recommendation-item">
+                          <div className={`recommendation-priority priority-${rec.priority?.toLowerCase() || 'medium'}`}>
+                            {rec.priority || 'Medium'}
+                          </div>
+                          <div className="recommendation-content">
+                            <h5>{rec.title}</h5>
+                            <p>{rec.description}</p>
+                            {rec.impact && <span className="recommendation-impact">Impact: {rec.impact}</span>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          
+          {executiveAnalysis && (
+            <div className="ai-analysis-result-section">
+              <div className="ai-result-header">
+                <Shield style={{ width: '20px', height: '20px', color: '#10b981' }} />
+                <h3>Executive Analysis Report</h3>
+                <button 
+                  className="close-analysis-btn"
+                  onClick={() => setExecutiveAnalysis(null)}
+                  title="Close analysis"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+              <div className="executive-analysis-content">
+                {executiveAnalysis.overview && (
+                  <div className="analysis-section executive-overview">
+                    <h4 className="analysis-subtitle">Executive Overview</h4>
+                    <p className="analysis-text">{executiveAnalysis.overview}</p>
+                  </div>
+                )}
+                
+                {executiveAnalysis.keyMetrics && (
+                  <div className="analysis-section">
+                    <h4 className="analysis-subtitle">Key Metrics</h4>
+                    <div className="metrics-grid">
+                      {Object.entries(executiveAnalysis.keyMetrics).map(([key, value]) => (
+                        <div key={key} className="metric-card">
+                          <span className="metric-label">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
+                          <span className="metric-value">{value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {executiveAnalysis.strengths && executiveAnalysis.strengths.length > 0 && (
+                  <div className="analysis-section">
+                    <h4 className="analysis-subtitle">Strengths</h4>
+                    <ul className="executive-list strengths-list">
+                      {executiveAnalysis.strengths.map((strength, index) => (
+                        <li key={index}>
+                          <CheckCircle size={16} className="list-icon positive" />
+                          {strength}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                
+                {executiveAnalysis.weaknesses && executiveAnalysis.weaknesses.length > 0 && (
+                  <div className="analysis-section">
+                    <h4 className="analysis-subtitle">Areas for Improvement</h4>
+                    <ul className="executive-list weaknesses-list">
+                      {executiveAnalysis.weaknesses.map((weakness, index) => (
+                        <li key={index}>
+                          <AlertCircle size={16} className="list-icon negative" />
+                          {weakness}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                
+                {executiveAnalysis.recommendations && executiveAnalysis.recommendations.length > 0 && (
+                  <div className="analysis-section">
+                    <h4 className="analysis-subtitle">Strategic Recommendations</h4>
+                    <div className="executive-recommendations">
+                      {executiveAnalysis.recommendations.map((rec, index) => (
+                        <div key={index} className="executive-recommendation">
+                          <div className="recommendation-number">{index + 1}</div>
+                          <div className="recommendation-details">
+                            <h5>{rec.title || rec}</h5>
+                            {rec.description && <p>{rec.description}</p>}
+                            {rec.timeline && <span className="timeline">Timeline: {rec.timeline}</span>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -660,200 +940,11 @@ const EnhancedDashboard = ({ data, isLoading }) => {
         </>
       )}
 
-      {/* Modals */}
-      {showDeepInsights && deepInsights && (
-        <DeepInsightsModal 
-          insights={deepInsights} 
-          onClose={() => setShowDeepInsights(false)} 
-        />
-      )}
-
-      {showExecutiveAnalysis && executiveAnalysis && (
-        <ExecutiveAnalysisModal 
-          analysis={executiveAnalysis} 
-          onClose={() => setShowExecutiveAnalysis(false)} 
-        />
-      )}
+      {/* Removed modals - Analysis now shows inline */}
       </div>
     </div>
   );
 };
 
-// Deep Insights Modal Component
-const DeepInsightsModal = ({ insights, onClose }) => {
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center">
-          <h2 className="text-2xl font-bold">Deep Analysis Results</h2>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-        
-        <div className="p-6 space-y-6">
-          {/* Competitive Analysis */}
-          <section>
-            <h3 className="text-lg font-semibold mb-3">Competitive Analysis</h3>
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <pre className="whitespace-pre-wrap text-sm">
-                {JSON.stringify(insights.competitiveAnalysis, null, 2)}
-              </pre>
-            </div>
-          </section>
-
-          {/* Feature Opportunities */}
-          <section>
-            <h3 className="text-lg font-semibold mb-3">Feature Opportunities</h3>
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <pre className="whitespace-pre-wrap text-sm">
-                {JSON.stringify(insights.featureOpportunities, null, 2)}
-              </pre>
-            </div>
-          </section>
-
-          {/* User Personas */}
-          <section>
-            <h3 className="text-lg font-semibold mb-3">User Personas</h3>
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <pre className="whitespace-pre-wrap text-sm">
-                {JSON.stringify(insights.userPersonas, null, 2)}
-              </pre>
-            </div>
-          </section>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Executive Analysis Modal Component
-const ExecutiveAnalysisModal = ({ analysis, onClose }) => {
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center">
-          <h2 className="text-2xl font-bold">Executive Analysis Report</h2>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-        
-        <div className="p-6 space-y-8">
-          {/* Executive Summary */}
-          {analysis.executiveSummary && (
-            <section>
-              <h3 className="text-xl font-bold mb-4">Executive Summary</h3>
-              <div className="bg-blue-50 p-6 rounded-lg space-y-4">
-                <p className="text-gray-800">{analysis.executiveSummary.overview}</p>
-                
-                <div>
-                  <h4 className="font-semibold mb-2">Key Findings:</h4>
-                  <ul className="list-disc list-inside space-y-1">
-                    {analysis.executiveSummary.keyFindings?.map((finding, idx) => (
-                      <li key={idx} className="text-gray-700">{finding}</li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div>
-                  <h4 className="font-semibold mb-2">Urgent Actions Required:</h4>
-                  <ul className="list-disc list-inside space-y-1">
-                    {analysis.executiveSummary.urgentActions?.map((action, idx) => (
-                      <li key={idx} className="text-red-700">{action}</li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            </section>
-          )}
-
-          {/* Revenue Analysis */}
-          {analysis.revenueAnalysis && (
-            <section>
-              <h3 className="text-xl font-bold mb-4">Revenue Impact Analysis</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-red-50 p-4 rounded-lg">
-                  <h4 className="font-semibold text-red-800 mb-2">Current Impact</h4>
-                  <p className="text-2xl font-bold text-red-600">
-                    ${analysis.revenueAnalysis.current?.annualRevenueLoss?.toLocaleString() || 'N/A'}
-                  </p>
-                  <p className="text-sm text-gray-600 mt-1">Annual revenue at risk</p>
-                  <p className="text-sm mt-2">{analysis.revenueAnalysis.current?.reasoning}</p>
-                </div>
-                
-                <div className="bg-green-50 p-4 rounded-lg">
-                  <h4 className="font-semibold text-green-800 mb-2">Opportunity</h4>
-                  <p className="text-2xl font-bold text-green-600">
-                    ${analysis.revenueAnalysis.projections?.withImprovements?.oneYear?.toLocaleString() || 'N/A'}
-                  </p>
-                  <p className="text-sm text-gray-600 mt-1">Potential recovery in 1 year</p>
-                </div>
-              </div>
-            </section>
-          )}
-
-          {/* Competitive Analysis */}
-          {analysis.competitiveAnalysis && (
-            <section>
-              <h3 className="text-xl font-bold mb-4">Competitive Position</h3>
-              <div className="bg-gray-50 p-6 rounded-lg">
-                <p className="mb-4">{analysis.competitiveAnalysis.marketPosition}</p>
-                
-                {analysis.competitiveAnalysis.competitiveGaps && (
-                  <div>
-                    <h4 className="font-semibold mb-2">Key Competitive Gaps:</h4>
-                    <ul className="list-disc list-inside space-y-1">
-                      {analysis.competitiveAnalysis.competitiveGaps.map((gap, idx) => (
-                        <li key={idx} className="text-gray-700">{gap}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            </section>
-          )}
-
-          {/* Recommendations */}
-          {analysis.recommendations && (
-            <section>
-              <h3 className="text-xl font-bold mb-4">Strategic Recommendations</h3>
-              <div className="space-y-4">
-                {Object.entries(analysis.recommendations).map(([timeframe, items]) => (
-                  <div key={timeframe} className="border rounded-lg p-4">
-                    <h4 className="font-semibold capitalize mb-3">{timeframe} Actions</h4>
-                    <div className="space-y-3">
-                      {items.map((item, idx) => (
-                        <div key={idx} className="bg-gray-50 p-3 rounded">
-                          <div className="flex justify-between items-start mb-1">
-                            <span className="font-medium">{item.action}</span>
-                            <span className="text-sm text-gray-500">{item.timeline}</span>
-                          </div>
-                          <p className="text-sm text-gray-600">{item.impact}</p>
-                          <p className="text-xs text-gray-500 mt-1">Owner: {item.owner}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* Analysis Metadata */}
-          {analysis.analysisMetadata && (
-            <section className="border-t pt-4">
-              <p className="text-sm text-gray-500">
-                Analysis Type: {analysis.analysisMetadata.analysisType} | 
-                Confidence: {analysis.analysisMetadata.confidenceLevel} | 
-                Reviews Analyzed: {analysis.analysisMetadata.totalReviewsAnalyzed}
-              </p>
-            </section>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
 
 export default EnhancedDashboard;
