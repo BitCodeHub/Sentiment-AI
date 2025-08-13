@@ -731,70 +731,274 @@ const EnhancedDashboard = ({ data, isLoading }) => {
 
       {/* Charts Grid */}
       <div className="dashboard-analytics-grid">
-        {/* Rating Distribution */}
+        {/* Enhanced Rating Distribution */}
         {expandedSections.distribution && (
           <div className="analytics-card col-span-6">
-          <div className="analytics-header" style={{ cursor: 'pointer' }} onClick={() => toggleSection('distribution')}>
-            <h3 className="analytics-title">
-              Rating Distribution
-              <ChevronUp className="inline-block ml-auto" style={{ width: '16px', height: '16px' }} />
-            </h3>
+            <div className="analytics-header" style={{ cursor: 'pointer' }} onClick={() => toggleSection('distribution')}>
+              <h3 className="analytics-title">
+                Rating Distribution
+                <ChevronUp className="inline-block ml-auto" style={{ width: '16px', height: '16px' }} />
+              </h3>
+            </div>
+            <div className="enhanced-rating-chart-container">
+              <div className="rating-bars">
+                {[
+                  { rating: '5★', count: filteredRatingDistribution[5] || 0, color: '#10b981', label: 'Excellent' },
+                  { rating: '4★', count: filteredRatingDistribution[4] || 0, color: '#22c55e', label: 'Good' },
+                  { rating: '3★', count: filteredRatingDistribution[3] || 0, color: '#f59e0b', label: 'Average' },
+                  { rating: '2★', count: filteredRatingDistribution[2] || 0, color: '#f97316', label: 'Poor' },
+                  { rating: '1★', count: filteredRatingDistribution[1] || 0, color: '#ef4444', label: 'Terrible' }
+                ].map((item, index) => {
+                  const totalReviews = filteredReviews.length;
+                  const percentage = totalReviews > 0 ? ((item.count / totalReviews) * 100) : 0;
+                  const maxCount = Math.max(...Object.values(filteredRatingDistribution));
+                  const barWidth = maxCount > 0 ? (item.count / maxCount) * 100 : 0;
+                  const ratingNumber = item.rating.charAt(0); // Extract rating number (5, 4, 3, 2, 1)
+                  const isSelected = selectedFilter === ratingNumber;
+                  const isClickable = item.count > 0; // Only clickable if there are reviews
+                  
+                  return (
+                    <div 
+                      key={index} 
+                      className={`rating-bar-row ${isSelected ? 'selected' : ''} ${isClickable ? 'clickable' : 'disabled'}`}
+                      onClick={() => {
+                        if (!isClickable) return;
+                        
+                        if (isSelected) {
+                          // If already selected, clear the filter
+                          setSelectedFilter('all');
+                        } else {
+                          // Select this rating filter
+                          setSelectedFilter(ratingNumber);
+                        }
+                      }}
+                      title={isClickable ? 
+                        (isSelected ? `Clear ${item.rating} filter` : `Filter by ${item.rating} reviews`) : 
+                        `No ${item.rating} reviews available`
+                      }
+                    >
+                      <div className="rating-label">
+                        <span className="rating-stars">{item.rating}</span>
+                        <span className="rating-description">{item.label}</span>
+                      </div>
+                      
+                      <div className="rating-bar-container">
+                        <div 
+                          className="rating-bar"
+                          style={{ 
+                            width: `${barWidth}%`,
+                            background: `linear-gradient(90deg, ${item.color}88, ${item.color})`,
+                            boxShadow: `0 2px 8px ${item.color}40`
+                          }}
+                        >
+                          <div 
+                            className="rating-bar-fill"
+                            style={{ backgroundColor: item.color }}
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="rating-stats">
+                        <span className="rating-count">{item.count.toLocaleString()}</span>
+                        <span className="rating-percentage">{percentage.toFixed(1)}%</span>
+                      </div>
+                      
+                      {/* Click indicator */}
+                      {isClickable && (
+                        <div className="click-indicator">
+                          {isSelected ? (
+                            <div className="selected-badge">
+                              <span>✓</span>
+                            </div>
+                          ) : (
+                            <div className="click-hint">
+                              <span>Click to filter</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              
+              {/* Rating Summary */}
+              <div className="rating-summary">
+                <div className="average-rating">
+                  <span className="average-label">Average Rating</span>
+                  <div className="average-value">
+                    <span className="average-number">
+                      {filteredReviews.length > 0 ? 
+                        ((filteredRatingDistribution[5] * 5 + 
+                          filteredRatingDistribution[4] * 4 + 
+                          filteredRatingDistribution[3] * 3 + 
+                          filteredRatingDistribution[2] * 2 + 
+                          filteredRatingDistribution[1] * 1) / filteredReviews.length).toFixed(1)
+                        : '0.0'
+                      }
+                    </span>
+                    <div className="average-stars">
+                      {[1,2,3,4,5].map(star => (
+                        <span 
+                          key={star}
+                          className={`star ${star <= Math.round((filteredRatingDistribution[5] * 5 + filteredRatingDistribution[4] * 4 + filteredRatingDistribution[3] * 3 + filteredRatingDistribution[2] * 2 + filteredRatingDistribution[1] * 1) / (filteredReviews.length || 1)) ? 'filled' : 'empty'}`}
+                        >
+                          ★
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <div className="total-reviews">
+                  <span>{filteredReviews.length.toLocaleString()}</span>
+                  <span>Total Reviews</span>
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="chart-container">
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={[
-                { rating: '5★', count: filteredRatingDistribution[5] || 0 },
-                { rating: '4★', count: filteredRatingDistribution[4] || 0 },
-                { rating: '3★', count: filteredRatingDistribution[3] || 0 },
-                { rating: '2★', count: filteredRatingDistribution[2] || 0 },
-                { rating: '1★', count: filteredRatingDistribution[1] || 0 },
-              ]}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="rating" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="count" fill="#3b82f6" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      )}
+        )}
 
-      {/* Sentiment Analysis */}
-      {expandedSections.sentiment && filteredReviews.length > 0 && (
-        <div className="analytics-card col-span-6">
-          <div className="analytics-header" style={{ cursor: 'pointer' }} onClick={() => toggleSection('sentiment')}>
-            <h3 className="analytics-title">
-              Sentiment Analysis
-              <ChevronUp className="inline-block ml-auto" style={{ width: '16px', height: '16px' }} />
-            </h3>
+        {/* Enhanced Sentiment Analysis */}
+        {expandedSections.sentiment && filteredReviews.length > 0 && (
+          <div className="analytics-card col-span-6">
+            <div className="analytics-header" style={{ cursor: 'pointer' }} onClick={() => toggleSection('sentiment')}>
+              <h3 className="analytics-title">
+                Sentiment Insights
+                <ChevronUp className="inline-block ml-auto" style={{ width: '16px', height: '16px' }} />
+              </h3>
+            </div>
+            <div className="enhanced-sentiment-container">
+              {/* Sentiment Overview */}
+              <div className="sentiment-overview">
+                <div className="sentiment-score">
+                  <div className="sentiment-gauge">
+                    <div className="gauge-track">
+                      <div 
+                        className="gauge-fill"
+                        style={{
+                          width: `${filteredReviews.length > 0 ? ((filteredSentimentBreakdown.positive / filteredReviews.length) * 100) : 0}%`,
+                          background: 'linear-gradient(90deg, #ef4444, #f59e0b, #10b981)',
+                          filter: `hue-rotate(${(filteredSentimentBreakdown.positive / Math.max(filteredReviews.length, 1)) * 120}deg)`
+                        }}
+                      />
+                    </div>
+                    <div className="gauge-labels">
+                      <span>Negative</span>
+                      <span>Neutral</span>
+                      <span>Positive</span>
+                    </div>
+                  </div>
+                  <div className="overall-sentiment">
+                    <span className="sentiment-label">Overall Sentiment</span>
+                    <span className={`sentiment-value ${
+                      (filteredSentimentBreakdown.positive / Math.max(filteredReviews.length, 1)) >= 0.6 ? 'positive' :
+                      (filteredSentimentBreakdown.negative / Math.max(filteredReviews.length, 1)) >= 0.6 ? 'negative' : 'neutral'
+                    }`}>
+                      {(filteredSentimentBreakdown.positive / Math.max(filteredReviews.length, 1)) >= 0.6 ? '😊 Positive' :
+                       (filteredSentimentBreakdown.negative / Math.max(filteredReviews.length, 1)) >= 0.6 ? '😞 Negative' : '😐 Mixed'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Sentiment Breakdown */}
+              <div className="sentiment-breakdown">
+                {[
+                  { 
+                    name: 'Positive', 
+                    count: filteredSentimentBreakdown.positive || 0, 
+                    color: '#10b981', 
+                    icon: '😊',
+                    description: 'Customers love your product'
+                  },
+                  { 
+                    name: 'Neutral', 
+                    count: filteredSentimentBreakdown.neutral || 0, 
+                    color: '#f59e0b', 
+                    icon: '😐',
+                    description: 'Mixed or neutral feedback'
+                  },
+                  { 
+                    name: 'Negative', 
+                    count: filteredSentimentBreakdown.negative || 0, 
+                    color: '#ef4444', 
+                    icon: '😞',
+                    description: 'Areas needing attention'
+                  }
+                ].map((sentiment, index) => {
+                  const totalReviews = filteredReviews.length;
+                  const percentage = totalReviews > 0 ? ((sentiment.count / totalReviews) * 100) : 0;
+                  const sentimentKey = sentiment.name.toLowerCase(); // 'positive', 'neutral', 'negative'
+                  const isSelected = selectedFilter === sentimentKey;
+                  const isClickable = sentiment.count > 0; // Only clickable if there are reviews
+                  
+                  return (
+                    <div 
+                      key={index} 
+                      className={`sentiment-item ${isSelected ? 'selected' : ''} ${isClickable ? 'clickable' : 'disabled'}`}
+                      onClick={() => {
+                        if (!isClickable) return;
+                        
+                        if (isSelected) {
+                          // If already selected, clear the filter
+                          setSelectedFilter('all');
+                        } else {
+                          // Select this sentiment filter
+                          setSelectedFilter(sentimentKey);
+                        }
+                      }}
+                      title={isClickable ? 
+                        (isSelected ? `Clear ${sentiment.name} sentiment filter` : `Filter by ${sentiment.name} reviews`) : 
+                        `No ${sentiment.name} reviews available`
+                      }
+                    >
+                      <div className="sentiment-header">
+                        <div className="sentiment-icon">{sentiment.icon}</div>
+                        <div className="sentiment-info">
+                          <span className="sentiment-name">{sentiment.name}</span>
+                          <span className="sentiment-desc">{sentiment.description}</span>
+                        </div>
+                      </div>
+                      
+                      <div className="sentiment-metrics">
+                        <div className="sentiment-count">{sentiment.count.toLocaleString()}</div>
+                        <div className="sentiment-percent" style={{ color: sentiment.color }}>
+                          {percentage.toFixed(1)}%
+                        </div>
+                      </div>
+                      
+                      <div className="sentiment-bar">
+                        <div 
+                          className="sentiment-progress"
+                          style={{
+                            width: `${percentage}%`,
+                            backgroundColor: sentiment.color,
+                            boxShadow: `0 2px 8px ${sentiment.color}40`
+                          }}
+                        />
+                      </div>
+                      
+                      {/* Click indicator */}
+                      {isClickable && (
+                        <div className="click-indicator sentiment-click">
+                          {isSelected ? (
+                            <div className="selected-badge">
+                              <span>✓</span>
+                            </div>
+                          ) : (
+                            <div className="click-hint">
+                              <span>Click to filter</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
-          <div className="sentiment-chart-container">
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={[
-                    { name: 'Positive', value: filteredSentimentBreakdown.positive || 0 },
-                    { name: 'Neutral', value: filteredSentimentBreakdown.neutral || 0 },
-                    { name: 'Negative', value: filteredSentimentBreakdown.negative || 0 },
-                  ]}
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={100}
-                  fill="#8884d8"
-                  dataKey="value"
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                >
-                  <Cell fill="#10b981" />
-                  <Cell fill="#f59e0b" />
-                  <Cell fill="#ef4444" />
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      )}
+        )}
       </div>
 
       {/* AI Analysis Results - Displayed inline below buttons */}
