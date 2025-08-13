@@ -427,9 +427,15 @@ const EnhancedDashboard = ({ data, isLoading }) => {
   return (
     <div className="modern-dashboard">
       <div className="dashboard-content">
-      {/* Search and Filters */}
-      <div className="analytics-card">
-        <div className="filter-group">
+      {/* Enhanced Header with Search and Filters */}
+      <div className="dashboard-header-section">
+        <div className="dashboard-title-area">
+          <h1 className="dashboard-title">Review Analytics Dashboard</h1>
+          <p className="dashboard-subtitle">Comprehensive insights from {summary.totalReviews.toLocaleString()} reviews</p>
+        </div>
+        
+        {/* Search Section */}
+        <div className="search-section">
           <div className="search-input-wrapper">
             <input
               type="text"
@@ -438,183 +444,231 @@ const EnhancedDashboard = ({ data, isLoading }) => {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="search-input"
             />
-          </div>
-          
-          {/* Combined Rating/Sentiment Filter */}
-          <select
-            value={selectedFilter}
-            onChange={(e) => setSelectedFilter(e.target.value)}
-            className="filter-select"
-          >
-            <option value="all">All Reviews</option>
-            <optgroup label="Ratings">
-              <option value="5">⭐⭐⭐⭐⭐ 5 Stars</option>
-              <option value="4">⭐⭐⭐⭐ 4 Stars</option>
-              <option value="3">⭐⭐⭐ 3 Stars</option>
-              <option value="2">⭐⭐ 2 Stars</option>
-              <option value="1">⭐ 1 Star</option>
-            </optgroup>
-            <optgroup label="Sentiments">
-              <option value="positive">😊 Positive</option>
-              <option value="neutral">😐 Neutral</option>
-              <option value="negative">😞 Negative</option>
-            </optgroup>
-          </select>
-          
-          {/* Metadata Filters */}
-          {metadataOptions.appName && metadataOptions.appName.length > 2 && (
-            <select
-              value={metadataFilters.appName}
-              onChange={(e) => setMetadataFilters(prev => ({ ...prev, appName: e.target.value }))}
-              className="filter-select"
-              title="Filter by app name"
-            >
-              <option value="all">All Apps</option>
-              {metadataOptions.appName.slice(1).map(appName => (
-                <option key={appName} value={appName}>{appName}</option>
-              ))}
-            </select>
-          )}
-          
-          {metadataOptions.device && metadataOptions.device.length > 2 && (
-            <select
-              value={metadataFilters.device}
-              onChange={(e) => setMetadataFilters(prev => ({ ...prev, device: e.target.value }))}
-              className="filter-select"
-              title="Filter by device"
-            >
-              <option value="all">All Devices</option>
-              {metadataOptions.device.slice(1).map(device => (
-                <option key={device} value={device}>{device}</option>
-              ))}
-            </select>
-          )}
-          
-          {metadataOptions.version && metadataOptions.version.length > 2 && (
-            <select
-              value={metadataFilters.version}
-              onChange={(e) => setMetadataFilters(prev => ({ ...prev, version: e.target.value }))}
-              className="filter-select"
-              title="Filter by app version"
-            >
-              <option value="all">All Versions</option>
-              {metadataOptions.version.slice(1).map(version => (
-                <option key={version} value={version}>v{version}</option>
-              ))}
-            </select>
-          )}
-          
-          {metadataOptions.platform && metadataOptions.platform.length > 2 && (
-            <select
-              value={metadataFilters.platform}
-              onChange={(e) => setMetadataFilters(prev => ({ ...prev, platform: e.target.value }))}
-              className="filter-select"
-              title="Filter by platform"
-            >
-              <option value="all">All Platforms</option>
-              {metadataOptions.platform.slice(1).map(platform => (
-                <option key={platform} value={platform}>{platform}</option>
-              ))}
-            </select>
-          )}
-          
-          {metadataOptions.os && metadataOptions.os.length > 2 && (
-            <select
-              value={metadataFilters.os}
-              onChange={(e) => setMetadataFilters(prev => ({ ...prev, os: e.target.value }))}
-              className="filter-select"
-              title="Filter by OS version"
-            >
-              <option value="all">All OS</option>
-              {metadataOptions.os.slice(1).map(os => (
-                <option key={os} value={os}>{os}</option>
-              ))}
-            </select>
-          )}
-          
-          {/* Active Filters Count */}
-          <div 
-            className={`active-filters-count ${activeFilterCount === 0 ? 'inactive' : ''}`}
-            onClick={activeFilterCount > 0 ? resetAllFilters : undefined}
-            title={activeFilterCount > 0 ? 'Click to reset all filters' : 'No active filters'}
-          >
-            <Filter size={14} />
-            <span>{activeFilterCount} Filter{activeFilterCount !== 1 ? 's' : ''}</span>
-            {activeFilterCount > 0 && <X size={12} />}
-          </div>
-          
-          {dateRange && (
-            <div className="date-range-container" ref={dateRangeRef}>
-              <div 
-                className="date-range-display clickable" 
-                onClick={(e) => handleDateRangeClick(e)}
-                title="Click to filter by date range"
+            {searchTerm && (
+              <button 
+                className="clear-search"
+                onClick={() => setSearchTerm('')}
+                title="Clear search"
               >
-                <Calendar size={16} />
-                <span className="date-range-label">Date Range:</span>
-                <span className="date-range-value">
-                  {selectedDateRange.start && selectedDateRange.end 
-                    ? `${new Date(selectedDateRange.start).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} - ${new Date(selectedDateRange.end).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
-                    : dateRange.display
-                  }
-                </span>
-                <ChevronDown size={16} style={{
-                  transform: showDatePicker ? 'rotate(180deg)' : 'rotate(0deg)',
-                  transition: 'transform 0.2s ease'
-                }} />
-              </div>
-              {selectedDateRange.start || selectedDateRange.end ? (
-                <button 
-                  className="clear-date-range"
-                  onClick={clearDateRange}
-                  title="Clear date filter"
-                >
-                  <X size={14} />
-                </button>
-              ) : null}
-              {showDatePicker && createPortal(
-                <div
-                  style={{
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    zIndex: 999998,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: 'rgba(0, 0, 0, 0.1)',
-                    pointerEvents: 'none' // Let clicks pass through the backdrop
-                  }}
-                >
-                  <div 
-                    className="date-range-popup"
-                    style={{
-                      position: 'relative',
-                      zIndex: 999999,
-                      background: 'white',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '12px',
-                      boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-                      minWidth: '600px',
-                      maxWidth: '90vw',
-                      maxHeight: '80vh',
-                      overflow: 'auto',
-                      pointerEvents: 'auto' // Re-enable clicks for the popup
+                <X size={16} />
+              </button>
+            )}
+          </div>
+        </div>
+        
+        {/* Filter Groups - Redesigned for better organization */}
+        <div className="filters-container">
+          {/* Primary Filters Row */}
+          <div className="primary-filters-section">
+            <div className="primary-filter-item">
+              <label className="filter-label">
+                <Filter size={14} />
+                Review Type
+              </label>
+              <select
+                value={selectedFilter}
+                onChange={(e) => setSelectedFilter(e.target.value)}
+                className="filter-select primary"
+              >
+                <option value="all">All Reviews</option>
+                <optgroup label="Ratings">
+                  <option value="5">⭐⭐⭐⭐⭐ 5 Stars</option>
+                  <option value="4">⭐⭐⭐⭐ 4 Stars</option>
+                  <option value="3">⭐⭐⭐ 3 Stars</option>
+                  <option value="2">⭐⭐ 2 Stars</option>
+                  <option value="1">⭐ 1 Star</option>
+                </optgroup>
+                <optgroup label="Sentiments">
+                  <option value="positive">😊 Positive</option>
+                  <option value="neutral">😐 Neutral</option>
+                  <option value="negative">😞 Negative</option>
+                </optgroup>
+              </select>
+            </div>
+            
+            {dateRange && (
+              <div className="primary-filter-item">
+                <label className="filter-label">
+                  <Calendar size={14} />
+                  Date Range
+                </label>
+                <div className="date-range-container" ref={dateRangeRef}>
+                  <button 
+                    className="date-range-button" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowDatePicker(!showDatePicker);
                     }}
+                    title="Click to filter by date range"
                   >
-                    <DateRangeCalendar
-                      reviews={data.reviews}
-                      onDateRangeChange={handleDateRangeChange}
-                      initialRange={selectedDateRange}
-                      showDisplay={false}
-                      inline={true}
-                    />
+                    <span className="date-range-value">
+                      {selectedDateRange.start && selectedDateRange.end 
+                        ? `${new Date(selectedDateRange.start).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} - ${new Date(selectedDateRange.end).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+                        : dateRange.display
+                      }
+                    </span>
+                    <ChevronDown size={14} className={`chevron-icon ${showDatePicker ? 'rotated' : ''}`} />
+                  </button>
+                  {(selectedDateRange.start || selectedDateRange.end) && (
+                    <button 
+                      className="clear-date-range"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        clearDateRange();
+                      }}
+                      title="Clear date filter"
+                    >
+                      <X size={12} />
+                    </button>
+                  )}
+                  {showDatePicker && createPortal(
+                    <div 
+                      className="date-picker-overlay"
+                      onClick={() => setShowDatePicker(false)}
+                    >
+                      <div 
+                        className="date-range-popup"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="date-picker-header">
+                          <h4>Select Date Range</h4>
+                          <button 
+                            className="close-date-picker"
+                            onClick={() => setShowDatePicker(false)}
+                            title="Close date picker"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                        <DateRangeCalendar
+                          reviews={data.reviews}
+                          onDateRangeChange={(range) => {
+                            handleDateRangeChange(range);
+                            if (range.start && range.end) {
+                              setShowDatePicker(false);
+                            }
+                          }}
+                          initialRange={selectedDateRange}
+                          showDisplay={false}
+                          inline={true}
+                        />
+                      </div>
+                    </div>,
+                    document.body
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+          
+          {/* Secondary Filters - Compact Design */}
+          {(metadataOptions.appName?.length > 2 || metadataOptions.device?.length > 2 || 
+            metadataOptions.version?.length > 2 || metadataOptions.platform?.length > 2 || 
+            metadataOptions.os?.length > 2) && (
+            <div className="secondary-filters-section">
+              <div className="secondary-filters-label">
+                <span>Advanced Filters</span>
+              </div>
+              <div className="secondary-filters-grid">
+                {metadataOptions.appName && metadataOptions.appName.length > 2 && (
+                  <div className="secondary-filter-item">
+                    <select
+                      value={metadataFilters.appName}
+                      onChange={(e) => setMetadataFilters(prev => ({ ...prev, appName: e.target.value }))}
+                      className="filter-select secondary"
+                      title="Filter by app name"
+                    >
+                      <option value="all">All Apps</option>
+                      {metadataOptions.appName.slice(1).map(appName => (
+                        <option key={appName} value={appName}>{appName}</option>
+                      ))}
+                    </select>
                   </div>
-                </div>,
-                document.body
-              )}
+                )}
+                
+                {metadataOptions.device && metadataOptions.device.length > 2 && (
+                  <div className="secondary-filter-item">
+                    <select
+                      value={metadataFilters.device}
+                      onChange={(e) => setMetadataFilters(prev => ({ ...prev, device: e.target.value }))}
+                      className="filter-select secondary"
+                      title="Filter by device"
+                    >
+                      <option value="all">All Devices</option>
+                      {metadataOptions.device.slice(1).map(device => (
+                        <option key={device} value={device}>{device}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                
+                {metadataOptions.version && metadataOptions.version.length > 2 && (
+                  <div className="secondary-filter-item">
+                    <select
+                      value={metadataFilters.version}
+                      onChange={(e) => setMetadataFilters(prev => ({ ...prev, version: e.target.value }))}
+                      className="filter-select secondary"
+                      title="Filter by app version"
+                    >
+                      <option value="all">All Versions</option>
+                      {metadataOptions.version.slice(1).map(version => (
+                        <option key={version} value={version}>v{version}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                
+                {metadataOptions.platform && metadataOptions.platform.length > 2 && (
+                  <div className="secondary-filter-item">
+                    <select
+                      value={metadataFilters.platform}
+                      onChange={(e) => setMetadataFilters(prev => ({ ...prev, platform: e.target.value }))}
+                      className="filter-select secondary"
+                      title="Filter by platform"
+                    >
+                      <option value="all">All Platforms</option>
+                      {metadataOptions.platform.slice(1).map(platform => (
+                        <option key={platform} value={platform}>{platform}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                
+                {metadataOptions.os && metadataOptions.os.length > 2 && (
+                  <div className="secondary-filter-item">
+                    <select
+                      value={metadataFilters.os}
+                      onChange={(e) => setMetadataFilters(prev => ({ ...prev, os: e.target.value }))}
+                      className="filter-select secondary"
+                      title="Filter by OS version"
+                    >
+                      <option value="all">All OS</option>
+                      {metadataOptions.os.slice(1).map(os => (
+                        <option key={os} value={os}>{os}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          
+          {/* Active Filters Summary */}
+          {activeFilterCount > 0 && (
+            <div className="filter-summary">
+              <div className="active-filters-display">
+                <span className="active-filters-text">
+                  {activeFilterCount} active filter{activeFilterCount !== 1 ? 's' : ''}
+                </span>
+                <button 
+                  className="reset-filters-btn"
+                  onClick={resetAllFilters}
+                  title="Reset all filters"
+                >
+                  <X size={12} />
+                  Clear All
+                </button>
+              </div>
             </div>
           )}
         </div>
