@@ -1,0 +1,100 @@
+/* Rate Limit Notification Styles */
+.rate-limit-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+  z-index: 1000;
+  animation: slideIn 0.3s ease-out;
+  max-width: 400px;
+  border: 1px solid #fee2e2;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.rate-limit-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+}
+
+.rate-limit-icon {
+  color: #ef4444;
+  flex-shrink: 0;
+}
+
+.rate-limit-text {
+  flex: 1;
+}
+
+.rate-limit-title {
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 4px 0;
+  font-size: 14px;
+}
+
+.rate-limit-message {
+  color: #64748b;
+  margin: 0;
+  font-size: 13px;
+}
+
+.rate-limit-clock {
+  color: #94a3b8;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.rate-limit-progress {
+  height: 3px;
+  background: #fee2e2;
+  position: relative;
+}
+
+.rate-limit-progress-bar {
+  height: 100%;
+  background: #ef4444;
+  transition: width 0.1s linear;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .rate-limit-notification {
+    background: #1e293b;
+    border-color: #7f1d1d;
+  }
+  
+  .rate-limit-title {
+    color: #f1f5f9;
+  }
+  
+  .rate-limit-message {
+    color: #cbd5e1;
+  }
+  
+  .rate-limit-progress {
+    background: #7f1d1d;
+  }
+}
