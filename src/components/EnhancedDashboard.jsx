@@ -12,7 +12,7 @@ import { Alert, AlertDescription } from './ui/alert';
 import { 
   TrendingUp, TrendingDown, AlertCircle, Brain, 
   Sparkles, Target, Shield, Zap, Search, Filter,
-  ChevronDown, ChevronUp, X, Download, RefreshCw, Calendar, CheckCircle
+  ChevronDown, ChevronUp, X, Download, RefreshCw, Calendar, CheckCircle, Star
 } from 'lucide-react';
 import { analyzeReviews, generateInsights } from '../services/aiAnalysis';
 import { performDeepAnalysis } from '../services/deepAnalysis';
