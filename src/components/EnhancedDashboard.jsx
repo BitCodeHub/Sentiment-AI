@@ -24,11 +24,16 @@ import ReviewDisplay from './ReviewDisplay';
 import SentimentTrends from './SentimentTrends';
 import DateRangeCalendar from './DateRangeCalendar';
 import ErrorDisplay from './ErrorDisplay';
+import Sidebar from './Sidebar';
+import WordsAnalysis from './WordsAnalysis';
 import './EnhancedDashboard.css';
 
 const COLORS = ['#10b981', '#f59e0b', '#ef4444', '#6366f1', '#8b5cf6'];
 
 const EnhancedDashboard = ({ data, isLoading }) => {
+  // Sidebar and view state
+  const [activeView, setActiveView] = useState('overview');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [aiInsights, setAiInsights] = useState(null);
   const [deepInsights, setDeepInsights] = useState(null);
   const [executiveAnalysis, setExecutiveAnalysis] = useState(null);
@@ -632,9 +637,19 @@ const EnhancedDashboard = ({ data, isLoading }) => {
 
   return (
     <div className="modern-dashboard">
-      <div className="dashboard-content">
-      {/* Enhanced Header with Search and Filters */}
-      <div className="dashboard-header-section">
+      <Sidebar 
+        activeView={activeView} 
+        onViewChange={setActiveView}
+        isOpen={sidebarOpen}
+        onToggle={() => setSidebarOpen(!sidebarOpen)}
+      />
+      
+      <div className={`dashboard-content dashboard-with-sidebar ${sidebarOpen ? 'sidebar-open' : ''}`}>
+      {/* Conditional rendering based on active view */}
+      {activeView === 'overview' && (
+        <>
+          {/* Enhanced Header with Search and Filters */}
+          <div className="dashboard-header-section">
         <div className="dashboard-title-area">
           <h1 className="dashboard-title">Review Analytics Dashboard</h1>
           <p className="dashboard-subtitle">Comprehensive insights from {summary.totalReviews.toLocaleString()} reviews</p>
@@ -1585,6 +1600,461 @@ const EnhancedDashboard = ({ data, isLoading }) => {
               <CategorizedReviews reviews={filteredReviews} searchTerm={searchTerm} />
             )}
           </div>
+        </>
+      )}
+
+      {/* Emotion View */}
+      {activeView === 'emotion' && (
+        <>
+          {/* Enhanced Header with Search and Filters */}
+          <div className="dashboard-header-section">
+            <div className="dashboard-title-area">
+              <h1 className="dashboard-title">Emotion Analysis</h1>
+              <p className="dashboard-subtitle">Visualize customer emotions from {summary.totalReviews.toLocaleString()} reviews</p>
+            </div>
+            
+            {/* Search Section */}
+            <div className="search-section">
+              <Search className="search-icon" size={20} />
+              <div className="search-input-wrapper">
+                <input
+                  type="text"
+                  placeholder="Search reviews..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="search-input"
+                />
+                {searchTerm && (
+                  <button 
+                    className="clear-search"
+                    onClick={() => setSearchTerm('')}
+                    title="Clear search"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Emotion Visualizer */}
+          <div className="emotion-visualizer-container" ref={emotionVisualizerRef}>
+            <div className="emotion-visualizer-header">
+              <div className="visualizer-title">
+                <Brain className="h-5 w-5" style={{ color: '#3b82f6' }} />
+                <h2>Emotion Visualizer</h2>
+                <span className="visualizer-subtitle">{emotionData.length} emotions mapped</span>
+              </div>
+              <div className="emotion-controls">
+                <div className="emotion-date-filter">
+                  <button 
+                    ref={emotionDateRef}
+                    className="emotion-date-button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowEmotionDatePicker(!showEmotionDatePicker);
+                    }}
+                    title="Filter emotions by date range"
+                  >
+                    <Calendar size={14} />
+                    <span className="date-range-value">
+                      {emotionDateRange.start && emotionDateRange.end 
+                        ? `${new Date(emotionDateRange.start).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${new Date(emotionDateRange.end).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+                        : 'Filter by Date'
+                      }
+                    </span>
+                    <ChevronDown size={14} className={`chevron-icon ${showEmotionDatePicker ? 'rotated' : ''}`} />
+                  </button>
+                  {(emotionDateRange.start || emotionDateRange.end) && (
+                    <button 
+                      className="clear-emotion-date"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        clearEmotionDateRange();
+                      }}
+                      title="Clear date filter"
+                    >
+                      <X size={12} />
+                    </button>
+                  )}
+                </div>
+                <div className="emotion-legend">
+                  <div className="legend-item joy"><div className="legend-dot" style={{ backgroundColor: '#10b981' }}></div><span>Joy</span></div>
+                  <div className="legend-item satisfaction"><div className="legend-dot" style={{ backgroundColor: '#22c55e' }}></div><span>Satisfaction</span></div>
+                  <div className="legend-item neutral"><div className="legend-dot" style={{ backgroundColor: '#6b7280' }}></div><span>Neutral</span></div>
+                  <div className="legend-item frustration"><div className="legend-dot" style={{ backgroundColor: '#f59e0b' }}></div><span>Frustration</span></div>
+                  <div className="legend-item disappointment"><div className="legend-dot" style={{ backgroundColor: '#f97316' }}></div><span>Disappointment</span></div>
+                  <div className="legend-item anger"><div className="legend-dot" style={{ backgroundColor: '#ef4444' }}></div><span>Anger</span></div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="emotion-visualizer-chart" onMouseMove={handleMouseMove}>
+              {/* Emotion zones background */}
+              <div className="emotion-zones">
+                <div className="emotion-zone joy-zone" style={{ background: 'radial-gradient(circle at 80% 20%, rgba(16, 185, 129, 0.1) 20%, transparent 45%)' }}></div>
+                <div className="emotion-zone satisfaction-zone" style={{ background: 'radial-gradient(circle at 75% 35%, rgba(34, 197, 94, 0.08) 25%, transparent 50%)' }}></div>
+                <div className="emotion-zone neutral-zone" style={{ background: 'radial-gradient(circle at 50% 50%, rgba(107, 114, 128, 0.06) 30%, transparent 55%)' }}></div>
+                <div className="emotion-zone frustration-zone" style={{ background: 'radial-gradient(circle at 25% 65%, rgba(245, 158, 11, 0.08) 25%, transparent 50%)' }}></div>
+                <div className="emotion-zone anger-zone" style={{ background: 'radial-gradient(circle at 15% 85%, rgba(239, 68, 68, 0.1) 20%, transparent 45%)' }}></div>
+                <div className="emotion-zone disappointment-zone" style={{ background: 'radial-gradient(circle at 30% 75%, rgba(249, 115, 22, 0.08) 22%, transparent 47%)' }}></div>
+              </div>
+              
+              {/* Axis labels */}
+              <div className="axis-labels">
+                <div className="axis-label positive-axis">Positive Experience →</div>
+                <div className="axis-label negative-axis">← Negative Experience</div>
+                <div className="axis-label high-energy">↑ High Energy</div>
+                <div className="axis-label low-energy">Low Energy ↓</div>
+              </div>
+              
+              {/* Review dots */}
+              {emotionData.map((review, index) => (
+                <div
+                  key={review.id}
+                  className={`emotion-dot ${review.emotion} ${hoveredReview?.id === review.id ? 'hovered' : ''}`}
+                  style={{
+                    left: `${review.x}%`,
+                    top: `${review.y}%`,
+                    backgroundColor: review.color,
+                    boxShadow: `0 0 20px ${review.color}40`,
+                    animationDelay: `${index * 0.05}s`
+                  }}
+                  onMouseEnter={(e) => {
+                    e.stopPropagation();
+                    setHoveredReview(review);
+                    
+                    // Calculate initial tooltip position
+                    if (emotionVisualizerRef.current) {
+                      const container = emotionVisualizerRef.current.getBoundingClientRect();
+                      const tooltipWidth = 350;
+                      const tooltipHeight = 200;
+                      const margin = 15;
+                      
+                      let x = e.clientX - container.left + margin;
+                      let y = e.clientY - container.top - margin;
+                      
+                      // Adjust if tooltip would go outside right edge
+                      if (x + tooltipWidth > container.width - margin) {
+                        x = e.clientX - container.left - tooltipWidth - margin;
+                      }
+                      
+                      // Adjust if tooltip would go outside bottom edge
+                      if (y + tooltipHeight > container.height - margin) {
+                        y = e.clientY - container.top - tooltipHeight - margin;
+                      }
+                      
+                      // Ensure tooltip doesn't go outside left edge
+                      if (x < margin) {
+                        x = margin;
+                      }
+                      
+                      // Ensure tooltip doesn't go outside top edge
+                      if (y < margin) {
+                        y = margin;
+                      }
+                      
+                      setTooltipPosition({ x, y });
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.stopPropagation();
+                    setHoveredReview(null);
+                  }}
+                  title={`${review.rating}★ - ${review.emotionLabel}`}
+                />
+              ))}
+              
+              {/* Emotion zone labels */}
+              <div className="zone-labels">
+                <div className="zone-label joy-label" style={{ left: '80%', top: '15%' }}>Joy</div>
+                <div className="zone-label satisfaction-label" style={{ left: '75%', top: '30%' }}>Satisfaction</div>
+                <div className="zone-label neutral-label" style={{ left: '50%', top: '45%' }}>Neutral</div>
+                <div className="zone-label frustration-label" style={{ left: '25%', top: '60%' }}>Frustration</div>
+                <div className="zone-label disappointment-label" style={{ left: '30%', top: '70%' }}>Disappointment</div>
+                <div className="zone-label anger-label" style={{ left: '15%', top: '80%' }}>Anger</div>
+              </div>
+            </div>
+            
+            {/* Emotion Date Picker */}
+            {showEmotionDatePicker && createPortal(
+              <div 
+                className="emotion-date-picker-overlay"
+                onClick={() => setShowEmotionDatePicker(false)}
+              >
+                <div 
+                  className="emotion-date-picker-popup"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="date-picker-header">
+                    <h4>Filter Emotions by Date</h4>
+                    <button 
+                      className="close-date-picker"
+                      onClick={() => setShowEmotionDatePicker(false)}
+                      title="Close date picker"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                  <DateRangeCalendar
+                    reviews={filteredReviews}
+                    onDateRangeChange={handleEmotionDateRangeChange}
+                    initialRange={emotionDateRange}
+                    showDisplay={false}
+                    inline={true}
+                  />
+                </div>
+              </div>,
+              document.body
+            )}
+            
+            {/* Review tooltip */}
+            {hoveredReview && (
+              <div 
+                className="review-tooltip"
+                style={{
+                  position: 'absolute',
+                  left: `${tooltipPosition.x}px`,
+                  top: `${tooltipPosition.y}px`,
+                  zIndex: 10001,
+                  pointerEvents: 'none'
+                }}
+              >
+                <div className="tooltip-header">
+                  <div className="rating-stars">
+                    {[1, 2, 3, 4, 5].map(star => (
+                      <span 
+                        key={star} 
+                        className={`star ${star <= hoveredReview.rating ? 'filled' : ''}`}
+                        style={{ color: star <= hoveredReview.rating ? '#fbbf24' : '#d1d5db' }}
+                      >
+                        ★
+                      </span>
+                    ))}
+                  </div>
+                  <span className="emotion-badge" style={{ backgroundColor: hoveredReview.color }}>
+                    {hoveredReview.emotionLabel}
+                  </span>
+                </div>
+                <div className="tooltip-content">
+                  <p>"{hoveredReview.content}"</p>
+                </div>
+                <div className="tooltip-footer">
+                  <span className="review-date">
+                    {new Date(hoveredReview.date).toLocaleDateString('en-US', { 
+                      month: 'short', 
+                      day: 'numeric', 
+                      year: 'numeric' 
+                    })}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* Words View */}
+      {activeView === 'words' && (
+        <>
+          <div className="dashboard-header-section">
+            <div className="dashboard-title-area">
+              <h1 className="dashboard-title">Words Analysis</h1>
+              <p className="dashboard-subtitle">Discover key themes from {summary.totalReviews.toLocaleString()} reviews</p>
+            </div>
+          </div>
+          <WordsAnalysis reviews={filteredReviews} />
+        </>
+      )}
+
+      {/* Trends View */}
+      {activeView === 'trends' && (
+        <>
+          <div className="dashboard-header-section">
+            <div className="dashboard-title-area">
+              <h1 className="dashboard-title">Sentiment Trends</h1>
+              <p className="dashboard-subtitle">Track sentiment changes over time</p>
+            </div>
+          </div>
+          <SentimentTrends 
+            reviews={filteredReviews} 
+            dateRange={selectedDateRange}
+            onDateRangeChange={handleDateRangeChange}
+          />
+        </>
+      )}
+
+      {/* Reviews View */}
+      {activeView === 'reviews' && (
+        <>
+          <div className="dashboard-header-section">
+            <div className="dashboard-title-area">
+              <h1 className="dashboard-title">All Reviews</h1>
+              <p className="dashboard-subtitle">Browse and search through {filteredReviews.length.toLocaleString()} reviews</p>
+            </div>
+            
+            {/* Search Section */}
+            <div className="search-section">
+              <Search className="search-icon" size={20} />
+              <div className="search-input-wrapper">
+                <input
+                  type="text"
+                  placeholder="Search reviews..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="search-input"
+                />
+                {searchTerm && (
+                  <button 
+                    className="clear-search"
+                    onClick={() => setSearchTerm('')}
+                    title="Clear search"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+          <ReviewDisplay reviews={filteredReviews} searchTerm={searchTerm} />
+        </>
+      )}
+
+      {/* AI Insights View */}
+      {activeView === 'insights' && (
+        <>
+          <div className="dashboard-header-section">
+            <div className="dashboard-title-area">
+              <h1 className="dashboard-title">AI Insights</h1>
+              <p className="dashboard-subtitle">Powered by advanced AI analysis</p>
+            </div>
+            <div className="header-actions">
+              <button 
+                className="analytics-action-btn primary"
+                onClick={triggerAIAnalysis}
+                disabled={isAnalyzing || filteredReviews.length === 0}
+              >
+                {isAnalyzing ? (
+                  <><RefreshCw className="w-4 h-4 mr-2" style={{ animation: 'spin 1s linear infinite' }} /> Analyzing...</>
+                ) : (
+                  <><Sparkles className="w-4 h-4 mr-2" /> Generate AI Insights</>
+                )}
+              </button>
+            </div>
+          </div>
+          
+          {aiInsights && (
+            <AIInsights 
+              insights={aiInsights} 
+              isAnalyzing={isAnalyzing}
+            />
+          )}
+          
+          {!aiInsights && !isAnalyzing && (
+            <Card className="text-center p-8">
+              <CardContent>
+                <Sparkles className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                <p className="text-gray-600">Click "Generate AI Insights" to analyze your reviews</p>
+              </CardContent>
+            </Card>
+          )}
+        </>
+      )}
+
+      {/* Analytics View */}
+      {activeView === 'analytics' && (
+        <>
+          <div className="dashboard-header-section">
+            <div className="dashboard-title-area">
+              <h1 className="dashboard-title">Deep Analytics</h1>
+              <p className="dashboard-subtitle">Comprehensive analysis and insights</p>
+            </div>
+            <div className="header-actions">
+              <button 
+                className="analytics-action-btn"
+                onClick={triggerDeepAnalysis}
+                disabled={isDeepAnalyzing || filteredReviews.length === 0}
+              >
+                {isDeepAnalyzing ? (
+                  <><RefreshCw className="w-4 h-4 mr-2" style={{ animation: 'spin 1s linear infinite' }} /> Analyzing...</>
+                ) : (
+                  <><Brain className="w-4 h-4 mr-2" /> Perform Deep Analysis</>
+                )}
+              </button>
+              <button 
+                className="analytics-action-btn"
+                onClick={triggerExecutiveAnalysis}
+                disabled={isExecutiveAnalyzing || filteredReviews.length === 0}
+              >
+                {isExecutiveAnalyzing ? (
+                  <><RefreshCw className="w-4 h-4 mr-2" style={{ animation: 'spin 1s linear infinite' }} /> Analyzing...</>
+                ) : (
+                  <><Target className="w-4 h-4 mr-2" /> Executive Analysis</>
+                )}
+              </button>
+            </div>
+          </div>
+          
+          <div className="analytics-results-container">
+            {deepInsights && (
+              <Card className="mb-4">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Brain className="w-5 h-5" />
+                    Deep Analysis Results
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {/* Deep analysis results would be displayed here */}
+                  <pre className="text-sm">{JSON.stringify(deepInsights, null, 2)}</pre>
+                </CardContent>
+              </Card>
+            )}
+            
+            {executiveAnalysis && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Target className="w-5 h-5" />
+                    Executive Analysis
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {/* Executive analysis results would be displayed here */}
+                  <pre className="text-sm">{JSON.stringify(executiveAnalysis, null, 2)}</pre>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* Reports View */}
+      {activeView === 'reports' && (
+        <>
+          <div className="dashboard-header-section">
+            <div className="dashboard-title-area">
+              <h1 className="dashboard-title">Reports</h1>
+              <p className="dashboard-subtitle">Export and generate reports</p>
+            </div>
+          </div>
+          <Card>
+            <CardContent className="text-center p-8">
+              <Download className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+              <h3 className="text-lg font-semibold mb-2">Export Reports</h3>
+              <p className="text-gray-600 mb-4">Generate comprehensive reports in various formats</p>
+              <div className="flex gap-4 justify-center">
+                <button className="analytics-action-btn">
+                  <Download className="w-4 h-4 mr-2" />
+                  Export to PDF
+                </button>
+                <button className="analytics-action-btn">
+                  <Download className="w-4 h-4 mr-2" />
+                  Export to Excel
+                </button>
+              </div>
+            </CardContent>
+          </Card>
         </>
       )}
 

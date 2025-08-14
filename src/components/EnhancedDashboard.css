@@ -3643,6 +3643,21 @@ html {
   }
 }
 
+/* Dashboard with Sidebar Layout */
+.dashboard-with-sidebar {
+  transition: margin-left 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+.dashboard-with-sidebar.sidebar-open {
+  overflow-x: hidden;
+}
+
+@media (max-width: 768px) {
+  .dashboard-with-sidebar {
+    margin-left: 0 !important;
+  }
+}
+
 /* ===== EMOTION VISUALIZER STYLES ===== */
 
 /* Emotion Visualizer Container */
