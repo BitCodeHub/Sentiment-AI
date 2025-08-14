@@ -11,52 +11,58 @@ const SentimentWordCloud = ({ wordData, onWordClick }) => {
   const getSize = (count, index) => {
     const normalized = (count - minCount) / (maxCount - minCount || 1);
     
-    // More dramatic size differences
-    if (index < 3) {
-      // Top 3 words - very large
-      return 56 + normalized * 24; // 56-80px
+    // Size distribution matching reference
+    if (index === 0) {
+      // Largest word
+      return 70 + normalized * 15; // 70-85px
+    } else if (index < 4) {
+      // Top 4 words - very large
+      return 50 + normalized * 20; // 50-70px
     } else if (index < 10) {
-      // Next 7 words - large
-      return 32 + normalized * 16; // 32-48px
-    } else if (index < 25) {
+      // Large words
+      return 35 + normalized * 15; // 35-50px
+    } else if (index < 20) {
+      // Medium-large words
+      return 24 + normalized * 12; // 24-36px
+    } else if (index < 40) {
       // Medium words
-      return 20 + normalized * 10; // 20-30px
-    } else if (index < 50) {
-      // Smaller words
-      return 14 + normalized * 6; // 14-20px
+      return 16 + normalized * 8; // 16-24px
+    } else if (index < 60) {
+      // Small words
+      return 13 + normalized * 5; // 13-18px
     } else {
-      // Smallest words
-      return 12 + normalized * 4; // 12-16px
+      // Tiny words
+      return 11 + normalized * 3; // 11-14px
     }
   };
 
   const getSentimentColor = (sentimentPercentages, index) => {
     const { positive, negative, neutral } = sentimentPercentages;
     
-    // More varied color palette based on sentiment and importance
+    // Rich color palette matching reference
     if (positive >= 70) {
-      // Strong positive - various greens
-      const greens = ['#10b981', '#22c55e', '#16a34a', '#15803d'];
+      // Strong positive - greens
+      const greens = ['#10b981', '#059669', '#16a34a', '#22c55e', '#4ade80'];
       return greens[index % greens.length];
     } else if (positive > 50) {
-      // Positive - teal/cyan shades
-      const teals = ['#14b8a6', '#06b6d4', '#0891b2', '#0e7490'];
-      return teals[index % teals.length];
+      // Positive - blues and teals
+      const blues = ['#3b82f6', '#2563eb', '#06b6d4', '#0891b2', '#0ea5e9'];
+      return blues[index % blues.length];
     } else if (negative >= 70) {
       // Strong negative - reds
-      const reds = ['#ef4444', '#dc2626', '#b91c1c', '#991b1b'];
+      const reds = ['#ef4444', '#dc2626', '#e11d48', '#be123c', '#f43f5e'];
       return reds[index % reds.length];
     } else if (negative > 50) {
-      // Negative - orange/amber
-      const oranges = ['#f97316', '#ea580c', '#f59e0b', '#d97706'];
+      // Negative - oranges and warm colors
+      const oranges = ['#f97316', '#fb923c', '#f59e0b', '#fbbf24', '#ea580c'];
       return oranges[index % oranges.length];
     } else if (neutral > 50) {
-      // Neutral - grays and blues
-      const neutrals = ['#6b7280', '#4b5563', '#64748b', '#475569'];
+      // Neutral - grays and muted colors
+      const neutrals = ['#6b7280', '#71717a', '#737373', '#64748b', '#94a3b8'];
       return neutrals[index % neutrals.length];
     } else {
-      // Mixed - purple/indigo
-      const mixed = ['#8b5cf6', '#7c3aed', '#6366f1', '#4f46e5'];
+      // Mixed - purples and varied colors
+      const mixed = ['#a855f7', '#9333ea', '#7c3aed', '#ec4899', '#6366f1'];
       return mixed[index % mixed.length];
     }
   };
@@ -64,7 +70,7 @@ const SentimentWordCloud = ({ wordData, onWordClick }) => {
   // Sort words by frequency for better visual distribution
   const sortedWords = [...wordData]
     .sort((a, b) => b.count - a.count)
-    .slice(0, 50); // Reduce to 50 words for better spacing
+    .slice(0, 85); // Optimal count for balanced cloud
 
   // Create distributed positioning across full canvas
   const cloudWords = (() => {
@@ -88,29 +94,42 @@ const SentimentWordCloud = ({ wordData, onWordClick }) => {
       while (attempts < 200 && !position) {
         let x, y;
         
-        // Random placement with bias towards center
+        // Strategic placement based on word importance
         if (index === 0) {
-          // First word - center
-          x = 48 + Math.random() * 4;
-          y = 48 + Math.random() * 4;
-        } else if (index < 5) {
-          // Top words - near center
-          const angle = Math.random() * Math.PI * 2;
-          const radius = 5 + Math.random() * 10;
+          // First word - slightly off-center for natural look
+          x = 45 + Math.random() * 10;
+          y = 45 + Math.random() * 10;
+        } else if (index < 4) {
+          // Top 4 words - key positions around center
+          const positions = [
+            { x: 30, y: 35 }, // left
+            { x: 70, y: 40 }, // right
+            { x: 50, y: 25 }, // top
+            { x: 50, y: 65 }  // bottom
+          ];
+          const pos = positions[index - 1];
+          x = pos.x + (Math.random() - 0.5) * 10;
+          y = pos.y + (Math.random() - 0.5) * 10;
+        } else if (index < 15) {
+          // Important words - inner circle
+          const angle = (index - 4) * (Math.PI * 2 / 11) + Math.random() * 0.5;
+          const radius = 15 + Math.random() * 10;
+          x = 50 + radius * Math.cos(angle);
+          y = 50 + radius * Math.sin(angle);
+        } else if (index < 40) {
+          // Medium words - middle zone
+          const angle = index * 0.618 * Math.PI * 2; // Golden angle
+          const radius = 20 + (index - 15) * 0.8;
           x = 50 + radius * Math.cos(angle);
           y = 50 + radius * Math.sin(angle);
         } else {
-          // All other words - random placement with slight center bias
-          const angle = Math.random() * Math.PI * 2;
-          const maxRadius = 35;
-          // Use sqrt for better distribution
-          const radius = Math.sqrt(Math.random()) * maxRadius;
-          x = 50 + radius * Math.cos(angle);
-          y = 50 + radius * Math.sin(angle);
-          
-          // Add some randomness
-          x += (Math.random() - 0.5) * 10;
-          y += (Math.random() - 0.5) * 10;
+          // Smaller words - outer areas
+          // Use Halton sequence for better distribution
+          const phi = (1 + Math.sqrt(5)) / 2;
+          const theta = 2 * Math.PI * index / phi;
+          const radius = 30 + Math.sqrt(index - 40) * 3;
+          x = 50 + radius * Math.cos(theta) * 0.8;
+          y = 50 + radius * Math.sin(theta) * 0.8;
         }
         
         // Keep within bounds with fixed margins
@@ -123,10 +142,14 @@ const SentimentWordCloud = ({ wordData, onWordClick }) => {
           const dx = Math.abs(x - p.x);
           const dy = Math.abs(y - p.y);
           
-          // Much more generous spacing to prevent overlaps
-          const padding = 15; // Minimum 15px padding between words
+          // Dynamic spacing based on word size and position
+          const basePadding = 8;
+          // Larger words need more space
+          const sizeFactor = Math.max(fontSize, p.size) / 20;
+          const padding = basePadding + sizeFactor * 2;
+          
           const minXDistance = (wordWidth + p.width) / 2 + padding;
-          const minYDistance = (wordHeight + p.height) / 2 + padding;
+          const minYDistance = (wordHeight + p.height) / 2 + padding * 0.8;
           
           return dx < minXDistance && dy < minYDistance;
         });
@@ -160,14 +183,14 @@ const SentimentWordCloud = ({ wordData, onWordClick }) => {
         position = { x: fallbackX, y: fallbackY };
       }
       
-      // Add rotation for variety
+      // Add rotation for variety - more vertical words
       let rotation = 0;
-      if (index > 5) {
+      if (index > 3) {
         const rotationChance = Math.random();
-        if (rotationChance < 0.1) {
-          rotation = -90; // Vertical
-        } else if (rotationChance < 0.2) {
-          rotation = (Math.random() - 0.5) * 20; // Slight angle
+        if (rotationChance < 0.25 && index < 40) {
+          rotation = -90; // Vertical - 25% chance for medium words
+        } else if (rotationChance < 0.15) {
+          rotation = (Math.random() - 0.5) * 15; // Slight angle
         }
       }
       
