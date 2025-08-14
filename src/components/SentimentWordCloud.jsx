@@ -228,7 +228,6 @@ const SentimentWordCloud = ({ wordData, onWordClick }) => {
             style={{
               fontSize: `${word.fontSize}px`,
               color: getSentimentColor(word.sentimentPercentages, index),
-              animationDelay: `${index * 0.02}s`,
               position: 'absolute',
               left: `${word.x}%`,
               top: `${word.y}%`,

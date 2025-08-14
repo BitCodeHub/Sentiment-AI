@@ -14,9 +14,9 @@
   height: 600px;
   background: #ffffff;
   border-radius: 12px;
-  overflow: hidden;
+  overflow: visible;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  padding: 45px;
+  padding: 20px;
   box-sizing: border-box;
 }
 
@@ -31,24 +31,12 @@
   cursor: pointer;
   position: absolute;
   transition: transform 0.2s ease, opacity 0.2s ease;
-  animation: fadeInScale 0.8s ease forwards;
-  opacity: 0;
+  opacity: 1;
   transform-origin: center;
   text-shadow: none;
   line-height: 1;
   white-space: nowrap;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica', Arial, sans-serif;
-}
-
-@keyframes fadeInScale {
-  from {
-    opacity: 0;
-    transform: scale(0.9);
-  }
-  to {
-    opacity: 0.95;
-    transform: scale(1);
-  }
 }
 
 /* Hover effects */
@@ -62,35 +50,35 @@
 
 /* Sentiment-based styling - clean without filters */
 .cloud-word.positive {
-  opacity: 0.95;
+  opacity: 1;
 }
 
 .cloud-word.positive:hover {
-  opacity: 0.85;
-}
-
-.cloud-word.negative {
-  opacity: 0.95;
-}
-
-.cloud-word.negative:hover {
-  opacity: 0.85;
-}
-
-.cloud-word.neutral {
   opacity: 0.9;
 }
 
+.cloud-word.negative {
+  opacity: 1;
+}
+
+.cloud-word.negative:hover {
+  opacity: 0.9;
+}
+
+.cloud-word.neutral {
+  opacity: 1;
+}
+
 .cloud-word.neutral:hover {
-  opacity: 0.8;
+  opacity: 0.9;
 }
 
 .cloud-word.mixed {
-  opacity: 0.95;
+  opacity: 1;
 }
 
 .cloud-word.mixed:hover {
-  opacity: 0.85;
+  opacity: 0.9;
 }
 
 /* Responsive design */
