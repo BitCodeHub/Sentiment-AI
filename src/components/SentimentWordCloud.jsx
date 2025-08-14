@@ -56,6 +56,7 @@ const SentimentWordCloud = ({ wordData, onWordClick }) => {
       { x: 50, y: 30, rx: 25, ry: 15 },    // Top
     ];
     
+    // Process words in order of importance (already sorted by frequency)
     sortedWords.forEach((word, index) => {
       let attempts = 0;
       let position = null;
