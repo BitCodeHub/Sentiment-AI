@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Excel Upload</title>
+</head>
+<body>
+    <h1>Test Excel Upload</h1>
+    <p>This page tests if the Excel upload is working correctly.</p>
+    
+    <h2>Instructions:</h2>
+    <ol>
+        <li>Open your browser's Developer Tools (F12)</li>
+        <li>Go to the Console tab</li>
+        <li>Upload an Excel file using the button below</li>
+        <li>Check the console for any errors</li>
+    </ol>
+    
+    <input type="file" id="fileInput" accept=".xlsx,.xls">
+    
+    <pre id="output"></pre>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script>
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet);
+                    
+                    console.log('Excel parsed successfully!');
+                    console.log('Sheet name:', firstSheetName);
+                    console.log('Number of rows:', jsonData.length);
+                    console.log('First row:', jsonData[0]);
+                    console.log('Column names:', Object.keys(jsonData[0] || {}));
+                    
+                    document.getElementById('output').textContent = JSON.stringify({
+                        success: true,
+                        sheetName: firstSheetName,
+                        rowCount: jsonData.length,
+                        columns: Object.keys(jsonData[0] || {}),
+                        firstRow: jsonData[0]
+                    }, null, 2);
+                } catch (error) {
+                    console.error('Error parsing Excel:', error);
+                    document.getElementById('output').textContent = 'Error: ' + error.message;
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        });
+    </script>
+</body>
+</html>
