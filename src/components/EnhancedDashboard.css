@@ -71,9 +71,25 @@ html {
 /* Dashboard Content */
 .dashboard-content {
   width: 100%;
-  max-width: 1400px;
-  margin: 0 auto;
   padding: 3rem 2rem;
+  transition: margin-left 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+/* Dashboard content with sidebar open */
+.dashboard-content.dashboard-with-sidebar {
+  margin-left: 260px;
+}
+
+@media (max-width: 1024px) {
+  .dashboard-content.dashboard-with-sidebar {
+    margin-left: 220px;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-content.dashboard-with-sidebar {
+    margin-left: 0;
+  }
 }
 
 /* Enhanced Dashboard Header Section - Dark Theme Integration */

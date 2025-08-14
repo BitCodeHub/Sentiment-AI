@@ -97,10 +97,7 @@ const Sidebar = ({ activeView, onViewChange, isOpen, onToggle }) => {
       {/* Sidebar */}
       <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
-          <h1 className="sidebar-logo">
-            <Brain size={24} />
-            <span>Review AI</span>
-          </h1>
+          {/* Removed logo and title - header now serves as spacing */}
         </div>
 
         <nav className="sidebar-nav">
