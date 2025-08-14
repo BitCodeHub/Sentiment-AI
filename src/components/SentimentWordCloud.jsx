@@ -10,7 +10,9 @@ const SentimentWordCloud = ({ wordData, onWordClick }) => {
   
   const getSize = (count) => {
     const normalized = (count - minCount) / (maxCount - minCount || 1);
-    return 14 + normalized * 28; // Size between 14px and 42px for more words
+    // Use logarithmic scale for better size distribution
+    const logScale = Math.log(count + 1) / Math.log(maxCount + 1);
+    return 12 + logScale * 36; // Size between 12px and 48px
   };
 
   const getSentimentColor = (sentimentPercentages) => {
@@ -37,7 +39,7 @@ const SentimentWordCloud = ({ wordData, onWordClick }) => {
   // Sort words by frequency for better visual distribution
   const sortedWords = [...wordData]
     .sort((a, b) => b.count - a.count)
-    .slice(0, 200); // Show more words
+    .slice(0, 250); // Show even more words for fuller cloud
 
   // Create cloud-shaped positioning with better distribution
   const cloudWords = (() => {
@@ -75,7 +77,7 @@ const SentimentWordCloud = ({ wordData, onWordClick }) => {
         
         // Check if position is valid (not too close to others)
         const fontSize = getSize(word.count);
-        const minDistance = fontSize * 0.8;
+        const minDistance = fontSize * 0.5; // Allow closer packing
         
         const tooClose = placed.some(p => {
           const dx = x - p.x;
