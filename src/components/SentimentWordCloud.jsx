@@ -12,48 +12,54 @@ const SentimentWordCloud = ({ wordData, onWordClick }) => {
     const normalized = (count - minCount) / (maxCount - minCount || 1);
     // Use logarithmic scale for better size distribution
     const logScale = Math.log(count + 1) / Math.log(maxCount + 1);
-    return 14 + logScale * 22; // Size between 14px and 36px - smaller range
+    return 12 + logScale * 28; // Size between 12px and 40px for better contrast
   };
 
   const getSentimentColor = (sentimentPercentages) => {
     const { positive, negative, neutral } = sentimentPercentages;
     
-    // Determine dominant sentiment
-    if (positive > negative && positive > neutral) {
-      // Positive dominant - green shades
-      const intensity = positive / 100;
-      return `hsl(142, ${50 + intensity * 30}%, ${45 - intensity * 15}%)`;
+    // Determine dominant sentiment with clearer colors
+    if (positive >= 60) {
+      // Strong positive - green
+      return '#22c55e';
+    } else if (positive > negative && positive > neutral) {
+      // Positive dominant - lighter green
+      return '#4ade80';
+    } else if (negative >= 60) {
+      // Strong negative - red
+      return '#ef4444';
     } else if (negative > positive && negative > neutral) {
-      // Negative dominant - red shades
-      const intensity = negative / 100;
-      return `hsl(0, ${50 + intensity * 30}%, ${45 - intensity * 15}%)`;
-    } else if (neutral > positive && neutral > negative) {
-      // Neutral dominant - gray shades
-      return `hsl(0, 0%, 50%)`;
+      // Negative dominant - lighter red
+      return '#f87171';
+    } else if (neutral > 50) {
+      // Neutral dominant - gray
+      return '#6b7280';
     } else {
-      // Mixed sentiment - amber/orange
-      return `hsl(30, 60%, 50%)`;
+      // Mixed sentiment - orange/amber
+      return '#f59e0b';
     }
   };
 
   // Sort words by frequency for better visual distribution
   const sortedWords = [...wordData]
     .sort((a, b) => b.count - a.count)
-    .slice(0, 80); // Limit to prevent overcrowding
+    .slice(0, 60); // Further reduce for better spacing
 
   // Create cloud-shaped positioning with better distribution
   const cloudWords = (() => {
     const positions = [];
     const placed = [];
     
-    // Define cloud shape using multiple ellipses with better spacing
+    // Define cloud shape with better distribution
     const cloudCenters = [
-      { x: 50, y: 50, rx: 30, ry: 20 },    // Main center
-      { x: 25, y: 45, rx: 20, ry: 15 },    // Left bulge
-      { x: 75, y: 45, rx: 20, ry: 15 },    // Right bulge
-      { x: 35, y: 65, rx: 18, ry: 12 },    // Bottom left
-      { x: 65, y: 65, rx: 18, ry: 12 },    // Bottom right
-      { x: 50, y: 30, rx: 25, ry: 15 },    // Top
+      { x: 50, y: 50, rx: 35, ry: 25 },    // Main center - larger
+      { x: 20, y: 45, rx: 22, ry: 18 },    // Left bulge
+      { x: 80, y: 45, rx: 22, ry: 18 },    // Right bulge
+      { x: 35, y: 70, rx: 20, ry: 15 },    // Bottom left
+      { x: 65, y: 70, rx: 20, ry: 15 },    // Bottom right
+      { x: 50, y: 25, rx: 28, ry: 18 },    // Top
+      { x: 15, y: 60, rx: 15, ry: 12 },    // Far left
+      { x: 85, y: 60, rx: 15, ry: 12 },    // Far right
     ];
     
     // Process words in order of importance (already sorted by frequency)
@@ -62,34 +68,43 @@ const SentimentWordCloud = ({ wordData, onWordClick }) => {
       let position = null;
       
       // Try to find a good position
-      while (attempts < 30 && !position) {
-        // Pick a random cloud center, favor main centers for important words
-        const centerIndex = index < 20 
-          ? Math.floor(Math.random() * 2) // Very important words in main areas only
-          : index < 40
-          ? Math.floor(Math.random() * 4) // Important words in main and side areas
-          : Math.floor(Math.random() * cloudCenters.length); // Others anywhere
+      while (attempts < 50 && !position) {
+        // Pick a cloud center based on word importance
+        let centerIndex;
+        if (index < 10) {
+          // Most important words in the main center
+          centerIndex = 0;
+        } else if (index < 25) {
+          // Important words in main areas
+          centerIndex = Math.floor(Math.random() * 3);
+        } else {
+          // Other words distributed throughout
+          centerIndex = Math.floor(Math.random() * cloudCenters.length);
+        }
         const center = cloudCenters[centerIndex];
         
-        // Generate position within ellipse
-        const angle = Math.random() * Math.PI * 2;
-        const radiusScale = Math.sqrt(Math.random()); // Square root for better distribution
+        // Generate position within ellipse with better distribution
+        const angle = (Math.random() + index * 0.618) * Math.PI * 2; // Golden ratio for spread
+        const radiusScale = 0.2 + Math.random() * 0.8; // Avoid center clustering
         
         const x = center.x + (radiusScale * center.rx * Math.cos(angle));
         const y = center.y + (radiusScale * center.ry * Math.sin(angle));
         
         // Check if position is valid (not too close to others)
         const fontSize = getSize(word.count);
-        const wordWidth = word.word.length * fontSize * 0.6; // Estimate word width
-        const minDistance = Math.max(fontSize * 1.2, wordWidth * 0.5); // Better spacing
+        const wordWidth = word.word.length * fontSize * 0.65; // Better width estimation
+        const wordHeight = fontSize * 1.2;
+        const minDistance = Math.max(fontSize * 1.5, 20); // Increased minimum spacing
         
         const tooClose = placed.some(p => {
           const dx = Math.abs(x - p.x);
           const dy = Math.abs(y - p.y);
-          // Check both circular distance and rectangular bounds
-          const distance = Math.sqrt(dx * dx + dy * dy);
-          const minDist = (minDistance + p.minDistance) / 2;
-          return distance < minDist || (dx < wordWidth/2 + p.width/2 && dy < fontSize/2 + p.size/2);
+          
+          // Improved collision detection with padding
+          const xOverlap = dx < (wordWidth/2 + p.width/2 + 8); // 8px horizontal padding
+          const yOverlap = dy < (wordHeight/2 + p.height/2 + 6); // 6px vertical padding
+          
+          return xOverlap && yOverlap;
         });
         
         if (!tooClose) {
@@ -99,6 +114,7 @@ const SentimentWordCloud = ({ wordData, onWordClick }) => {
             y, 
             size: fontSize, 
             width: wordWidth,
+            height: wordHeight,
             minDistance: minDistance 
           });
         }
@@ -120,7 +136,7 @@ const SentimentWordCloud = ({ wordData, onWordClick }) => {
         ...word,
         x: Math.max(8, Math.min(92, position.x)),
         y: Math.max(12, Math.min(88, position.y)),
-        rotation: index > 30 && Math.random() > 0.7 ? (Math.random() - 0.5) * 30 : 0
+        rotation: index > 20 && Math.random() > 0.8 ? (Math.random() - 0.5) * 20 : 0
       });
     });
     

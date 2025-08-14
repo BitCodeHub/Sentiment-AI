@@ -139,9 +139,13 @@ const WordsAnalysis = ({ reviews, onWordClick }) => {
   const filteredWords = useMemo(() => {
     let filtered = [...wordAnalysis];
 
-    // For cloud view, filter out low frequency words to prevent clutter
+    // For cloud view, include more words but still filter out very rare ones
     if (showWordCloud) {
       filtered = filtered.filter(w => w.count >= 2); // Only words that appear at least twice
+      // Ensure we have enough words for a good cloud
+      if (filtered.length < 40) {
+        filtered = wordAnalysis.filter(w => w.count >= 1).slice(0, 60);
+      }
     }
 
     switch (activeTab) {

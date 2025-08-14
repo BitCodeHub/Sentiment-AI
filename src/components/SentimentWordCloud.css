@@ -12,12 +12,15 @@
   position: relative;
   width: 100%;
   height: 600px;
-  background: #f8f9fa;
+  background: #f5f7fa;
   border-radius: 20px;
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  padding: 20px;
+  overflow: visible;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+  padding: 40px;
   box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Background decoration */
@@ -38,21 +41,26 @@
 .cloud-word {
   background: none;
   border: none;
-  padding: 0.15rem 0.25rem;
+  padding: 0.2rem 0.4rem;
   margin: 0;
   cursor: pointer;
-  font-weight: 500;
+  font-weight: 600;
   position: absolute;
   transition: all 0.3s ease;
-  animation: fadeInScale 0.5s ease forwards;
+  animation: fadeInScale 0.6s ease forwards;
   opacity: 0;
   transform-origin: center;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   line-height: 1;
   white-space: nowrap;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 @keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
   to {
     opacity: 1;
     transform: scale(1);
@@ -61,9 +69,10 @@
 
 /* Hover effects */
 .cloud-word:hover {
-  transform: scale(1.15) translateY(-2px);
-  filter: brightness(1.1);
+  transform: scale(1.1) translateY(-2px);
+  filter: brightness(1.15) saturate(1.2);
   z-index: 10;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .cloud-word::after {
@@ -83,37 +92,37 @@
   width: 100%;
 }
 
-/* Sentiment-based styling */
+/* Sentiment-based styling with enhanced visibility */
 .cloud-word.positive {
-  filter: drop-shadow(0 2px 4px rgba(16, 185, 129, 0.2));
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
 }
 
 .cloud-word.positive:hover {
-  filter: drop-shadow(0 4px 8px rgba(16, 185, 129, 0.3)) brightness(1.1);
+  filter: drop-shadow(0 3px 6px rgba(16, 185, 129, 0.25)) brightness(1.15) saturate(1.2);
 }
 
 .cloud-word.negative {
-  filter: drop-shadow(0 2px 4px rgba(239, 68, 68, 0.2));
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
 }
 
 .cloud-word.negative:hover {
-  filter: drop-shadow(0 4px 8px rgba(239, 68, 68, 0.3)) brightness(1.1);
+  filter: drop-shadow(0 3px 6px rgba(239, 68, 68, 0.25)) brightness(1.15) saturate(1.2);
 }
 
 .cloud-word.neutral {
-  filter: drop-shadow(0 2px 4px rgba(107, 114, 128, 0.2));
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
 }
 
 .cloud-word.neutral:hover {
-  filter: drop-shadow(0 4px 8px rgba(107, 114, 128, 0.3)) brightness(1.1);
+  filter: drop-shadow(0 3px 6px rgba(107, 114, 128, 0.25)) brightness(1.15) saturate(1.2);
 }
 
 .cloud-word.mixed {
-  filter: drop-shadow(0 2px 4px rgba(245, 158, 11, 0.2));
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
 }
 
 .cloud-word.mixed:hover {
-  filter: drop-shadow(0 4px 8px rgba(245, 158, 11, 0.3)) brightness(1.1);
+  filter: drop-shadow(0 3px 6px rgba(245, 158, 11, 0.25)) brightness(1.15) saturate(1.2);
 }
 
 /* Responsive design */
