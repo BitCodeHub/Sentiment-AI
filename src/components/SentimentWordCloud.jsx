@@ -219,7 +219,7 @@ const SentimentWordCloud = ({ wordData, onWordClick }) => {
               left: `${word.x}%`,
               top: `${word.y}%`,
               transform: `translate(-50%, -50%) rotate(${word.rotation || 0}deg)`,
-              fontWeight: index < 10 ? 700 : index < 20 ? 600 : 500
+              fontWeight: index < 5 ? 800 : index < 15 ? 700 : index < 30 ? 600 : 500
             }}
             onClick={() => onWordClick && onWordClick(word.word)}
             title={`${word.word}: ${word.count} mentions (${Math.round(word.sentimentPercentages.positive)}% positive, ${Math.round(word.sentimentPercentages.negative)}% negative)`}
