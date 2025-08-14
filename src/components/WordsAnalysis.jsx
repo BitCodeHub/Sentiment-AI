@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { Info, TrendingUp, TrendingDown, Sparkles, Star, AlertCircle, Clock, Filter } from 'lucide-react';
+import { Info, TrendingUp, TrendingDown, Sparkles, Star, AlertCircle, Clock, Filter, Cloud } from 'lucide-react';
+import SentimentWordCloud from './SentimentWordCloud';
 import './WordsAnalysis.css';
 
 // Common stop words to exclude
@@ -25,6 +26,7 @@ const STOP_WORDS = new Set([
 const WordsAnalysis = ({ reviews, onWordClick }) => {
   const [activeTab, setActiveTab] = useState('interesting');
   const [showAllWords, setShowAllWords] = useState(false);
+  const [showWordCloud, setShowWordCloud] = useState(false);
 
   // Analyze words from reviews
   const wordAnalysis = useMemo(() => {
@@ -207,33 +209,83 @@ const WordsAnalysis = ({ reviews, onWordClick }) => {
           </button>
         </p>
       </div>
-
-      <div className="words-scan-info">
-        <span>Scanned {reviews.length} reviews for words</span>
-        <Info size={16} className="info-icon" />
+      
+      <div className="words-view-toggle">
+        <button 
+          className={`view-toggle-btn ${!showWordCloud ? 'active' : ''}`}
+          onClick={() => setShowWordCloud(false)}
+        >
+          <Filter size={16} />
+          Table View
+        </button>
+        <button 
+          className={`view-toggle-btn ${showWordCloud ? 'active' : ''}`}
+          onClick={() => setShowWordCloud(true)}
+        >
+          <Cloud size={16} />
+          Word Cloud
+        </button>
       </div>
 
-      <div className="words-tabs">
-        {tabs.map(tab => {
-          const Icon = tab.icon;
-          return (
-            <button
-              key={tab.id}
-              className={`word-tab ${activeTab === tab.id ? 'active' : ''}`}
-              onClick={() => setActiveTab(tab.id)}
-            >
-              <Icon size={14} />
-              {tab.label}
-            </button>
-          );
-        })}
-      </div>
+      {!showWordCloud && (
+        <div className="words-scan-info">
+          <span>Scanned {reviews.length} reviews for words</span>
+          <Info size={16} className="info-icon" />
+        </div>
+      )}
 
-      <div className="words-info-text">
-        Words we think you might be interested in during this period excluding common and stop words.
-      </div>
+      {showWordCloud ? (
+        <>
+          <div className="words-tabs">
+            {tabs.map(tab => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  className={`word-tab ${activeTab === tab.id ? 'active' : ''}`}
+                  onClick={() => setActiveTab(tab.id)}
+                >
+                  <Icon size={14} />
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+          
+          <div className="word-cloud-header">
+            <h3>Word Cloud of {activeTab === 'interesting' ? 'Interesting' : activeTab === 'popular' ? 'Popular' : activeTab === 'critical' ? 'Critical' : activeTab === 'trending-up' ? 'Trending Up' : activeTab === 'trending-down' ? 'Trending Down' : 'New'} Words</h3>
+            <p className="word-cloud-subtitle">
+              Size represents frequency, color represents sentiment. Click any word to see reviews.
+            </p>
+          </div>
+          <SentimentWordCloud 
+            wordData={filteredWords} 
+            onWordClick={onWordClick}
+          />
+        </>
+      ) : (
+        <>
+          <div className="words-tabs">
+            {tabs.map(tab => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  className={`word-tab ${activeTab === tab.id ? 'active' : ''}`}
+                  onClick={() => setActiveTab(tab.id)}
+                >
+                  <Icon size={14} />
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
 
-      <div className="words-table">
+          <div className="words-info-text">
+            Words we think you might be interested in during this period excluding common and stop words.
+          </div>
+
+          <div className="words-table">
         <div className="words-table-header">
           <div className="word-col">WORD</div>
           <div className="sentiment-col">SENTIMENT</div>
@@ -287,15 +339,17 @@ const WordsAnalysis = ({ reviews, onWordClick }) => {
             </div>
           ))}
         </div>
-      </div>
+          </div>
 
-      {!showAllWords && wordAnalysis.length > 10 && (
-        <button 
-          className="show-more-words-btn"
-          onClick={() => setShowAllWords(true)}
-        >
-          Show More Words
-        </button>
+          {!showAllWords && wordAnalysis.length > 10 && (
+            <button 
+              className="show-more-words-btn"
+              onClick={() => setShowAllWords(true)}
+            >
+              Show More Words
+            </button>
+          )}
+        </>
       )}
     </div>
   );
