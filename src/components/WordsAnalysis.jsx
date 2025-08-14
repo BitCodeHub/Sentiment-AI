@@ -136,8 +136,8 @@ const WordsAnalysis = ({ reviews, onWordClick }) => {
 
     // For cloud view, include more words but still filter out very rare ones
     if (showWordCloud) {
-      // Get all words that appear at least once, up to 150 words to give cloud more options
-      filtered = wordAnalysis.filter(w => w.count >= 1).slice(0, 150);
+      // Get words that appear at least twice, up to 60 words for cleaner cloud
+      filtered = wordAnalysis.filter(w => w.count >= 2).slice(0, 60);
     }
 
     switch (activeTab) {

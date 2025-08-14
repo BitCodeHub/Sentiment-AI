@@ -24,12 +24,9 @@ const SentimentWordCloud = ({ wordData, onWordClick }) => {
     } else if (index < 50) {
       // Smaller words
       return 14 + normalized * 6; // 14-20px
-    } else if (index < 80) {
-      // Small words
-      return 12 + normalized * 4; // 12-16px
     } else {
-      // Smallest words for filling
-      return 10 + normalized * 3; // 10-13px
+      // Smallest words
+      return 12 + normalized * 4; // 12-16px
     }
   };
 
@@ -67,7 +64,7 @@ const SentimentWordCloud = ({ wordData, onWordClick }) => {
   // Sort words by frequency for better visual distribution
   const sortedWords = [...wordData]
     .sort((a, b) => b.count - a.count)
-    .slice(0, 120); // Increase to 120 words to fill more space
+    .slice(0, 50); // Reduce to 50 words for better spacing
 
   // Create distributed positioning across full canvas
   const cloudWords = (() => {
@@ -87,58 +84,49 @@ const SentimentWordCloud = ({ wordData, onWordClick }) => {
       const wordWidth = word.word.length * fontSize * charWidth;
       const wordHeight = fontSize * 1.2;
       
-      // Try to find a good position
-      while (attempts < 100 && !position) {
+      // Try to find a good position with more attempts
+      while (attempts < 200 && !position) {
         let x, y;
         
-        if (index < 3) {
-          // Top 3 words - dead center
-          x = 45 + Math.random() * 10;
-          y = 45 + Math.random() * 10;
-        } else if (index < 10) {
-          // Next important words - close to center
-          const angle = (index - 3) * (Math.PI * 2 / 7);
-          const radius = 8 + Math.random() * 8;
+        // Random placement with bias towards center
+        if (index === 0) {
+          // First word - center
+          x = 48 + Math.random() * 4;
+          y = 48 + Math.random() * 4;
+        } else if (index < 5) {
+          // Top words - near center
+          const angle = Math.random() * Math.PI * 2;
+          const radius = 5 + Math.random() * 10;
           x = 50 + radius * Math.cos(angle);
           y = 50 + radius * Math.sin(angle);
-        } else if (index < 25) {
-          // Medium importance - middle ring
-          const angle = index * goldenAngle;
-          const radius = 15 + Math.random() * 15;
-          x = 50 + radius * Math.cos(angle);
-          y = 50 + radius * Math.sin(angle);
-        } else if (index < 60) {
-          // Medium-outer ring
-          const angle = index * goldenAngle;
-          const radius = 22 + Math.sqrt(index - 25) * 3.5;
-          x = 50 + radius * Math.cos(angle) + (Math.random() - 0.5) * 6;
-          y = 50 + radius * Math.sin(angle) + (Math.random() - 0.5) * 6;
         } else {
-          // Outer words - fill remaining space
-          const angle = index * goldenAngle * 0.8;
-          const radius = 30 + Math.sqrt(index - 60) * 2.5;
+          // All other words - random placement with slight center bias
+          const angle = Math.random() * Math.PI * 2;
+          const maxRadius = 35;
+          // Use sqrt for better distribution
+          const radius = Math.sqrt(Math.random()) * maxRadius;
           x = 50 + radius * Math.cos(angle);
           y = 50 + radius * Math.sin(angle);
+          
+          // Add some randomness
+          x += (Math.random() - 0.5) * 10;
+          y += (Math.random() - 0.5) * 10;
         }
         
-        // Keep within bounds with much larger margins to prevent cutoff
-        // Calculate margin as percentage of canvas based on word size
-        const xMargin = Math.max(20, (wordWidth / 600) * 50); // At least 20% from edge
-        const yMargin = Math.max(12, (wordHeight / 600) * 40); // At least 12% from edge
-        
-        // Apply margins
-        x = Math.max(xMargin, Math.min(100 - xMargin, x));
-        y = Math.max(yMargin, Math.min(100 - yMargin, y));
+        // Keep within bounds with fixed margins
+        const margin = 15; // 15% margin from all edges
+        x = Math.max(margin, Math.min(100 - margin, x));
+        y = Math.max(margin, Math.min(100 - margin, y));
         
         // Check collisions with more spacing
         const tooClose = placed.some(p => {
           const dx = Math.abs(x - p.x);
           const dy = Math.abs(y - p.y);
           
-          // Adjusted spacing - less for center words, more for edges
-          const spacingFactor = index < 10 ? 0.35 : index < 25 ? 0.4 : index < 60 ? 0.45 : 0.35;
-          const minXDistance = (wordWidth + p.width) / 100 * spacingFactor * 100 + 2;
-          const minYDistance = (wordHeight + p.height) / 100 * spacingFactor * 100 + 1;
+          // Much more generous spacing to prevent overlaps
+          const padding = 15; // Minimum 15px padding between words
+          const minXDistance = (wordWidth + p.width) / 2 + padding;
+          const minYDistance = (wordHeight + p.height) / 2 + padding;
           
           return dx < minXDistance && dy < minYDistance;
         });
@@ -158,28 +146,28 @@ const SentimentWordCloud = ({ wordData, onWordClick }) => {
       
       // Fallback with spiral - ensure it's within bounds
       if (!position) {
+        // Place remaining words in a spiral pattern
         const angle = index * goldenAngle;
-        const radius = Math.min(30, 15 + Math.sqrt(index) * 3);
+        const radius = 20 + (index / sortedWords.length) * 20;
         let fallbackX = 50 + radius * Math.cos(angle);
         let fallbackY = 50 + radius * Math.sin(angle);
         
-        // Apply same margin constraints
-        const xMargin = Math.max(20, (wordWidth / 600) * 50);
-        const yMargin = Math.max(12, (wordHeight / 600) * 40);
-        fallbackX = Math.max(xMargin, Math.min(100 - xMargin, fallbackX));
-        fallbackY = Math.max(yMargin, Math.min(100 - yMargin, fallbackY));
+        // Apply margin constraints
+        const margin = 15;
+        fallbackX = Math.max(margin, Math.min(100 - margin, fallbackX));
+        fallbackY = Math.max(margin, Math.min(100 - margin, fallbackY));
         
         position = { x: fallbackX, y: fallbackY };
       }
       
-      // Add rotation for variety - but not for very large words
+      // Add rotation for variety
       let rotation = 0;
-      if (index > 5 && index < 50) {
+      if (index > 5) {
         const rotationChance = Math.random();
-        if (rotationChance < 0.15) {
+        if (rotationChance < 0.1) {
           rotation = -90; // Vertical
-        } else if (rotationChance < 0.25) {
-          rotation = (Math.random() - 0.5) * 25; // Slight angle
+        } else if (rotationChance < 0.2) {
+          rotation = (Math.random() - 0.5) * 20; // Slight angle
         }
       }
       
