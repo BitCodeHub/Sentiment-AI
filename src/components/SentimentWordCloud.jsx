@@ -10,7 +10,7 @@ const SentimentWordCloud = ({ wordData, onWordClick }) => {
   
   const getSize = (count) => {
     const normalized = (count - minCount) / (maxCount - minCount || 1);
-    return 16 + normalized * 32; // Size between 16px and 48px
+    return 14 + normalized * 28; // Size between 14px and 42px for more words
   };
 
   const getSentimentColor = (sentimentPercentages) => {
@@ -37,14 +37,54 @@ const SentimentWordCloud = ({ wordData, onWordClick }) => {
   // Sort words by frequency for better visual distribution
   const sortedWords = [...wordData]
     .sort((a, b) => b.count - a.count)
-    .slice(0, 100); // Limit to top 100 words
+    .slice(0, 200); // Show more words
 
-  // Shuffle for better visual distribution (keeping size/importance)
-  const shuffledWords = sortedWords.sort(() => Math.random() - 0.5);
+  // Create cloud-shaped positioning using spiral pattern
+  const cloudWords = sortedWords.map((word, index) => {
+    const totalWords = sortedWords.length;
+    const normalizedIndex = index / totalWords;
+    
+    // Use spiral pattern for word placement
+    const spiralTurns = 3;
+    const angle = normalizedIndex * Math.PI * 2 * spiralTurns;
+    const maxRadius = 40;
+    
+    // Vary radius based on position for cloud shape
+    let radius = normalizedIndex * maxRadius;
+    
+    // Create cloud bulges at different angles
+    const bulgeAngles = [0, Math.PI * 0.6, Math.PI * 1.3, Math.PI * 1.8];
+    bulgeAngles.forEach(bulgeAngle => {
+      const angleDiff = Math.abs(angle % (Math.PI * 2) - bulgeAngle);
+      const bulgeEffect = Math.max(0, 1 - angleDiff / Math.PI) * 0.3;
+      radius *= (1 + bulgeEffect);
+    });
+    
+    // Calculate position with cloud-like distribution
+    let x = 50 + radius * Math.cos(angle) * 1.5;
+    let y = 50 + radius * Math.sin(angle) * 0.8;
+    
+    // Add organic randomness
+    const jitter = Math.max(3, 10 - index * 0.05);
+    x += (Math.random() - 0.5) * jitter;
+    y += (Math.random() - 0.5) * jitter;
+    
+    // Cluster important words near center
+    if (index < 20) {
+      x = x * 0.6 + 20;
+      y = y * 0.6 + 20;
+    }
+    
+    return {
+      ...word,
+      x: Math.max(5, Math.min(95, x)),
+      y: Math.max(15, Math.min(85, y))
+    };
+  });
 
   return (
-    <div className="sentiment-word-cloud">
-      {shuffledWords.map((word, index) => {
+    <div className="sentiment-word-cloud cloud-shape">
+      {cloudWords.map((word, index) => {
         const sentimentClass = 
           word.sentimentPercentages.positive > 60 ? 'positive' :
           word.sentimentPercentages.negative > 60 ? 'negative' :
@@ -57,7 +97,11 @@ const SentimentWordCloud = ({ wordData, onWordClick }) => {
             style={{
               fontSize: `${getSize(word.count)}px`,
               color: getSentimentColor(word.sentimentPercentages),
-              animationDelay: `${index * 0.02}s`
+              animationDelay: `${index * 0.01}s`,
+              position: 'absolute',
+              left: `${word.x}%`,
+              top: `${word.y}%`,
+              transform: 'translate(-50%, -50%)'
             }}
             onClick={() => onWordClick && onWordClick(word.word)}
             title={`${word.word}: ${word.count} mentions (${Math.round(word.sentimentPercentages.positive)}% positive, ${Math.round(word.sentimentPercentages.negative)}% negative)`}

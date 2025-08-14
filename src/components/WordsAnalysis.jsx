@@ -3,24 +3,20 @@ import { Info, TrendingUp, TrendingDown, Sparkles, Star, AlertCircle, Clock, Fil
 import SentimentWordCloud from './SentimentWordCloud';
 import './WordsAnalysis.css';
 
-// Common stop words to exclude
+// Common stop words to exclude - reduced list to capture more meaningful words
 const STOP_WORDS = new Set([
   'the', 'be', 'to', 'of', 'and', 'a', 'in', 'that', 'have', 'i', 'it', 'for', 'not',
   'on', 'with', 'he', 'as', 'you', 'do', 'at', 'this', 'but', 'his', 'by', 'from',
   'they', 'we', 'say', 'her', 'she', 'or', 'an', 'will', 'my', 'one', 'all', 'would',
   'there', 'their', 'what', 'so', 'up', 'out', 'if', 'about', 'who', 'get', 'which',
-  'go', 'me', 'when', 'make', 'can', 'like', 'time', 'no', 'just', 'him', 'know',
-  'take', 'people', 'into', 'year', 'your', 'good', 'some', 'could', 'them', 'see',
-  'other', 'than', 'then', 'now', 'look', 'only', 'come', 'its', 'over', 'think',
-  'also', 'back', 'after', 'use', 'two', 'how', 'our', 'work', 'first', 'well',
+  'go', 'me', 'when', 'make', 'can', 'like', 'no', 'just', 'him', 'know',
+  'take', 'into', 'your', 'some', 'could', 'them', 'see',
+  'other', 'than', 'then', 'now', 'only', 'come', 'its', 'over', 'think',
+  'also', 'back', 'after', 'use', 'two', 'how', 'our', 'first', 'well',
   'way', 'even', 'new', 'want', 'because', 'any', 'these', 'give', 'day', 'most',
   'us', 'is', 'was', 'are', 'been', 'has', 'had', 'were', 'said', 'did', 'getting',
   'made', 'find', 'where', 'much', 'too', 'very', 'still', 'being', 'going', 'why',
-  'before', 'never', 'here', 'more', 'app', 'apps', 'application', 'it\'s', 'i\'m',
-  'don\'t', 'can\'t', 'won\'t', 'doesn\'t', 'isn\'t', 'aren\'t', 'wasn\'t', 'weren\'t',
-  'that\'s', 'there\'s', 'i\'ve', 'you\'ve', 'we\'ve', 'they\'ve', 'i\'d', 'you\'d',
-  'he\'d', 'she\'d', 'we\'d', 'they\'d', 'i\'ll', 'you\'ll', 'he\'ll', 'she\'ll',
-  'we\'ll', 'they\'ll', 'let\'s', 'that\'s', 'who\'s', 'what\'s', 'here\'s', 'there\'s'
+  'before', 'never', 'here', 'more'
 ]);
 
 const WordsAnalysis = ({ reviews, onWordClick }) => {
@@ -43,11 +39,17 @@ const WordsAnalysis = ({ reviews, onWordClick }) => {
       const rating = review.rating || review.Rating || 3;
       const reviewDate = new Date(review.date || review.Date || review['Review Date'] || new Date());
       
-      // Extract words (3+ characters, alphanumeric)
+      // Extract words (2+ characters for more coverage, alphanumeric)
       const words = content.toLowerCase()
-        .replace(/[^\w\s]/g, ' ')
+        .replace(/[^\w\s'-]/g, ' ') // Keep hyphens and apostrophes
         .split(/\s+/)
-        .filter(word => word.length >= 3 && !STOP_WORDS.has(word));
+        .filter(word => {
+          // More inclusive filtering
+          if (word.length < 2) return false;
+          if (STOP_WORDS.has(word)) return false;
+          if (/^\d+$/.test(word)) return false; // Skip pure numbers
+          return true;
+        });
 
       // Count words and track sentiment
       words.forEach(word => {
@@ -137,6 +139,11 @@ const WordsAnalysis = ({ reviews, onWordClick }) => {
   const filteredWords = useMemo(() => {
     let filtered = [...wordAnalysis];
 
+    // For cloud view, include more words but still filter out single occurrences
+    if (showWordCloud) {
+      filtered = filtered.filter(w => w.count >= 1);
+    }
+
     switch (activeTab) {
       case 'interesting':
         filtered = filtered.sort((a, b) => b.interestingScore - a.interestingScore);
@@ -164,8 +171,8 @@ const WordsAnalysis = ({ reviews, onWordClick }) => {
         break;
     }
 
-    return showAllWords ? filtered : filtered.slice(0, 10);
-  }, [wordAnalysis, activeTab, showAllWords]);
+    return showAllWords || showWordCloud ? filtered : filtered.slice(0, 10);
+  }, [wordAnalysis, activeTab, showAllWords, showWordCloud]);
 
   // Generate sparkline SVG path
   const generateSparkline = (data) => {

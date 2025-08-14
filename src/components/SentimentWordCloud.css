@@ -1,16 +1,20 @@
 /* Sentiment Word Cloud Styles */
 .sentiment-word-cloud {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: center;
-  gap: 0.75rem 1rem;
   padding: 2rem;
-  min-height: 400px;
-  background: #f9fafb;
+  min-height: 500px;
+  background: #ffffff;
   border-radius: 12px;
   position: relative;
   overflow: hidden;
+}
+
+.sentiment-word-cloud.cloud-shape {
+  position: relative;
+  width: 100%;
+  height: 600px;
+  background: #fafafa;
+  border-radius: 20px;
+  overflow: visible;
 }
 
 /* Background decoration */
@@ -31,17 +35,18 @@
 .cloud-word {
   background: none;
   border: none;
-  padding: 0.25rem 0.5rem;
+  padding: 0.15rem 0.25rem;
   margin: 0;
   cursor: pointer;
-  font-weight: 600;
-  position: relative;
+  font-weight: 500;
+  position: absolute;
   transition: all 0.3s ease;
   animation: fadeInScale 0.5s ease forwards;
   opacity: 0;
-  transform: scale(0.8);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-  line-height: 1.2;
+  transform-origin: center;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  line-height: 1;
+  white-space: nowrap;
 }
 
 @keyframes fadeInScale {
@@ -113,17 +118,24 @@
   .sentiment-word-cloud {
     padding: 1.5rem;
     min-height: 300px;
-    gap: 0.5rem 0.75rem;
+  }
+  
+  .sentiment-word-cloud.cloud-shape {
+    height: 400px;
   }
   
   .cloud-word {
-    padding: 0.2rem 0.4rem;
+    padding: 0.1rem 0.2rem;
   }
 }
 
 /* Dark mode support */
 @media (prefers-color-scheme: dark) {
   .sentiment-word-cloud {
+    background: #1e293b;
+  }
+  
+  .sentiment-word-cloud.cloud-shape {
     background: #1e293b;
   }
   
