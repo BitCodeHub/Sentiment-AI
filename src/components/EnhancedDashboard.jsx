@@ -34,6 +34,10 @@ const EnhancedDashboard = ({ data, isLoading }) => {
   // Sidebar and view state
   const [activeView, setActiveView] = useState('overview');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  
+  // Word click state
+  const [selectedWord, setSelectedWord] = useState(null);
+  const [showWordReviews, setShowWordReviews] = useState(false);
   const [aiInsights, setAiInsights] = useState(null);
   const [deepInsights, setDeepInsights] = useState(null);
   const [executiveAnalysis, setExecutiveAnalysis] = useState(null);
@@ -1865,7 +1869,13 @@ const EnhancedDashboard = ({ data, isLoading }) => {
               <p className="dashboard-subtitle">Discover key themes from {summary.totalReviews.toLocaleString()} reviews</p>
             </div>
           </div>
-          <WordsAnalysis reviews={filteredReviews} />
+          <WordsAnalysis 
+            reviews={filteredReviews} 
+            onWordClick={(word) => {
+              setSelectedWord(word);
+              setShowWordReviews(true);
+            }}
+          />
           </>
         )}
 
@@ -2061,6 +2071,117 @@ const EnhancedDashboard = ({ data, isLoading }) => {
         )}
 
         {/* Removed modals - Analysis now shows inline */}
+        
+        {/* Word Reviews Modal */}
+        {showWordReviews && selectedWord && createPortal(
+          <div 
+            className="word-reviews-overlay"
+            onClick={() => {
+              setShowWordReviews(false);
+              setSelectedWord(null);
+            }}
+          >
+            <div 
+              className="word-reviews-modal"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="word-reviews-header">
+                <h3>Reviews containing "{selectedWord}"</h3>
+                <button 
+                  className="close-word-reviews"
+                  onClick={() => {
+                    setShowWordReviews(false);
+                    setSelectedWord(null);
+                  }}
+                  title="Close"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              
+              <div className="word-reviews-content">
+                {(() => {
+                  const wordReviews = filteredReviews.filter(review => {
+                    const content = (review.content || review.Content || review.Review || review['Review Text'] || '').toLowerCase();
+                    return content.includes(selectedWord.toLowerCase());
+                  });
+                  
+                  return (
+                    <>
+                      <div className="word-reviews-stats">
+                        <span className="word-count">Found in {wordReviews.length} reviews</span>
+                        <div className="word-sentiment-breakdown">
+                          <span className="positive-count" style={{ color: '#10b981' }}>
+                            {wordReviews.filter(r => (r.rating || r.Rating || 3) >= 4).length} positive
+                          </span>
+                          <span className="neutral-count" style={{ color: '#6b7280' }}>
+                            {wordReviews.filter(r => (r.rating || r.Rating || 3) === 3).length} neutral
+                          </span>
+                          <span className="negative-count" style={{ color: '#ef4444' }}>
+                            {wordReviews.filter(r => (r.rating || r.Rating || 3) <= 2).length} negative
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <div className="word-reviews-list">
+                        {wordReviews.length === 0 ? (
+                          <div className="no-word-reviews">
+                            <p>No reviews found containing "{selectedWord}"</p>
+                          </div>
+                        ) : (
+                          wordReviews.slice(0, 50).map((review, index) => {
+                            const rating = review.rating || review.Rating || 3;
+                            const content = review.content || review.Content || review.Review || review['Review Text'] || '';
+                            const date = new Date(review.date || review.Date || review['Review Date'] || new Date());
+                            const author = review.author || review.Author || review.Reviewer || 'Anonymous';
+                            
+                            // Highlight the word in the review
+                            const highlightedContent = content.replace(
+                              new RegExp(`(${selectedWord})`, 'gi'),
+                              '<mark class="word-highlight">$1</mark>'
+                            );
+                            
+                            return (
+                              <div key={index} className="word-review-card">
+                                <div className="word-review-header">
+                                  <div className="rating-stars">
+                                    {[...Array(5)].map((_, i) => (
+                                      <Star
+                                        key={i}
+                                        size={14}
+                                        className={`star ${i < rating ? 'filled' : ''}`}
+                                        style={{
+                                          fill: i < rating ? '#fbbf24' : 'none',
+                                          stroke: i < rating ? '#fbbf24' : '#d1d5db'
+                                        }}
+                                      />
+                                    ))}
+                                  </div>
+                                  <span className="review-author">{author}</span>
+                                  <span className="review-date">{date.toLocaleDateString()}</span>
+                                </div>
+                                <div 
+                                  className="word-review-content"
+                                  dangerouslySetInnerHTML={{ __html: highlightedContent }}
+                                />
+                              </div>
+                            );
+                          })
+                        )}
+                        {wordReviews.length > 50 && (
+                          <div className="more-reviews-note">
+                            Showing first 50 of {wordReviews.length} reviews
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
       </div>
     </div>
   );

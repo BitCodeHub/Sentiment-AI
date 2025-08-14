@@ -22,7 +22,7 @@ const STOP_WORDS = new Set([
   'we\'ll', 'they\'ll', 'let\'s', 'that\'s', 'who\'s', 'what\'s', 'here\'s', 'there\'s'
 ]);
 
-const WordsAnalysis = ({ reviews }) => {
+const WordsAnalysis = ({ reviews, onWordClick }) => {
   const [activeTab, setActiveTab] = useState('interesting');
   const [showAllWords, setShowAllWords] = useState(false);
 
@@ -246,7 +246,13 @@ const WordsAnalysis = ({ reviews }) => {
           {filteredWords.map((wordData, index) => (
             <div key={wordData.word} className="word-row">
               <div className="word-rank">{index + 1}</div>
-              <div className="word-text">"{wordData.word}"</div>
+              <button 
+                className="word-text clickable-word"
+                onClick={() => onWordClick && onWordClick(wordData.word)}
+                title={`Click to see reviews containing "${wordData.word}"`}
+              >
+                "{wordData.word}"
+              </button>
               
               <div className="word-sentiment">
                 <div className="sentiment-bar">

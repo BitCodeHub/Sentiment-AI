@@ -52,21 +52,6 @@ const Sidebar = ({ activeView, onViewChange, isOpen, onToggle }) => {
       color: '#06b6d4'
     },
     {
-      id: 'insights',
-      label: 'AI Insights',
-      icon: Sparkles,
-      description: 'AI analysis',
-      color: '#10b981',
-      badge: 'AI'
-    },
-    {
-      id: 'analytics',
-      label: 'Analytics',
-      icon: BarChart3,
-      description: 'Deep analytics',
-      color: '#6366f1'
-    },
-    {
       id: 'reports',
       label: 'Reports',
       icon: FileText,
@@ -135,7 +120,7 @@ const Sidebar = ({ activeView, onViewChange, isOpen, onToggle }) => {
 
           <div className="sidebar-section">
             <h3 className="sidebar-section-title">Advanced</h3>
-            {menuItems.slice(5).map(item => {
+            {menuItems.slice(5, 6).map(item => {
               const Icon = item.icon;
               return (
                 <button
