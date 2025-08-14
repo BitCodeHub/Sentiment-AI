@@ -139,9 +139,9 @@ const WordsAnalysis = ({ reviews, onWordClick }) => {
   const filteredWords = useMemo(() => {
     let filtered = [...wordAnalysis];
 
-    // For cloud view, include more words but still filter out single occurrences
+    // For cloud view, filter out low frequency words to prevent clutter
     if (showWordCloud) {
-      filtered = filtered.filter(w => w.count >= 1);
+      filtered = filtered.filter(w => w.count >= 2); // Only words that appear at least twice
     }
 
     switch (activeTab) {

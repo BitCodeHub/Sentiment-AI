@@ -14,8 +14,10 @@
   height: 600px;
   background: #f8f9fa;
   border-radius: 20px;
-  overflow: visible;
+  overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  padding: 20px;
+  box-sizing: border-box;
 }
 
 /* Background decoration */

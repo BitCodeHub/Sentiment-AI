@@ -12,7 +12,7 @@ const SentimentWordCloud = ({ wordData, onWordClick }) => {
     const normalized = (count - minCount) / (maxCount - minCount || 1);
     // Use logarithmic scale for better size distribution
     const logScale = Math.log(count + 1) / Math.log(maxCount + 1);
-    return 12 + logScale * 36; // Size between 12px and 48px
+    return 14 + logScale * 22; // Size between 14px and 36px - smaller range
   };
 
   const getSentimentColor = (sentimentPercentages) => {
@@ -39,21 +39,21 @@ const SentimentWordCloud = ({ wordData, onWordClick }) => {
   // Sort words by frequency for better visual distribution
   const sortedWords = [...wordData]
     .sort((a, b) => b.count - a.count)
-    .slice(0, 250); // Show even more words for fuller cloud
+    .slice(0, 80); // Limit to prevent overcrowding
 
   // Create cloud-shaped positioning with better distribution
   const cloudWords = (() => {
     const positions = [];
     const placed = [];
     
-    // Define cloud shape using multiple ellipses
+    // Define cloud shape using multiple ellipses with better spacing
     const cloudCenters = [
-      { x: 50, y: 50, rx: 35, ry: 25 },    // Main center
-      { x: 30, y: 45, rx: 25, ry: 20 },    // Left bulge
-      { x: 70, y: 45, rx: 25, ry: 20 },    // Right bulge
-      { x: 40, y: 60, rx: 20, ry: 15 },    // Bottom left
-      { x: 60, y: 60, rx: 20, ry: 15 },    // Bottom right
-      { x: 50, y: 35, rx: 30, ry: 18 },    // Top
+      { x: 50, y: 50, rx: 30, ry: 20 },    // Main center
+      { x: 25, y: 45, rx: 20, ry: 15 },    // Left bulge
+      { x: 75, y: 45, rx: 20, ry: 15 },    // Right bulge
+      { x: 35, y: 65, rx: 18, ry: 12 },    // Bottom left
+      { x: 65, y: 65, rx: 18, ry: 12 },    // Bottom right
+      { x: 50, y: 30, rx: 25, ry: 15 },    // Top
     ];
     
     sortedWords.forEach((word, index) => {
@@ -61,11 +61,13 @@ const SentimentWordCloud = ({ wordData, onWordClick }) => {
       let position = null;
       
       // Try to find a good position
-      while (attempts < 50 && !position) {
+      while (attempts < 30 && !position) {
         // Pick a random cloud center, favor main centers for important words
-        const centerIndex = index < 30 
-          ? Math.floor(Math.random() * 3) // Important words in main areas
-          : Math.floor(Math.random() * cloudCenters.length);
+        const centerIndex = index < 20 
+          ? Math.floor(Math.random() * 2) // Very important words in main areas only
+          : index < 40
+          ? Math.floor(Math.random() * 4) // Important words in main and side areas
+          : Math.floor(Math.random() * cloudCenters.length); // Others anywhere
         const center = cloudCenters[centerIndex];
         
         // Generate position within ellipse
@@ -77,17 +79,27 @@ const SentimentWordCloud = ({ wordData, onWordClick }) => {
         
         // Check if position is valid (not too close to others)
         const fontSize = getSize(word.count);
-        const minDistance = fontSize * 0.5; // Allow closer packing
+        const wordWidth = word.word.length * fontSize * 0.6; // Estimate word width
+        const minDistance = Math.max(fontSize * 1.2, wordWidth * 0.5); // Better spacing
         
         const tooClose = placed.some(p => {
-          const dx = x - p.x;
-          const dy = y - p.y;
-          return Math.sqrt(dx * dx + dy * dy) < minDistance;
+          const dx = Math.abs(x - p.x);
+          const dy = Math.abs(y - p.y);
+          // Check both circular distance and rectangular bounds
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          const minDist = (minDistance + p.minDistance) / 2;
+          return distance < minDist || (dx < wordWidth/2 + p.width/2 && dy < fontSize/2 + p.size/2);
         });
         
         if (!tooClose) {
           position = { x, y };
-          placed.push({ x, y, size: fontSize });
+          placed.push({ 
+            x, 
+            y, 
+            size: fontSize, 
+            width: wordWidth,
+            minDistance: minDistance 
+          });
         }
         
         attempts++;
@@ -105,8 +117,9 @@ const SentimentWordCloud = ({ wordData, onWordClick }) => {
       
       positions.push({
         ...word,
-        x: Math.max(5, Math.min(95, position.x)),
-        y: Math.max(10, Math.min(90, position.y))
+        x: Math.max(8, Math.min(92, position.x)),
+        y: Math.max(12, Math.min(88, position.y)),
+        rotation: index > 30 && Math.random() > 0.7 ? (Math.random() - 0.5) * 30 : 0
       });
     });
     
@@ -132,7 +145,7 @@ const SentimentWordCloud = ({ wordData, onWordClick }) => {
               position: 'absolute',
               left: `${word.x}%`,
               top: `${word.y}%`,
-              transform: 'translate(-50%, -50%)'
+              transform: `translate(-50%, -50%) rotate(${word.rotation || 0}deg)`
             }}
             onClick={() => onWordClick && onWordClick(word.word)}
             title={`${word.word}: ${word.count} mentions (${Math.round(word.sentimentPercentages.positive)}% positive, ${Math.round(word.sentimentPercentages.negative)}% negative)`}
