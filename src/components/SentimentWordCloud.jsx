@@ -8,103 +8,113 @@ const SentimentWordCloud = ({ wordData, onWordClick }) => {
   const maxCount = Math.max(...wordData.map(w => w.count));
   const minCount = Math.min(...wordData.map(w => w.count));
   
-  const getSize = (count) => {
+  const getSize = (count, index) => {
     const normalized = (count - minCount) / (maxCount - minCount || 1);
-    // Use logarithmic scale for better size distribution
-    const logScale = Math.log(count + 1) / Math.log(maxCount + 1);
-    return 12 + logScale * 28; // Size between 12px and 40px for better contrast
+    
+    // More dramatic size differences
+    if (index < 5) {
+      // Top 5 words - very large
+      return 48 + normalized * 32; // 48-80px
+    } else if (index < 15) {
+      // Next 10 words - large
+      return 28 + normalized * 20; // 28-48px
+    } else if (index < 30) {
+      // Medium words
+      return 18 + normalized * 12; // 18-30px
+    } else {
+      // Smaller words
+      return 14 + normalized * 8; // 14-22px
+    }
   };
 
-  const getSentimentColor = (sentimentPercentages) => {
+  const getSentimentColor = (sentimentPercentages, index) => {
     const { positive, negative, neutral } = sentimentPercentages;
     
-    // Determine dominant sentiment with clearer colors
-    if (positive >= 60) {
-      // Strong positive - green
-      return '#22c55e';
-    } else if (positive > negative && positive > neutral) {
-      // Positive dominant - lighter green
-      return '#4ade80';
-    } else if (negative >= 60) {
-      // Strong negative - red
-      return '#ef4444';
-    } else if (negative > positive && negative > neutral) {
-      // Negative dominant - lighter red
-      return '#f87171';
+    // More varied color palette based on sentiment and importance
+    if (positive >= 70) {
+      // Strong positive - various greens
+      const greens = ['#10b981', '#22c55e', '#16a34a', '#15803d'];
+      return greens[index % greens.length];
+    } else if (positive > 50) {
+      // Positive - teal/cyan shades
+      const teals = ['#14b8a6', '#06b6d4', '#0891b2', '#0e7490'];
+      return teals[index % teals.length];
+    } else if (negative >= 70) {
+      // Strong negative - reds
+      const reds = ['#ef4444', '#dc2626', '#b91c1c', '#991b1b'];
+      return reds[index % reds.length];
+    } else if (negative > 50) {
+      // Negative - orange/amber
+      const oranges = ['#f97316', '#ea580c', '#f59e0b', '#d97706'];
+      return oranges[index % oranges.length];
     } else if (neutral > 50) {
-      // Neutral dominant - gray
-      return '#6b7280';
+      // Neutral - grays and blues
+      const neutrals = ['#6b7280', '#4b5563', '#64748b', '#475569'];
+      return neutrals[index % neutrals.length];
     } else {
-      // Mixed sentiment - orange/amber
-      return '#f59e0b';
+      // Mixed - purple/indigo
+      const mixed = ['#8b5cf6', '#7c3aed', '#6366f1', '#4f46e5'];
+      return mixed[index % mixed.length];
     }
   };
 
   // Sort words by frequency for better visual distribution
   const sortedWords = [...wordData]
     .sort((a, b) => b.count - a.count)
-    .slice(0, 60); // Further reduce for better spacing
+    .slice(0, 50); // Limit to 50 for better spacing
 
-  // Create cloud-shaped positioning with better distribution
+  // Create distributed positioning across full canvas
   const cloudWords = (() => {
     const positions = [];
     const placed = [];
     
-    // Define cloud shape with better distribution
-    const cloudCenters = [
-      { x: 50, y: 50, rx: 35, ry: 25 },    // Main center - larger
-      { x: 20, y: 45, rx: 22, ry: 18 },    // Left bulge
-      { x: 80, y: 45, rx: 22, ry: 18 },    // Right bulge
-      { x: 35, y: 70, rx: 20, ry: 15 },    // Bottom left
-      { x: 65, y: 70, rx: 20, ry: 15 },    // Bottom right
-      { x: 50, y: 25, rx: 28, ry: 18 },    // Top
-      { x: 15, y: 60, rx: 15, ry: 12 },    // Far left
-      { x: 85, y: 60, rx: 15, ry: 12 },    // Far right
-    ];
+    // Use spiral pattern for better distribution
+    const goldenAngle = Math.PI * (3 - Math.sqrt(5)); // Golden angle in radians
     
     // Process words in order of importance (already sorted by frequency)
     sortedWords.forEach((word, index) => {
       let attempts = 0;
       let position = null;
+      const fontSize = getSize(word.count, index);
+      const wordWidth = word.word.length * fontSize * 0.6;
+      const wordHeight = fontSize * 1.1;
       
       // Try to find a good position
-      while (attempts < 50 && !position) {
-        // Pick a cloud center based on word importance
-        let centerIndex;
-        if (index < 10) {
-          // Most important words in the main center
-          centerIndex = 0;
-        } else if (index < 25) {
-          // Important words in main areas
-          centerIndex = Math.floor(Math.random() * 3);
+      while (attempts < 100 && !position) {
+        let x, y;
+        
+        if (index < 5) {
+          // Top 5 words - center area with some randomness
+          x = 30 + Math.random() * 40;
+          y = 35 + Math.random() * 30;
+        } else if (index < 15) {
+          // Important words - inner ring
+          const angle = Math.random() * Math.PI * 2;
+          const radius = 20 + Math.random() * 15;
+          x = 50 + radius * Math.cos(angle);
+          y = 50 + radius * Math.sin(angle);
         } else {
-          // Other words distributed throughout
-          centerIndex = Math.floor(Math.random() * cloudCenters.length);
+          // Other words - spiral pattern
+          const angle = index * goldenAngle;
+          const radius = 15 + Math.sqrt(index) * 6;
+          x = 50 + radius * Math.cos(angle) + (Math.random() - 0.5) * 10;
+          y = 50 + radius * Math.sin(angle) + (Math.random() - 0.5) * 10;
         }
-        const center = cloudCenters[centerIndex];
         
-        // Generate position within ellipse with better distribution
-        const angle = (Math.random() + index * 0.618) * Math.PI * 2; // Golden ratio for spread
-        const radiusScale = 0.2 + Math.random() * 0.8; // Avoid center clustering
+        // Keep within bounds
+        x = Math.max(10, Math.min(90, x));
+        y = Math.max(10, Math.min(90, y));
         
-        const x = center.x + (radiusScale * center.rx * Math.cos(angle));
-        const y = center.y + (radiusScale * center.ry * Math.sin(angle));
-        
-        // Check if position is valid (not too close to others)
-        const fontSize = getSize(word.count);
-        const wordWidth = word.word.length * fontSize * 0.65; // Better width estimation
-        const wordHeight = fontSize * 1.2;
-        const minDistance = Math.max(fontSize * 1.5, 20); // Increased minimum spacing
-        
+        // Check collisions with more spacing
         const tooClose = placed.some(p => {
           const dx = Math.abs(x - p.x);
           const dy = Math.abs(y - p.y);
           
-          // Improved collision detection with padding
-          const xOverlap = dx < (wordWidth/2 + p.width/2 + 8); // 8px horizontal padding
-          const yOverlap = dy < (wordHeight/2 + p.height/2 + 6); // 6px vertical padding
+          // Generous spacing based on word size
+          const minXDistance = (wordWidth + p.width) / 100 * 50 + 5;
+          const minYDistance = (wordHeight + p.height) / 100 * 50 + 3;
           
-          return xOverlap && yOverlap;
+          return dx < minXDistance && dy < minYDistance;
         });
         
         if (!tooClose) {
@@ -112,31 +122,41 @@ const SentimentWordCloud = ({ wordData, onWordClick }) => {
           placed.push({ 
             x, 
             y, 
-            size: fontSize, 
             width: wordWidth,
-            height: wordHeight,
-            minDistance: minDistance 
+            height: wordHeight
           });
         }
         
         attempts++;
       }
       
-      // Fallback position if no good spot found
+      // Fallback with spiral
       if (!position) {
-        const angle = (index / sortedWords.length) * Math.PI * 2;
-        const radius = 25 + (index / sortedWords.length) * 20;
+        const angle = index * goldenAngle;
+        const radius = 20 + Math.sqrt(index) * 5;
         position = {
           x: 50 + radius * Math.cos(angle),
-          y: 50 + radius * Math.sin(angle) * 0.7
+          y: 50 + radius * Math.sin(angle)
         };
+      }
+      
+      // Add rotation for variety
+      let rotation = 0;
+      if (index > 8) {
+        const rotationChance = Math.random();
+        if (rotationChance < 0.2) {
+          rotation = -90; // Vertical
+        } else if (rotationChance < 0.35) {
+          rotation = (Math.random() - 0.5) * 30; // Slight angle
+        }
       }
       
       positions.push({
         ...word,
-        x: Math.max(8, Math.min(92, position.x)),
-        y: Math.max(12, Math.min(88, position.y)),
-        rotation: index > 20 && Math.random() > 0.8 ? (Math.random() - 0.5) * 20 : 0
+        x: position.x,
+        y: position.y,
+        fontSize: fontSize,
+        rotation: rotation
       });
     });
     
@@ -156,13 +176,14 @@ const SentimentWordCloud = ({ wordData, onWordClick }) => {
             key={`${word.word}-${index}`}
             className={`cloud-word ${sentimentClass}`}
             style={{
-              fontSize: `${getSize(word.count)}px`,
-              color: getSentimentColor(word.sentimentPercentages),
-              animationDelay: `${index * 0.01}s`,
+              fontSize: `${word.fontSize}px`,
+              color: getSentimentColor(word.sentimentPercentages, index),
+              animationDelay: `${index * 0.02}s`,
               position: 'absolute',
               left: `${word.x}%`,
               top: `${word.y}%`,
-              transform: `translate(-50%, -50%) rotate(${word.rotation || 0}deg)`
+              transform: `translate(-50%, -50%) rotate(${word.rotation || 0}deg)`,
+              fontWeight: index < 10 ? 700 : index < 20 ? 600 : 500
             }}
             onClick={() => onWordClick && onWordClick(word.word)}
             title={`${word.word}: ${word.count} mentions (${Math.round(word.sentimentPercentages.positive)}% positive, ${Math.round(word.sentimentPercentages.negative)}% negative)`}

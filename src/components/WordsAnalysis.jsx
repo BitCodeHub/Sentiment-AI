@@ -3,20 +3,15 @@ import { Info, TrendingUp, TrendingDown, Sparkles, Star, AlertCircle, Clock, Fil
 import SentimentWordCloud from './SentimentWordCloud';
 import './WordsAnalysis.css';
 
-// Common stop words to exclude - reduced list to capture more meaningful words
+// Common stop words to exclude - minimal list to allow more words through
 const STOP_WORDS = new Set([
-  'the', 'be', 'to', 'of', 'and', 'a', 'in', 'that', 'have', 'i', 'it', 'for', 'not',
-  'on', 'with', 'he', 'as', 'you', 'do', 'at', 'this', 'but', 'his', 'by', 'from',
-  'they', 'we', 'say', 'her', 'she', 'or', 'an', 'will', 'my', 'one', 'all', 'would',
-  'there', 'their', 'what', 'so', 'up', 'out', 'if', 'about', 'who', 'get', 'which',
-  'go', 'me', 'when', 'make', 'can', 'like', 'no', 'just', 'him', 'know',
-  'take', 'into', 'your', 'some', 'could', 'them', 'see',
-  'other', 'than', 'then', 'now', 'only', 'come', 'its', 'over', 'think',
-  'also', 'back', 'after', 'use', 'two', 'how', 'our', 'first', 'well',
-  'way', 'even', 'new', 'want', 'because', 'any', 'these', 'give', 'day', 'most',
-  'us', 'is', 'was', 'are', 'been', 'has', 'had', 'were', 'said', 'did', 'getting',
-  'made', 'find', 'where', 'much', 'too', 'very', 'still', 'being', 'going', 'why',
-  'before', 'never', 'here', 'more'
+  'the', 'be', 'to', 'of', 'and', 'a', 'in', 'that', 'have', 'i', 'it', 'for',
+  'on', 'with', 'he', 'as', 'at', 'this', 'but', 'his', 'by', 'from',
+  'they', 'we', 'her', 'she', 'or', 'an', 'my', 'one', 'all',
+  'there', 'their', 'what', 'so', 'up', 'out', 'if', 'who', 'which',
+  'me', 'him', 'into', 'your', 'some', 'them',
+  'than', 'then', 'its', 'our', 'these',
+  'us', 'is', 'was', 'are', 'been', 'has', 'had', 'were', 'did'
 ]);
 
 const WordsAnalysis = ({ reviews, onWordClick }) => {
