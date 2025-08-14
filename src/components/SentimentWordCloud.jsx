@@ -77,81 +77,85 @@ const SentimentWordCloud = ({ wordData, onWordClick }) => {
     const positions = [];
     const placed = [];
     
-    // Use spiral pattern for better distribution
-    const goldenAngle = Math.PI * (3 - Math.sqrt(5)); // Golden angle in radians
+    // Grid-based placement for better space utilization
+    const gridCells = 10; // 10x10 grid
+    const cellSize = 100 / gridCells;
+    const usedCells = new Set();
     
     // Process words in order of importance (already sorted by frequency)
     sortedWords.forEach((word, index) => {
       let attempts = 0;
       let position = null;
       const fontSize = getSize(word.count, index);
-      // More accurate width calculation considering font weight
-      const charWidth = index < 10 ? 0.7 : 0.6; // Bolder fonts are wider
-      const wordWidth = word.word.length * fontSize * charWidth;
-      const wordHeight = fontSize * 1.2;
+      
+      // Better width calculation
+      const charWidth = fontSize < 30 ? 0.5 : fontSize < 50 ? 0.6 : 0.7;
+      const wordWidth = word.word.length * charWidth + 10; // Add extra padding
+      const wordHeight = fontSize * 1.5; // More height padding
       
       // Try to find a good position with more attempts
-      while (attempts < 200 && !position) {
+      while (attempts < 300 && !position) {
         let x, y;
         
-        // Strategic placement based on word importance
         if (index === 0) {
-          // First word - slightly off-center for natural look
-          x = 45 + Math.random() * 10;
-          y = 45 + Math.random() * 10;
-        } else if (index < 4) {
-          // Top 4 words - key positions around center
-          const positions = [
-            { x: 30, y: 35 }, // left
-            { x: 70, y: 40 }, // right
-            { x: 50, y: 25 }, // top
-            { x: 50, y: 65 }  // bottom
-          ];
-          const pos = positions[index - 1];
-          x = pos.x + (Math.random() - 0.5) * 10;
-          y = pos.y + (Math.random() - 0.5) * 10;
-        } else if (index < 15) {
-          // Important words - inner circle
-          const angle = (index - 4) * (Math.PI * 2 / 11) + Math.random() * 0.5;
-          const radius = 15 + Math.random() * 10;
+          // First word - center
+          x = 50;
+          y = 50;
+        } else if (index < 5) {
+          // Top words - distributed around center
+          const angle = (index - 1) * (Math.PI * 2 / 4) + Math.PI / 4;
+          const radius = 25;
           x = 50 + radius * Math.cos(angle);
           y = 50 + radius * Math.sin(angle);
-        } else if (index < 40) {
-          // Medium words - middle zone
-          const angle = index * 0.618 * Math.PI * 2; // Golden angle
-          const radius = 20 + (index - 15) * 0.8;
-          x = 50 + radius * Math.cos(angle);
-          y = 50 + radius * Math.sin(angle);
+        } else if (index < 20) {
+          // Important words - use grid with some randomness
+          const gridX = Math.floor(Math.random() * gridCells);
+          const gridY = Math.floor(Math.random() * gridCells);
+          const cellKey = `${gridX},${gridY}`;
+          
+          if (!usedCells.has(cellKey)) {
+            x = (gridX + 0.5) * cellSize + (Math.random() - 0.5) * cellSize * 0.6;
+            y = (gridY + 0.5) * cellSize + (Math.random() - 0.5) * cellSize * 0.6;
+            usedCells.add(cellKey);
+          } else {
+            // Random placement if grid cell is used
+            x = 10 + Math.random() * 80;
+            y = 10 + Math.random() * 80;
+          }
         } else {
-          // Smaller words - outer areas
-          // Use Halton sequence for better distribution
-          const phi = (1 + Math.sqrt(5)) / 2;
-          const theta = 2 * Math.PI * index / phi;
-          const radius = 30 + Math.sqrt(index - 40) * 3;
-          x = 50 + radius * Math.cos(theta) * 0.8;
-          y = 50 + radius * Math.sin(theta) * 0.8;
+          // Smaller words - fill gaps
+          x = 10 + Math.random() * 80;
+          y = 10 + Math.random() * 80;
         }
         
-        // Keep within bounds with fixed margins
-        const margin = 15; // 15% margin from all edges
-        x = Math.max(margin, Math.min(100 - margin, x));
-        y = Math.max(margin, Math.min(100 - margin, y));
+        // Keep within bounds with margins based on word size
+        const xMargin = Math.max(8, wordWidth / 2);
+        const yMargin = Math.max(8, wordHeight / 2);
+        x = Math.max(xMargin, Math.min(100 - xMargin, x));
+        y = Math.max(yMargin, Math.min(100 - yMargin, y));
         
-        // Check collisions with more spacing
+        // Improved collision detection
         const tooClose = placed.some(p => {
-          const dx = Math.abs(x - p.x);
-          const dy = Math.abs(y - p.y);
+          // Calculate actual boundaries
+          const thisLeft = x - wordWidth / 2;
+          const thisRight = x + wordWidth / 2;
+          const thisTop = y - wordHeight / 2;
+          const thisBottom = y + wordHeight / 2;
           
-          // Dynamic spacing based on word size and position
-          const basePadding = 8;
-          // Larger words need more space
-          const sizeFactor = Math.max(fontSize, p.size) / 20;
-          const padding = basePadding + sizeFactor * 2;
+          const otherLeft = p.x - p.width / 2;
+          const otherRight = p.x + p.width / 2;
+          const otherTop = p.y - p.height / 2;
+          const otherBottom = p.y + p.height / 2;
           
-          const minXDistance = (wordWidth + p.width) / 2 + padding;
-          const minYDistance = (wordHeight + p.height) / 2 + padding * 0.8;
+          // Add extra spacing
+          const spacingX = 15; // Minimum horizontal spacing
+          const spacingY = 10; // Minimum vertical spacing
           
-          return dx < minXDistance && dy < minYDistance;
+          // Check if rectangles overlap with spacing
+          const overlapX = thisRight + spacingX > otherLeft && thisLeft - spacingX < otherRight;
+          const overlapY = thisBottom + spacingY > otherTop && thisTop - spacingY < otherBottom;
+          
+          return overlapX && overlapY;
         });
         
         if (!tooClose) {
@@ -160,37 +164,59 @@ const SentimentWordCloud = ({ wordData, onWordClick }) => {
             x, 
             y, 
             width: wordWidth,
-            height: wordHeight
+            height: wordHeight,
+            size: fontSize
           });
         }
         
         attempts++;
       }
       
-      // Fallback with spiral - ensure it's within bounds
+      // Force placement if no good position found
       if (!position) {
-        // Place remaining words in a spiral pattern
-        const angle = index * goldenAngle;
-        const radius = 20 + (index / sortedWords.length) * 20;
-        let fallbackX = 50 + radius * Math.cos(angle);
-        let fallbackY = 50 + radius * Math.sin(angle);
+        // Find the emptiest area
+        let bestX = 50, bestY = 50;
+        let maxDistance = 0;
         
-        // Apply margin constraints
-        const margin = 15;
-        fallbackX = Math.max(margin, Math.min(100 - margin, fallbackX));
-        fallbackY = Math.max(margin, Math.min(100 - margin, fallbackY));
+        // Sample grid points
+        for (let gx = 1; gx < gridCells; gx++) {
+          for (let gy = 1; gy < gridCells; gy++) {
+            const testX = (gx / gridCells) * 100;
+            const testY = (gy / gridCells) * 100;
+            
+            // Calculate minimum distance to existing words
+            let minDist = Infinity;
+            placed.forEach(p => {
+              const dist = Math.sqrt(Math.pow(testX - p.x, 2) + Math.pow(testY - p.y, 2));
+              minDist = Math.min(minDist, dist);
+            });
+            
+            if (minDist > maxDistance) {
+              maxDistance = minDist;
+              bestX = testX;
+              bestY = testY;
+            }
+          }
+        }
         
-        position = { x: fallbackX, y: fallbackY };
+        position = { x: bestX, y: bestY };
+        placed.push({ 
+          x: bestX, 
+          y: bestY, 
+          width: wordWidth,
+          height: wordHeight,
+          size: fontSize
+        });
       }
       
-      // Add rotation for variety - more vertical words
+      // Add rotation for variety
       let rotation = 0;
-      if (index > 3) {
+      if (index > 4) {
         const rotationChance = Math.random();
-        if (rotationChance < 0.25 && index < 40) {
-          rotation = -90; // Vertical - 25% chance for medium words
-        } else if (rotationChance < 0.15) {
-          rotation = (Math.random() - 0.5) * 15; // Slight angle
+        if (rotationChance < 0.2 && fontSize < 30) {
+          rotation = -90; // Vertical for smaller words
+        } else if (rotationChance < 0.1) {
+          rotation = (Math.random() - 0.5) * 20; // Slight angle
         }
       }
       
