@@ -12,18 +12,21 @@ const SentimentWordCloud = ({ wordData, onWordClick }) => {
     const normalized = (count - minCount) / (maxCount - minCount || 1);
     
     // More dramatic size differences
-    if (index < 5) {
-      // Top 5 words - very large
-      return 48 + normalized * 32; // 48-80px
-    } else if (index < 15) {
-      // Next 10 words - large
-      return 28 + normalized * 20; // 28-48px
-    } else if (index < 30) {
+    if (index < 3) {
+      // Top 3 words - very large
+      return 56 + normalized * 24; // 56-80px
+    } else if (index < 10) {
+      // Next 7 words - large
+      return 32 + normalized * 16; // 32-48px
+    } else if (index < 25) {
       // Medium words
-      return 18 + normalized * 12; // 18-30px
-    } else {
+      return 20 + normalized * 10; // 20-30px
+    } else if (index < 50) {
       // Smaller words
-      return 14 + normalized * 8; // 14-22px
+      return 14 + normalized * 6; // 14-20px
+    } else {
+      // Smallest words
+      return 12 + normalized * 4; // 12-16px
     }
   };
 
@@ -61,7 +64,7 @@ const SentimentWordCloud = ({ wordData, onWordClick }) => {
   // Sort words by frequency for better visual distribution
   const sortedWords = [...wordData]
     .sort((a, b) => b.count - a.count)
-    .slice(0, 50); // Limit to 50 for better spacing
+    .slice(0, 80); // Increase to 80 words to fill space better
 
   // Create distributed positioning across full canvas
   const cloudWords = (() => {
@@ -76,43 +79,54 @@ const SentimentWordCloud = ({ wordData, onWordClick }) => {
       let attempts = 0;
       let position = null;
       const fontSize = getSize(word.count, index);
-      const wordWidth = word.word.length * fontSize * 0.6;
-      const wordHeight = fontSize * 1.1;
+      // More accurate width calculation considering font weight
+      const charWidth = index < 10 ? 0.7 : 0.6; // Bolder fonts are wider
+      const wordWidth = word.word.length * fontSize * charWidth;
+      const wordHeight = fontSize * 1.2;
       
       // Try to find a good position
       while (attempts < 100 && !position) {
         let x, y;
         
-        if (index < 5) {
-          // Top 5 words - center area with some randomness
-          x = 30 + Math.random() * 40;
-          y = 35 + Math.random() * 30;
-        } else if (index < 15) {
-          // Important words - inner ring
-          const angle = Math.random() * Math.PI * 2;
-          const radius = 20 + Math.random() * 15;
+        if (index < 3) {
+          // Top 3 words - dead center
+          x = 45 + Math.random() * 10;
+          y = 45 + Math.random() * 10;
+        } else if (index < 10) {
+          // Next important words - close to center
+          const angle = (index - 3) * (Math.PI * 2 / 7);
+          const radius = 8 + Math.random() * 8;
+          x = 50 + radius * Math.cos(angle);
+          y = 50 + radius * Math.sin(angle);
+        } else if (index < 25) {
+          // Medium importance - middle ring
+          const angle = index * goldenAngle;
+          const radius = 15 + Math.random() * 15;
           x = 50 + radius * Math.cos(angle);
           y = 50 + radius * Math.sin(angle);
         } else {
-          // Other words - spiral pattern
+          // Other words - outer areas with spiral
           const angle = index * goldenAngle;
-          const radius = 15 + Math.sqrt(index) * 6;
-          x = 50 + radius * Math.cos(angle) + (Math.random() - 0.5) * 10;
-          y = 50 + radius * Math.sin(angle) + (Math.random() - 0.5) * 10;
+          const radius = 25 + Math.sqrt(index - 25) * 4;
+          x = 50 + radius * Math.cos(angle) + (Math.random() - 0.5) * 8;
+          y = 50 + radius * Math.sin(angle) + (Math.random() - 0.5) * 8;
         }
         
-        // Keep within bounds
-        x = Math.max(10, Math.min(90, x));
-        y = Math.max(10, Math.min(90, y));
+        // Keep within bounds with more margin to prevent cutoff
+        const xMargin = wordWidth / 1000 + 15; // Dynamic margin based on word width
+        const yMargin = wordHeight / 100 + 8;
+        x = Math.max(xMargin, Math.min(100 - xMargin, x));
+        y = Math.max(yMargin, Math.min(100 - yMargin, y));
         
         // Check collisions with more spacing
         const tooClose = placed.some(p => {
           const dx = Math.abs(x - p.x);
           const dy = Math.abs(y - p.y);
           
-          // Generous spacing based on word size
-          const minXDistance = (wordWidth + p.width) / 100 * 50 + 5;
-          const minYDistance = (wordHeight + p.height) / 100 * 50 + 3;
+          // Adjusted spacing - less for center words, more for edges
+          const spacingFactor = index < 10 ? 0.4 : index < 25 ? 0.45 : 0.5;
+          const minXDistance = (wordWidth + p.width) / 100 * spacingFactor * 100 + 3;
+          const minYDistance = (wordHeight + p.height) / 100 * spacingFactor * 100 + 2;
           
           return dx < minXDistance && dy < minYDistance;
         });
@@ -140,14 +154,14 @@ const SentimentWordCloud = ({ wordData, onWordClick }) => {
         };
       }
       
-      // Add rotation for variety
+      // Add rotation for variety - but not for very large words
       let rotation = 0;
-      if (index > 8) {
+      if (index > 5 && index < 50) {
         const rotationChance = Math.random();
-        if (rotationChance < 0.2) {
+        if (rotationChance < 0.15) {
           rotation = -90; // Vertical
-        } else if (rotationChance < 0.35) {
-          rotation = (Math.random() - 0.5) * 30; // Slight angle
+        } else if (rotationChance < 0.25) {
+          rotation = (Math.random() - 0.5) * 25; // Slight angle
         }
       }
       
