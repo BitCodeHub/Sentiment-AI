@@ -39,48 +39,77 @@ const SentimentWordCloud = ({ wordData, onWordClick }) => {
     .sort((a, b) => b.count - a.count)
     .slice(0, 200); // Show more words
 
-  // Create cloud-shaped positioning using spiral pattern
-  const cloudWords = sortedWords.map((word, index) => {
-    const totalWords = sortedWords.length;
-    const normalizedIndex = index / totalWords;
+  // Create cloud-shaped positioning with better distribution
+  const cloudWords = (() => {
+    const positions = [];
+    const placed = [];
     
-    // Use spiral pattern for word placement
-    const spiralTurns = 3;
-    const angle = normalizedIndex * Math.PI * 2 * spiralTurns;
-    const maxRadius = 40;
+    // Define cloud shape using multiple ellipses
+    const cloudCenters = [
+      { x: 50, y: 50, rx: 35, ry: 25 },    // Main center
+      { x: 30, y: 45, rx: 25, ry: 20 },    // Left bulge
+      { x: 70, y: 45, rx: 25, ry: 20 },    // Right bulge
+      { x: 40, y: 60, rx: 20, ry: 15 },    // Bottom left
+      { x: 60, y: 60, rx: 20, ry: 15 },    // Bottom right
+      { x: 50, y: 35, rx: 30, ry: 18 },    // Top
+    ];
     
-    // Vary radius based on position for cloud shape
-    let radius = normalizedIndex * maxRadius;
-    
-    // Create cloud bulges at different angles
-    const bulgeAngles = [0, Math.PI * 0.6, Math.PI * 1.3, Math.PI * 1.8];
-    bulgeAngles.forEach(bulgeAngle => {
-      const angleDiff = Math.abs(angle % (Math.PI * 2) - bulgeAngle);
-      const bulgeEffect = Math.max(0, 1 - angleDiff / Math.PI) * 0.3;
-      radius *= (1 + bulgeEffect);
+    sortedWords.forEach((word, index) => {
+      let attempts = 0;
+      let position = null;
+      
+      // Try to find a good position
+      while (attempts < 50 && !position) {
+        // Pick a random cloud center, favor main centers for important words
+        const centerIndex = index < 30 
+          ? Math.floor(Math.random() * 3) // Important words in main areas
+          : Math.floor(Math.random() * cloudCenters.length);
+        const center = cloudCenters[centerIndex];
+        
+        // Generate position within ellipse
+        const angle = Math.random() * Math.PI * 2;
+        const radiusScale = Math.sqrt(Math.random()); // Square root for better distribution
+        
+        const x = center.x + (radiusScale * center.rx * Math.cos(angle));
+        const y = center.y + (radiusScale * center.ry * Math.sin(angle));
+        
+        // Check if position is valid (not too close to others)
+        const fontSize = getSize(word.count);
+        const minDistance = fontSize * 0.8;
+        
+        const tooClose = placed.some(p => {
+          const dx = x - p.x;
+          const dy = y - p.y;
+          return Math.sqrt(dx * dx + dy * dy) < minDistance;
+        });
+        
+        if (!tooClose) {
+          position = { x, y };
+          placed.push({ x, y, size: fontSize });
+        }
+        
+        attempts++;
+      }
+      
+      // Fallback position if no good spot found
+      if (!position) {
+        const angle = (index / sortedWords.length) * Math.PI * 2;
+        const radius = 25 + (index / sortedWords.length) * 20;
+        position = {
+          x: 50 + radius * Math.cos(angle),
+          y: 50 + radius * Math.sin(angle) * 0.7
+        };
+      }
+      
+      positions.push({
+        ...word,
+        x: Math.max(5, Math.min(95, position.x)),
+        y: Math.max(10, Math.min(90, position.y))
+      });
     });
     
-    // Calculate position with cloud-like distribution
-    let x = 50 + radius * Math.cos(angle) * 1.5;
-    let y = 50 + radius * Math.sin(angle) * 0.8;
-    
-    // Add organic randomness
-    const jitter = Math.max(3, 10 - index * 0.05);
-    x += (Math.random() - 0.5) * jitter;
-    y += (Math.random() - 0.5) * jitter;
-    
-    // Cluster important words near center
-    if (index < 20) {
-      x = x * 0.6 + 20;
-      y = y * 0.6 + 20;
-    }
-    
-    return {
-      ...word,
-      x: Math.max(5, Math.min(95, x)),
-      y: Math.max(15, Math.min(85, y))
-    };
-  });
+    return positions;
+  })();
 
   return (
     <div className="sentiment-word-cloud cloud-shape">
