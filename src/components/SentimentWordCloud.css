@@ -16,7 +16,7 @@
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  padding: 40px;
+  padding: 60px;
   box-sizing: border-box;
 }
 
@@ -101,7 +101,8 @@
   }
   
   .sentiment-word-cloud.cloud-shape {
-    height: 400px;
+    height: 500px;
+    padding: 40px;
   }
   
   .cloud-word {

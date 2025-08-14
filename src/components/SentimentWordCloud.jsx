@@ -24,9 +24,12 @@ const SentimentWordCloud = ({ wordData, onWordClick }) => {
     } else if (index < 50) {
       // Smaller words
       return 14 + normalized * 6; // 14-20px
-    } else {
-      // Smallest words
+    } else if (index < 80) {
+      // Small words
       return 12 + normalized * 4; // 12-16px
+    } else {
+      // Smallest words for filling
+      return 10 + normalized * 3; // 10-13px
     }
   };
 
@@ -64,7 +67,7 @@ const SentimentWordCloud = ({ wordData, onWordClick }) => {
   // Sort words by frequency for better visual distribution
   const sortedWords = [...wordData]
     .sort((a, b) => b.count - a.count)
-    .slice(0, 80); // Increase to 80 words to fill space better
+    .slice(0, 120); // Increase to 120 words to fill more space
 
   // Create distributed positioning across full canvas
   const cloudWords = (() => {
@@ -104,17 +107,26 @@ const SentimentWordCloud = ({ wordData, onWordClick }) => {
           const radius = 15 + Math.random() * 15;
           x = 50 + radius * Math.cos(angle);
           y = 50 + radius * Math.sin(angle);
-        } else {
-          // Other words - outer areas with spiral
+        } else if (index < 60) {
+          // Medium-outer ring
           const angle = index * goldenAngle;
-          const radius = 25 + Math.sqrt(index - 25) * 4;
-          x = 50 + radius * Math.cos(angle) + (Math.random() - 0.5) * 8;
-          y = 50 + radius * Math.sin(angle) + (Math.random() - 0.5) * 8;
+          const radius = 22 + Math.sqrt(index - 25) * 3.5;
+          x = 50 + radius * Math.cos(angle) + (Math.random() - 0.5) * 6;
+          y = 50 + radius * Math.sin(angle) + (Math.random() - 0.5) * 6;
+        } else {
+          // Outer words - fill remaining space
+          const angle = index * goldenAngle * 0.8;
+          const radius = 30 + Math.sqrt(index - 60) * 2.5;
+          x = 50 + radius * Math.cos(angle);
+          y = 50 + radius * Math.sin(angle);
         }
         
-        // Keep within bounds with more margin to prevent cutoff
-        const xMargin = wordWidth / 1000 + 15; // Dynamic margin based on word width
-        const yMargin = wordHeight / 100 + 8;
+        // Keep within bounds with much larger margins to prevent cutoff
+        // Calculate margin as percentage of canvas based on word size
+        const xMargin = Math.max(20, (wordWidth / 600) * 50); // At least 20% from edge
+        const yMargin = Math.max(12, (wordHeight / 600) * 40); // At least 12% from edge
+        
+        // Apply margins
         x = Math.max(xMargin, Math.min(100 - xMargin, x));
         y = Math.max(yMargin, Math.min(100 - yMargin, y));
         
@@ -124,9 +136,9 @@ const SentimentWordCloud = ({ wordData, onWordClick }) => {
           const dy = Math.abs(y - p.y);
           
           // Adjusted spacing - less for center words, more for edges
-          const spacingFactor = index < 10 ? 0.4 : index < 25 ? 0.45 : 0.5;
-          const minXDistance = (wordWidth + p.width) / 100 * spacingFactor * 100 + 3;
-          const minYDistance = (wordHeight + p.height) / 100 * spacingFactor * 100 + 2;
+          const spacingFactor = index < 10 ? 0.35 : index < 25 ? 0.4 : index < 60 ? 0.45 : 0.35;
+          const minXDistance = (wordWidth + p.width) / 100 * spacingFactor * 100 + 2;
+          const minYDistance = (wordHeight + p.height) / 100 * spacingFactor * 100 + 1;
           
           return dx < minXDistance && dy < minYDistance;
         });
@@ -144,14 +156,20 @@ const SentimentWordCloud = ({ wordData, onWordClick }) => {
         attempts++;
       }
       
-      // Fallback with spiral
+      // Fallback with spiral - ensure it's within bounds
       if (!position) {
         const angle = index * goldenAngle;
-        const radius = 20 + Math.sqrt(index) * 5;
-        position = {
-          x: 50 + radius * Math.cos(angle),
-          y: 50 + radius * Math.sin(angle)
-        };
+        const radius = Math.min(30, 15 + Math.sqrt(index) * 3);
+        let fallbackX = 50 + radius * Math.cos(angle);
+        let fallbackY = 50 + radius * Math.sin(angle);
+        
+        // Apply same margin constraints
+        const xMargin = Math.max(20, (wordWidth / 600) * 50);
+        const yMargin = Math.max(12, (wordHeight / 600) * 40);
+        fallbackX = Math.max(xMargin, Math.min(100 - xMargin, fallbackX));
+        fallbackY = Math.max(yMargin, Math.min(100 - yMargin, fallbackY));
+        
+        position = { x: fallbackX, y: fallbackY };
       }
       
       // Add rotation for variety - but not for very large words
