@@ -645,19 +645,19 @@ const EnhancedDashboard = ({ data, isLoading }) => {
       />
       
       <div className={`dashboard-content dashboard-with-sidebar ${sidebarOpen ? 'sidebar-open' : ''}`}>
-      {/* Conditional rendering based on active view */}
-      {activeView === 'overview' && (
-        <>
-          {/* Enhanced Header with Search and Filters */}
-          <div className="dashboard-header-section">
-        <div className="dashboard-title-area">
-          <h1 className="dashboard-title">Review Analytics Dashboard</h1>
-          <p className="dashboard-subtitle">Comprehensive insights from {summary.totalReviews.toLocaleString()} reviews</p>
-        </div>
-        
-        {/* Search Section */}
-        <div className="search-section">
-          <div className="search-input-wrapper">
+        {/* Conditional rendering based on active view */}
+        {activeView === 'overview' && (
+          <>
+            {/* Enhanced Header with Search and Filters */}
+            <div className="dashboard-header-section">
+            <div className="dashboard-title-area">
+              <h1 className="dashboard-title">Review Analytics Dashboard</h1>
+              <p className="dashboard-subtitle">Comprehensive insights from {summary.totalReviews.toLocaleString()} reviews</p>
+            </div>
+            
+            {/* Search Section */}
+            <div className="search-section">
+              <div className="search-input-wrapper">
             <input
               type="text"
               placeholder="Search reviews..."
@@ -1600,14 +1600,16 @@ const EnhancedDashboard = ({ data, isLoading }) => {
               <CategorizedReviews reviews={filteredReviews} searchTerm={searchTerm} />
             )}
           </div>
+          </>
+        )}
         </>
-      )}
+        )}
 
-      {/* Emotion View */}
-      {activeView === 'emotion' && (
-        <>
-          {/* Enhanced Header with Search and Filters */}
-          <div className="dashboard-header-section">
+        {/* Emotion View */}
+        {activeView === 'emotion' && (
+          <>
+            {/* Enhanced Header with Search and Filters */}
+            <div className="dashboard-header-section">
             <div className="dashboard-title-area">
               <h1 className="dashboard-title">Emotion Analysis</h1>
               <p className="dashboard-subtitle">Visualize customer emotions from {summary.totalReviews.toLocaleString()} reviews</p>
@@ -1851,25 +1853,25 @@ const EnhancedDashboard = ({ data, isLoading }) => {
               </div>
             )}
           </div>
-        </>
-      )}
+          </>
+        )}
 
-      {/* Words View */}
-      {activeView === 'words' && (
-        <>
-          <div className="dashboard-header-section">
+        {/* Words View */}
+        {activeView === 'words' && (
+          <>
+            <div className="dashboard-header-section">
             <div className="dashboard-title-area">
               <h1 className="dashboard-title">Words Analysis</h1>
               <p className="dashboard-subtitle">Discover key themes from {summary.totalReviews.toLocaleString()} reviews</p>
             </div>
           </div>
           <WordsAnalysis reviews={filteredReviews} />
-        </>
-      )}
+          </>
+        )}
 
-      {/* Trends View */}
-      {activeView === 'trends' && (
-        <>
+        {/* Trends View */}
+        {activeView === 'trends' && (
+          <>
           <div className="dashboard-header-section">
             <div className="dashboard-title-area">
               <h1 className="dashboard-title">Sentiment Trends</h1>
@@ -1881,12 +1883,12 @@ const EnhancedDashboard = ({ data, isLoading }) => {
             dateRange={selectedDateRange}
             onDateRangeChange={handleDateRangeChange}
           />
-        </>
-      )}
+          </>
+        )}
 
-      {/* Reviews View */}
-      {activeView === 'reviews' && (
-        <>
+        {/* Reviews View */}
+        {activeView === 'reviews' && (
+          <>
           <div className="dashboard-header-section">
             <div className="dashboard-title-area">
               <h1 className="dashboard-title">All Reviews</h1>
@@ -1917,13 +1919,13 @@ const EnhancedDashboard = ({ data, isLoading }) => {
             </div>
           </div>
           <ReviewDisplay reviews={filteredReviews} searchTerm={searchTerm} />
-        </>
-      )}
+          </>
+        )}
 
-      {/* AI Insights View */}
-      {activeView === 'insights' && (
-        <>
-          <div className="dashboard-header-section">
+        {/* AI Insights View */}
+        {activeView === 'insights' && (
+          <>
+            <div className="dashboard-header-section">
             <div className="dashboard-title-area">
               <h1 className="dashboard-title">AI Insights</h1>
               <p className="dashboard-subtitle">Powered by advanced AI analysis</p>
@@ -1958,13 +1960,13 @@ const EnhancedDashboard = ({ data, isLoading }) => {
               </CardContent>
             </Card>
           )}
-        </>
-      )}
+          </>
+        )}
 
-      {/* Analytics View */}
-      {activeView === 'analytics' && (
-        <>
-          <div className="dashboard-header-section">
+        {/* Analytics View */}
+        {activeView === 'analytics' && (
+          <>
+            <div className="dashboard-header-section">
             <div className="dashboard-title-area">
               <h1 className="dashboard-title">Deep Analytics</h1>
               <p className="dashboard-subtitle">Comprehensive analysis and insights</p>
@@ -2026,13 +2028,13 @@ const EnhancedDashboard = ({ data, isLoading }) => {
               </Card>
             )}
           </div>
-        </>
-      )}
+          </>
+        )}
 
-      {/* Reports View */}
-      {activeView === 'reports' && (
-        <>
-          <div className="dashboard-header-section">
+        {/* Reports View */}
+        {activeView === 'reports' && (
+          <>
+            <div className="dashboard-header-section">
             <div className="dashboard-title-area">
               <h1 className="dashboard-title">Reports</h1>
               <p className="dashboard-subtitle">Export and generate reports</p>
@@ -2055,10 +2057,10 @@ const EnhancedDashboard = ({ data, isLoading }) => {
               </div>
             </CardContent>
           </Card>
-        </>
-      )}
+          </>
+        )}
 
-      {/* Removed modals - Analysis now shows inline */}
+        {/* Removed modals - Analysis now shows inline */}
       </div>
     </div>
   );

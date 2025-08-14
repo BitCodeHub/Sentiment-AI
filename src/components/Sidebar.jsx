@@ -20,49 +20,58 @@ const Sidebar = ({ activeView, onViewChange, isOpen, onToggle }) => {
       id: 'overview',
       label: 'Overview',
       icon: LayoutDashboard,
-      description: 'Dashboard overview'
+      description: 'Dashboard overview',
+      color: '#3b82f6'
     },
     {
       id: 'emotion',
       label: 'Emotions',
       icon: Brain,
-      description: 'Emotion visualizer'
+      description: 'Emotion visualizer',
+      color: '#8b5cf6'
     },
     {
       id: 'words',
       label: 'Words',
       icon: Hash,
-      description: 'Word analysis'
+      description: 'Word analysis',
+      color: '#10b981'
     },
     {
       id: 'trends',
       label: 'Trends',
       icon: TrendingUp,
-      description: 'Sentiment trends'
+      description: 'Sentiment trends',
+      color: '#f59e0b'
     },
     {
       id: 'reviews',
       label: 'Reviews',
       icon: MessageSquare,
-      description: 'All reviews'
+      description: 'All reviews',
+      color: '#06b6d4'
     },
     {
       id: 'insights',
       label: 'AI Insights',
       icon: Sparkles,
-      description: 'AI analysis'
+      description: 'AI analysis',
+      color: '#10b981',
+      badge: 'AI'
     },
     {
       id: 'analytics',
       label: 'Analytics',
       icon: BarChart3,
-      description: 'Deep analytics'
+      description: 'Deep analytics',
+      color: '#6366f1'
     },
     {
       id: 'reports',
       label: 'Reports',
       icon: FileText,
-      description: 'Export reports'
+      description: 'Export reports',
+      color: '#64748b'
     }
   ];
 
@@ -111,10 +120,16 @@ const Sidebar = ({ activeView, onViewChange, isOpen, onToggle }) => {
                   }}
                   title={item.description}
                 >
-                  <Icon size={18} />
+                  <Icon 
+                    size={20} 
+                    style={{ 
+                      color: activeView === item.id ? 'currentColor' : item.color,
+                      transition: 'all 0.2s ease'
+                    }} 
+                  />
                   <span className="sidebar-item-label">{item.label}</span>
-                  {item.id === 'insights' && (
-                    <span className="sidebar-badge">AI</span>
+                  {item.badge && (
+                    <span className="sidebar-badge">{item.badge}</span>
                   )}
                 </button>
               );
@@ -137,8 +152,17 @@ const Sidebar = ({ activeView, onViewChange, isOpen, onToggle }) => {
                   }}
                   title={item.description}
                 >
-                  <Icon size={18} />
+                  <Icon 
+                    size={20} 
+                    style={{ 
+                      color: activeView === item.id ? 'currentColor' : item.color,
+                      transition: 'all 0.2s ease'
+                    }} 
+                  />
                   <span className="sidebar-item-label">{item.label}</span>
+                  {item.badge && (
+                    <span className="sidebar-badge">{item.badge}</span>
+                  )}
                 </button>
               );
             })}
@@ -147,7 +171,13 @@ const Sidebar = ({ activeView, onViewChange, isOpen, onToggle }) => {
 
         <div className="sidebar-footer">
           <button className="sidebar-item settings">
-            <Settings size={18} />
+            <Settings 
+              size={20} 
+              style={{ 
+                color: '#94a3b8',
+                transition: 'all 0.2s ease'
+              }} 
+            />
             <span className="sidebar-item-label">Settings</span>
           </button>
         </div>
