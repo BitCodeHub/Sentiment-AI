@@ -465,6 +465,14 @@ const EnhancedDashboard = ({ data, isLoading }) => {
       genesis: { total: 0, count: 0, average: 0 }
     };
     
+    // Debug: Log unique app names to see what's in the data
+    const uniqueApps = new Set();
+    filteredReviews.forEach(review => {
+      const appName = review.appName || review.App || '';
+      if (appName) uniqueApps.add(appName);
+    });
+    console.log('Unique app names in data:', Array.from(uniqueApps));
+    
     filteredReviews.forEach(review => {
       const appName = review.appName || review.App || '';
       const rating = review.rating || review.Rating || 0;
@@ -475,8 +483,10 @@ const EnhancedDashboard = ({ data, isLoading }) => {
         appRatings.myHyundai.count++;
       }
       
-      // Check for Genesis Intelligent App
-      if (appName === 'Genesis Intelligent App') {
+      // Check for Genesis Intelligent App - also check for variations
+      if (appName === 'Genesis Intelligent App' || 
+          appName === 'Genesis Intelligent Assistant' ||
+          appName.toLowerCase().includes('genesis')) {
         appRatings.genesis.total += rating;
         appRatings.genesis.count++;
       }
@@ -490,6 +500,11 @@ const EnhancedDashboard = ({ data, isLoading }) => {
     if (appRatings.genesis.count > 0) {
       appRatings.genesis.average = appRatings.genesis.total / appRatings.genesis.count;
     }
+    
+    console.log('App ratings calculated:', {
+      myHyundai: appRatings.myHyundai,
+      genesis: appRatings.genesis
+    });
     
     return appRatings;
   }, [filteredReviews]);
@@ -1328,7 +1343,7 @@ const EnhancedDashboard = ({ data, isLoading }) => {
                 
                 {appAverageRatings.genesis.count > 0 && (
                   <div className="app-rating-item">
-                    <div className="app-name">Genesis Intelligent App</div>
+                    <div className="app-name">Genesis Intelligent Assistant</div>
                     <div className="app-rating-value">
                       <span className="app-rating-number">
                         {appAverageRatings.genesis.average.toFixed(1)}
