@@ -69,6 +69,8 @@ const EnhancedDashboard = ({ data, isLoading }) => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDateRange, setSelectedDateRange] = useState({ start: null, end: null });
   const dateRangeRef = useRef(null);
+  const [showRatingDatePicker, setShowRatingDatePicker] = useState(false);
+  const ratingDateRangeRef = useRef(null);
 
   // Count active filters
   const activeFilterCount = useMemo(() => {
@@ -568,6 +570,34 @@ const EnhancedDashboard = ({ data, isLoading }) => {
       document.removeEventListener('click', handleClickOutside);
     };
   }, [showDatePicker]);
+
+  // Click outside handler for rating date picker
+  useEffect(() => {
+    if (!showRatingDatePicker) return;
+    
+    const handleClickOutside = (event) => {
+      const popup = document.querySelectorAll('.date-range-popup')[1]; // Get the second popup
+      const button = ratingDateRangeRef.current;
+      
+      // Don't close if clicking the button or inside the popup
+      if ((button && button.contains(event.target)) || 
+          (popup && popup.contains(event.target))) {
+        return;
+      }
+      
+      setShowRatingDatePicker(false);
+    };
+    
+    // Add a small delay to prevent immediate closing
+    const timer = setTimeout(() => {
+      document.addEventListener('click', handleClickOutside);
+    }, 100);
+    
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [showRatingDatePicker]);
 
   // Handle date range changes
   const handleDateRangeChange = useCallback((dateRange) => {
@@ -1232,6 +1262,65 @@ const EnhancedDashboard = ({ data, isLoading }) => {
                 <ChevronUp className="inline-block ml-auto" style={{ width: '16px', height: '16px' }} />
               </h3>
             </div>
+            
+            {/* Date Range Filter for Rating Distribution */}
+            <div className="rating-date-filter">
+              <button 
+                ref={ratingDateRangeRef}
+                className="date-range-button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  setShowRatingDatePicker(!showRatingDatePicker);
+                }}
+              >
+                <Calendar size={16} />
+                <span>
+                  {selectedDateRange.start && selectedDateRange.end ? 
+                    `${new Date(selectedDateRange.start).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${new Date(selectedDateRange.end).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}` : 
+                    'All Dates'
+                  }
+                </span>
+                {selectedDateRange.start && (
+                  <button
+                    className="clear-date-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      clearDateRange();
+                    }}
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </button>
+              
+              {/* Date Range Popup for Rating Distribution */}
+              {showRatingDatePicker && createPortal(
+                <div 
+                  className="date-range-popup"
+                  style={{
+                    position: 'absolute',
+                    top: ratingDateRangeRef.current ? 
+                      ratingDateRangeRef.current.getBoundingClientRect().bottom + window.scrollY + 8 : 0,
+                    left: ratingDateRangeRef.current ? 
+                      ratingDateRangeRef.current.getBoundingClientRect().left + window.scrollX : 0,
+                    zIndex: 9999
+                  }}
+                >
+                  <DateRangeCalendar
+                    dateRange={selectedDateRange}
+                    onDateRangeChange={(range) => {
+                      handleDateRangeChange(range);
+                      if (range.start && range.end) {
+                        setTimeout(() => setShowRatingDatePicker(false), 100);
+                      }
+                    }}
+                  />
+                </div>,
+                document.body
+              )}
+            </div>
+            
             <div className="enhanced-rating-chart-container">
               <div className="rating-bars">
                 {[

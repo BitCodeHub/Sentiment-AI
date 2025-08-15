@@ -2922,6 +2922,54 @@ html {
 
 /* Enhanced Chart Styles */
 
+/* Rating Date Filter */
+.rating-date-filter {
+  display: flex;
+  justify-content: center;
+  padding: 1rem 1.5rem 0;
+}
+
+.rating-date-filter .date-range-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.rating-date-filter .date-range-button:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.rating-date-filter .clear-date-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  margin-left: 0.5rem;
+  background: #ef4444;
+  border: none;
+  border-radius: 50%;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.rating-date-filter .clear-date-btn:hover {
+  background: #dc2626;
+  transform: scale(1.1);
+}
+
 /* Enhanced Rating Distribution Chart */
 .enhanced-rating-chart-container {
   padding: 1.5rem;
@@ -3569,6 +3617,12 @@ html {
   
   .app-ratings {
     grid-template-columns: 1fr;
+  }
+  
+  /* Rating date filter responsive */
+  .rating-date-filter .date-range-button {
+    font-size: 0.75rem;
+    padding: 0.375rem 0.75rem;
   }
 }
 
