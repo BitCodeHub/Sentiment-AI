@@ -2974,6 +2974,34 @@ html {
   color: #94a3b8;
 }
 
+/* Rating Date Picker Dropdown */
+.rating-date-picker-dropdown {
+  background: rgba(30, 41, 59, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+  animation: fadeInDown 0.2s ease;
+}
+
+.rating-date-picker-dropdown .date-range-calendar {
+  border: none;
+  box-shadow: none;
+  background: transparent;
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Enhanced Rating Distribution Chart */
 .enhanced-rating-chart-container {
   padding: 1.5rem;

@@ -1403,14 +1403,14 @@ const EnhancedDashboard = ({ data, isLoading }) => {
                       )}
                     </button>
                     
-                    {/* Date Range Popup */}
+                    {/* Date Range Dropdown */}
                     {showRatingDatePicker && createPortal(
                       <div 
-                        className="date-range-popup"
+                        className="rating-date-picker-dropdown"
                         style={{
                           position: 'absolute',
                           top: ratingDateRangeRef.current ? 
-                            ratingDateRangeRef.current.getBoundingClientRect().bottom + window.scrollY + 8 : 0,
+                            ratingDateRangeRef.current.getBoundingClientRect().bottom + window.scrollY + 4 : 0,
                           left: ratingDateRangeRef.current ? 
                             ratingDateRangeRef.current.getBoundingClientRect().left + window.scrollX : 0,
                           zIndex: 9999
