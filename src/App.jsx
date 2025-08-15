@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import FileUpload from './components/FileUpload';
 import AppleImport from './components/AppleImport';
+import BenchmarkFileUpload from './components/BenchmarkFileUpload';
 import Dashboard from './components/Dashboard';
 import EnhancedDashboard from './components/EnhancedDashboard';
+import BenchmarkDashboard from './components/BenchmarkDashboard';
 import TopicDetailView from './components/TopicDetailView';
 import ErrorBoundary from './components/ErrorBoundary';
 import RateLimitNotification from './components/RateLimitNotification';
@@ -15,6 +17,8 @@ import './App.css';
 function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [data, setData] = useState(null);
+  const [benchmarkData, setBenchmarkData] = useState(null);
+  const [mode, setMode] = useState('single'); // 'single' or 'benchmark'
   const [error, setError] = useState(null);
 
   const handleFileUpload = async (file) => {
@@ -71,6 +75,54 @@ function App() {
     }
   };
 
+  const handleBenchmarkFilesUpload = async ({ userFile, competitorFile }) => {
+    setIsLoading(true);
+    setError(null);
+    setMode('benchmark');
+    
+    try {
+      console.log('Processing benchmark files...');
+      
+      // Process user file
+      const userReviews = await parseExcelFile(userFile);
+      const userAggregatedData = aggregateData(userReviews);
+      
+      // Process competitor file
+      const competitorReviews = await parseExcelFile(competitorFile);
+      const competitorAggregatedData = aggregateData(competitorReviews);
+      
+      // Ensure proper structure for both
+      [userAggregatedData, competitorAggregatedData].forEach(aggregatedData => {
+        if (!aggregatedData.summary || !aggregatedData.summary.distribution) {
+          aggregatedData.summary.distribution = aggregatedData.ratingDistribution || {};
+        }
+        if (!aggregatedData.sentimentBreakdown) {
+          aggregatedData.sentimentBreakdown = aggregatedData.sentimentDistribution || {};
+        }
+      });
+      
+      setBenchmarkData({
+        user: {
+          ...userAggregatedData,
+          fileName: userFile.name,
+          appName: userFile.name.replace(/\.(xlsx|xls)$/i, '')
+        },
+        competitor: {
+          ...competitorAggregatedData,
+          fileName: competitorFile.name,
+          appName: competitorFile.name.replace(/\.(xlsx|xls)$/i, '')
+        }
+      });
+      
+      console.log('Benchmark data processed successfully');
+    } catch (err) {
+      console.error('Error processing benchmark files:', err);
+      setError('Error processing benchmark files. Please make sure both files are valid Excel files with review data.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
 
   return (
     <Router>
@@ -78,31 +130,52 @@ function App() {
         <RateLimitNotification />
         <Routes>
           <Route path="/" element={
-            !data ? (
+            !data && !benchmarkData ? (
               <div className="upload-section">
                 <div className="app-header">
                   <h1>App Review Analytics Dashboard</h1>
                   <p>Upload your Excel file or import directly from App Store to analyze app reviews</p>
                 </div>
                 
-                <div className="import-options">
-                  <FileUpload onFileUpload={handleFileUpload} />
-                  
-                  <div className="divider">
-                    <span>OR</span>
-                  </div>
-                  
-                  <AppleImport onImport={handleAppleImport} />
+                <div className="mode-selector">
+                  <button 
+                    className={`mode-button ${mode === 'single' ? 'active' : ''}`}
+                    onClick={() => setMode('single')}
+                  >
+                    Single App Analysis
+                  </button>
+                  <button 
+                    className={`mode-button ${mode === 'benchmark' ? 'active' : ''}`}
+                    onClick={() => setMode('benchmark')}
+                  >
+                    Benchmark Analysis
+                  </button>
                 </div>
                 
-                <button 
-                  className="sample-data-btn"
-                  onClick={downloadSampleExcel}
-                  title="Download sample Excel file to see expected format"
-                >
-                  <Download size={20} />
-                  Download Sample Format
-                </button>
+                {mode === 'single' ? (
+                  <>
+                    <div className="import-options">
+                      <FileUpload onFileUpload={handleFileUpload} />
+                      
+                      <div className="divider">
+                        <span>OR</span>
+                      </div>
+                      
+                      <AppleImport onImport={handleAppleImport} />
+                    </div>
+                    
+                    <button 
+                      className="sample-data-btn"
+                      onClick={downloadSampleExcel}
+                      title="Download sample Excel file to see expected format"
+                    >
+                      <Download size={20} />
+                      Download Sample Format
+                    </button>
+                  </>
+                ) : (
+                  <BenchmarkFileUpload onFilesUpload={handleBenchmarkFilesUpload} />
+                )}
                 
                 {isLoading && (
                   <div className="loading">
@@ -117,6 +190,10 @@ function App() {
                   </div>
                 )}
               </div>
+            ) : mode === 'benchmark' && benchmarkData ? (
+              <ErrorBoundary>
+                <BenchmarkDashboard benchmarkData={benchmarkData} />
+              </ErrorBoundary>
             ) : (
               <ErrorBoundary>
                 <EnhancedDashboard data={data} />

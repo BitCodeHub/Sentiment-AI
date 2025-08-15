@@ -1,0 +1,304 @@
+/* Benchmark File Upload Styles */
+.benchmark-upload-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 3rem 2rem;
+  animation: fadeIn 0.3s ease;
+}
+
+.benchmark-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.benchmark-header h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.benchmark-header p {
+  font-size: 1.125rem;
+  color: #64748b;
+}
+
+/* Upload Sections */
+.upload-sections {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 2rem;
+  margin-bottom: 3rem;
+  align-items: center;
+}
+
+.upload-section {
+  position: relative;
+}
+
+.upload-section h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.user-section h3 {
+  color: #3b82f6;
+}
+
+.competitor-section h3 {
+  color: #f97316;
+}
+
+/* VS Divider */
+.vs-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 0 1rem;
+}
+
+.vs-divider span {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #94a3b8;
+  background: #f8fafc;
+  padding: 0.5rem 1rem;
+  border-radius: 50%;
+  border: 3px solid #e2e8f0;
+  position: relative;
+  z-index: 2;
+}
+
+/* File Upload Labels */
+.file-upload-label {
+  display: block;
+  padding: 3rem 2rem;
+  border: 2px dashed #cbd5e1;
+  border-radius: 16px;
+  background: #f8fafc;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.user-section .file-upload-label {
+  border-color: #93c5fd;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(59, 130, 246, 0.02));
+}
+
+.competitor-section .file-upload-label {
+  border-color: #fdba74;
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.05), rgba(249, 115, 22, 0.02));
+}
+
+.file-upload-label:hover {
+  border-style: solid;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.user-section .file-upload-label:hover {
+  border-color: #3b82f6;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05));
+}
+
+.competitor-section .file-upload-label:hover {
+  border-color: #f97316;
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.1), rgba(249, 115, 22, 0.05));
+}
+
+.file-upload-label.drag-active {
+  border-style: solid;
+  border-width: 3px;
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.competitor-section .file-upload-label.drag-active {
+  background: rgba(249, 115, 22, 0.1);
+}
+
+.file-upload-label.file-uploaded {
+  border-style: solid;
+  border-width: 2px;
+}
+
+.user-section .file-upload-label.file-uploaded {
+  border-color: #10b981;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05));
+}
+
+.competitor-section .file-upload-label.file-uploaded {
+  border-color: #10b981;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05));
+}
+
+/* Upload Content */
+.upload-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.upload-content svg {
+  color: #64748b;
+  transition: color 0.3s ease;
+}
+
+.success-icon {
+  color: #10b981 !important;
+}
+
+.upload-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+
+.file-name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.upload-instruction {
+  font-size: 0.875rem;
+  color: #64748b;
+  margin: 0;
+}
+
+/* Analyze Section */
+.analyze-section {
+  text-align: center;
+}
+
+.analyze-button {
+  padding: 1rem 3rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.analyze-button.active {
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  color: white;
+  box-shadow: 0 10px 30px rgba(59, 130, 246, 0.3);
+}
+
+.analyze-button.active:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 15px 40px rgba(59, 130, 246, 0.4);
+}
+
+.analyze-button.active::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.analyze-button.active:hover::before {
+  left: 100%;
+}
+
+.analyze-button.disabled {
+  background: #e2e8f0;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.upload-hint {
+  margin-top: 1rem;
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .upload-sections {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .vs-divider {
+    grid-row: 2;
+    padding: 1rem 0;
+  }
+
+  .vs-divider::before,
+  .vs-divider::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 40%;
+    height: 2px;
+    background: #e2e8f0;
+    transform: translateY(-50%);
+  }
+
+  .vs-divider::before {
+    left: 0;
+  }
+
+  .vs-divider::after {
+    right: 0;
+  }
+
+  .competitor-section {
+    grid-row: 3;
+  }
+}
+
+@media (max-width: 768px) {
+  .benchmark-upload-container {
+    padding: 2rem 1rem;
+  }
+
+  .benchmark-header h1 {
+    font-size: 2rem;
+  }
+
+  .file-upload-label {
+    padding: 2rem 1rem;
+  }
+
+  .analyze-button {
+    padding: 0.875rem 2rem;
+    font-size: 1rem;
+  }
+}
+
+/* Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

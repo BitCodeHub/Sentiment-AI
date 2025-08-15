@@ -10,11 +10,12 @@ import {
   Sparkles,
   Hash,
   Menu,
-  X
+  X,
+  GitCompare
 } from 'lucide-react';
 import './Sidebar.css';
 
-const Sidebar = ({ activeView, onViewChange, isOpen, onToggle }) => {
+const Sidebar = ({ activeView, onViewChange, isOpen, onToggle, showBenchmark = false }) => {
   const menuItems = [
     {
       id: 'overview',
@@ -60,6 +61,15 @@ const Sidebar = ({ activeView, onViewChange, isOpen, onToggle }) => {
     }
   ];
 
+  const benchmarkItem = {
+    id: 'benchmark',
+    label: 'Benchmark',
+    icon: GitCompare,
+    description: 'Compare with competitor',
+    color: '#ef4444',
+    isSpecial: true
+  };
+
   return (
     <>
       {/* Mobile Menu Toggle */}
@@ -86,6 +96,32 @@ const Sidebar = ({ activeView, onViewChange, isOpen, onToggle }) => {
         </div>
 
         <nav className="sidebar-nav">
+          {showBenchmark && (
+            <div className="sidebar-section">
+              <h3 className="sidebar-section-title">Compare</h3>
+              <button
+                className={`sidebar-item benchmark-item ${activeView === benchmarkItem.id ? 'active' : ''}`}
+                onClick={() => {
+                  onViewChange(benchmarkItem.id);
+                  if (window.innerWidth < 768) {
+                    onToggle();
+                  }
+                }}
+                title={benchmarkItem.description}
+              >
+                <benchmarkItem.icon 
+                  size={20} 
+                  style={{ 
+                    color: activeView === benchmarkItem.id ? 'currentColor' : benchmarkItem.color,
+                    transition: 'all 0.2s ease'
+                  }} 
+                />
+                <span className="sidebar-item-label">{benchmarkItem.label}</span>
+                <span className="sidebar-badge special">VS</span>
+              </button>
+            </div>
+          )}
+
           <div className="sidebar-section">
             <h3 className="sidebar-section-title">Main</h3>
             {menuItems.slice(0, 5).map(item => {

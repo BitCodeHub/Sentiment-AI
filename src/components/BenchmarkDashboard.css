@@ -1,0 +1,616 @@
+/* Benchmark Dashboard Styles */
+.benchmark-dashboard {
+  display: flex;
+  min-height: 100vh;
+  background-color: #f8fafc;
+}
+
+.benchmark-content {
+  flex: 1;
+  padding: 2rem;
+  transition: margin-left 0.3s ease;
+  overflow-x: hidden;
+}
+
+.benchmark-content.sidebar-open {
+  margin-left: 260px;
+}
+
+/* Header Section */
+.benchmark-header-section {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(249, 115, 22, 0.05));
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 20px;
+  padding: 2.5rem;
+  margin-bottom: 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.benchmark-header-section::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -10%;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%);
+  border-radius: 50%;
+}
+
+.benchmark-title-area {
+  z-index: 1;
+}
+
+.benchmark-title {
+  font-size: 2.5rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #3b82f6, #f97316);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 0.5rem;
+}
+
+.benchmark-subtitle {
+  font-size: 1.25rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.app-name {
+  font-weight: 700;
+  padding: 0.25rem 0.75rem;
+  border-radius: 6px;
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.app-name.user {
+  color: #3b82f6;
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.app-name.competitor {
+  color: #f97316;
+  background: rgba(249, 115, 22, 0.1);
+}
+
+/* Overall Winner Badge */
+.overall-winner {
+  z-index: 1;
+}
+
+.winner-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 2rem;
+  border-radius: 100px;
+  font-weight: 600;
+  font-size: 1.125rem;
+  color: white;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+.winner-badge.user {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+}
+
+.winner-badge.competitor {
+  background: linear-gradient(135deg, #f97316, #ea580c);
+}
+
+.winner-badge::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  animation: shine 3s infinite;
+}
+
+@keyframes shine {
+  0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+  100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+}
+
+/* Key Metrics Grid */
+.key-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.metric-comparison-card {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e2e8f0;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.metric-comparison-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.metric-comparison {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.metric-side {
+  flex: 1;
+  text-align: center;
+  padding: 1rem;
+}
+
+.metric-label {
+  display: block;
+  font-size: 0.875rem;
+  color: #64748b;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.metric-value {
+  display: block;
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.metric-side.user .metric-value {
+  color: #3b82f6;
+}
+
+.metric-side.competitor .metric-value {
+  color: #f97316;
+}
+
+.vs-indicator {
+  padding: 0.5rem 1rem;
+  background: #f1f5f9;
+  border-radius: 100px;
+  font-weight: 700;
+  color: #94a3b8;
+  font-size: 0.875rem;
+}
+
+.star-display {
+  display: flex;
+  justify-content: center;
+  gap: 0.125rem;
+}
+
+.mini-bar {
+  height: 6px;
+  background: #e5e7eb;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 0.5rem;
+}
+
+.bar-fill {
+  height: 100%;
+  transition: width 0.5s ease;
+}
+
+.bar-fill.positive {
+  background: #10b981;
+}
+
+.metric-diff {
+  text-align: center;
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.metric-diff.positive {
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.metric-diff.negative {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+/* Competitive Advantages Section */
+.competitive-advantages-section {
+  margin-bottom: 2rem;
+}
+
+.section-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.advantages-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.advantages-card {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e2e8f0;
+}
+
+.user-advantages {
+  border-left: 4px solid #3b82f6;
+}
+
+.competitor-advantages {
+  border-left: 4px solid #f97316;
+}
+
+.advantages-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.user-advantages .advantages-title {
+  color: #3b82f6;
+}
+
+.competitor-advantages .advantages-title {
+  color: #f97316;
+}
+
+.advantages-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.advantage-item {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
+}
+
+.advantage-item:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.advantage-item.impact-high {
+  border-left: 3px solid #10b981;
+}
+
+.advantage-item.impact-medium {
+  border-left: 3px solid #f59e0b;
+}
+
+.advantage-content h4 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 0.25rem;
+}
+
+.advantage-content p {
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+.no-advantages {
+  text-align: center;
+  color: #94a3b8;
+  font-style: italic;
+  padding: 2rem;
+}
+
+/* Charts Grid */
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.chart-card {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e2e8f0;
+}
+
+.chart-card.full-width {
+  grid-column: 1 / -1;
+}
+
+/* Custom Tooltip */
+.custom-tooltip {
+  background: rgba(30, 41, 59, 0.95);
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tooltip-label {
+  color: #e2e8f0;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.tooltip-item {
+  font-size: 0.8125rem;
+  margin: 0.25rem 0;
+}
+
+/* Word Analysis Section */
+.word-analysis-section {
+  margin-bottom: 2rem;
+}
+
+.word-clouds-comparison {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.word-cloud-card {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e2e8f0;
+  min-height: 400px;
+}
+
+/* Keywords Comparison */
+.keywords-comparison-card {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e2e8f0;
+}
+
+.keywords-table {
+  overflow-x: auto;
+}
+
+.keywords-header,
+.keyword-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  padding: 1rem;
+  align-items: center;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.keywords-header {
+  background: #f8fafc;
+  font-weight: 600;
+  color: #64748b;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.keyword-row:last-child {
+  border-bottom: none;
+}
+
+.keyword-row:hover {
+  background: #f8fafc;
+}
+
+.keyword-text {
+  font-weight: 500;
+  color: #1e293b;
+}
+
+.keyword-count {
+  text-align: center;
+  font-weight: 600;
+}
+
+.keyword-count.user {
+  color: #3b82f6;
+}
+
+.keyword-count.competitor {
+  color: #f97316;
+}
+
+.keyword-diff {
+  text-align: center;
+  font-weight: 600;
+}
+
+.keyword-diff.positive {
+  color: #10b981;
+}
+
+.keyword-diff.negative {
+  color: #ef4444;
+}
+
+/* Strategic Insights Card */
+.strategic-insights-card {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.05), rgba(59, 130, 246, 0.05));
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  margin-bottom: 2rem;
+}
+
+.strategic-insights-card .card-header {
+  border-bottom: 1px solid rgba(139, 92, 246, 0.1);
+}
+
+.insights-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+}
+
+.insight-section {
+  padding: 1.5rem;
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.insight-section h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.insight-section ul {
+  list-style: none;
+  padding: 0;
+}
+
+.insight-section li {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #f1f5f9;
+  color: #475569;
+  position: relative;
+  padding-left: 1.5rem;
+}
+
+.insight-section li:last-child {
+  border-bottom: none;
+}
+
+.insight-section li::before {
+  content: '→';
+  position: absolute;
+  left: 0;
+  color: #3b82f6;
+  font-weight: 700;
+}
+
+.insight-section p {
+  color: #475569;
+  line-height: 1.6;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .advantages-grid,
+  .word-clouds-comparison {
+    grid-template-columns: 1fr;
+  }
+  
+  .charts-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .benchmark-content {
+    padding: 1rem;
+  }
+  
+  .benchmark-content.sidebar-open {
+    margin-left: 0;
+  }
+  
+  .benchmark-header-section {
+    flex-direction: column;
+    gap: 1.5rem;
+    padding: 1.5rem;
+  }
+  
+  .benchmark-title {
+    font-size: 1.75rem;
+  }
+  
+  .key-metrics-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .metric-comparison {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .vs-indicator {
+    margin: 0.5rem 0;
+  }
+  
+  .keywords-header,
+  .keyword-row {
+    font-size: 0.8125rem;
+    padding: 0.75rem;
+  }
+  
+  .insights-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Animation Classes */
+.chart-card,
+.metric-comparison-card,
+.advantages-card {
+  animation: fadeInUp 0.5s ease;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Loading State */
+.benchmark-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  gap: 1rem;
+}
+
+.benchmark-loading svg {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
