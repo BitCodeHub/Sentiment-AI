@@ -101,16 +101,22 @@ function App() {
         }
       });
       
+      // Extract app names from the data or use filename as fallback
+      const userAppName = userAggregatedData.reviews?.[0]?.appName || 
+                         userFile.name.replace(/\.(xlsx|xls)$/i, '').replace(/_/g, ' ');
+      const competitorAppName = competitorAggregatedData.reviews?.[0]?.appName || 
+                               competitorFile.name.replace(/\.(xlsx|xls)$/i, '').replace(/_/g, ' ');
+      
       setBenchmarkData({
         user: {
           ...userAggregatedData,
           fileName: userFile.name,
-          appName: userFile.name.replace(/\.(xlsx|xls)$/i, '')
+          appName: userAppName
         },
         competitor: {
           ...competitorAggregatedData,
           fileName: competitorFile.name,
-          appName: competitorFile.name.replace(/\.(xlsx|xls)$/i, '')
+          appName: competitorAppName
         }
       });
       
