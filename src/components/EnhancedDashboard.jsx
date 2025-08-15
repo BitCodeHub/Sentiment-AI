@@ -868,16 +868,6 @@ const EnhancedDashboard = ({ data, isLoading }) => {
                         className="date-range-popup"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <div className="date-picker-header">
-                          <h4>Select Date Range</h4>
-                          <button 
-                            className="close-date-picker"
-                            onClick={() => setShowDatePicker(false)}
-                            title="Close date picker"
-                          >
-                            <X size={16} />
-                          </button>
-                        </div>
                         <DateRangeCalendar
                           reviews={data.reviews}
                           onDateRangeChange={(range) => {
@@ -1417,13 +1407,16 @@ const EnhancedDashboard = ({ data, isLoading }) => {
                         }}
                       >
                         <DateRangeCalendar
-                          dateRange={selectedDateRange}
+                          reviews={data.reviews}
+                          initialRange={selectedDateRange}
                           onDateRangeChange={(range) => {
                             handleDateRangeChange(range);
                             if (range.start && range.end) {
                               setTimeout(() => setShowRatingDatePicker(false), 100);
                             }
                           }}
+                          showDisplay={false}
+                          inline={true}
                         />
                       </div>,
                       document.body

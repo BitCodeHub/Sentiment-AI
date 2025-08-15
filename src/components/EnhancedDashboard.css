@@ -421,15 +421,22 @@ html {
 .date-range-popup {
   position: relative;
   z-index: 999999;
-  background: #1e293b;
-  border: 1px solid rgba(59, 130, 246, 0.3);
-  border-radius: 16px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
-  min-width: 600px;
+  background: rgba(30, 41, 59, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 20px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  min-width: 700px;
   max-width: 90vw;
   max-height: 80vh;
   overflow: hidden;
   animation: scaleIn 0.2s ease;
+}
+
+.date-range-popup .date-range-content {
+  background: transparent;
+  margin: 0;
+  padding: 0;
 }
 
 .date-picker-header {
@@ -2979,16 +2986,23 @@ html {
   background: rgba(30, 41, 59, 0.95);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(59, 130, 246, 0.2);
-  border-radius: 12px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.1);
   overflow: hidden;
   animation: fadeInDown 0.2s ease;
+  min-width: 700px;
 }
 
 .rating-date-picker-dropdown .date-range-calendar {
   border: none;
   box-shadow: none;
   background: transparent;
+}
+
+.rating-date-picker-dropdown .date-range-content {
+  background: transparent;
+  margin: 0;
+  padding: 0;
 }
 
 @keyframes fadeInDown {
