@@ -495,10 +495,8 @@ const EnhancedDashboard = ({ data, isLoading }) => {
         appRatings.myHyundai.count++;
       }
       
-      // Check for Genesis Intelligent App - also check for variations
-      if (appName === 'Genesis Intelligent App' || 
-          appName === 'Genesis Intelligent Assistant' ||
-          appName.toLowerCase().includes('genesis')) {
+      // Check for Genesis Intelligent App
+      if (appName === 'Genesis Intelligent App') {
         appRatings.genesis.total += rating;
         appRatings.genesis.count++;
       }
@@ -1383,7 +1381,7 @@ const EnhancedDashboard = ({ data, isLoading }) => {
                   
                   {appAverageRatings.genesis.count > 0 && (
                     <div className="app-rating-item">
-                      <div className="app-name">Genesis Intelligent Assistant</div>
+                      <div className="app-name">Genesis Intelligent App</div>
                       <div className="app-rating-value">
                         <span className="app-rating-number">
                           {appAverageRatings.genesis.average.toFixed(1)}

@@ -3557,6 +3557,20 @@ html {
   .total-reviews span:first-child {
     font-size: 2rem;
   }
+  
+  /* Platform filter responsive */
+  .platform-filter {
+    flex-wrap: wrap;
+  }
+  
+  .platform-btn {
+    font-size: 0.75rem;
+    padding: 0.375rem 0.75rem;
+  }
+  
+  .app-ratings {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 768px) {
