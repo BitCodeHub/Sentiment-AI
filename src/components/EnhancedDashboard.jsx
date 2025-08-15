@@ -48,7 +48,7 @@ const EnhancedDashboard = ({ data, isLoading }) => {
   const [selectedTimeRange, setSelectedTimeRange] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all');
-  const [platformFilter, setPlatformFilter] = useState('all'); // New platform filter state
+  const [platformFilter, setPlatformFilter] = useState('ios'); // Default to iOS platform
   const [metadataFilters, setMetadataFilters] = useState({
     appName: 'all',
     device: 'all',
@@ -498,11 +498,9 @@ const EnhancedDashboard = ({ data, isLoading }) => {
       const rating = review.rating || review.Rating || 0;
       const store = review['App Store'] || review.Store || '';
       
-      // Apply platform filter
-      if (platformFilter !== 'all') {
-        if (platformFilter === 'ios' && store !== 'iOS') return;
-        if (platformFilter === 'android' && store !== 'Google Play') return;
-      }
+      // Apply platform filter - always filter by platform
+      if (platformFilter === 'ios' && store !== 'iOS') return;
+      if (platformFilter === 'android' && store !== 'Google Play') return;
       
       // Check for apps with case-insensitive matching
       const appNameLower = appName.toLowerCase().trim();
@@ -1354,12 +1352,6 @@ const EnhancedDashboard = ({ data, isLoading }) => {
                 {/* Platform Filter */}
                 <div className="platform-filter">
                   <button 
-                    className={`platform-btn ${platformFilter === 'all' ? 'active' : ''}`}
-                    onClick={() => setPlatformFilter('all')}
-                  >
-                    All Platforms
-                  </button>
-                  <button 
                     className={`platform-btn ${platformFilter === 'ios' ? 'active' : ''}`}
                     onClick={() => setPlatformFilter('ios')}
                   >
@@ -1394,11 +1386,9 @@ const EnhancedDashboard = ({ data, isLoading }) => {
                       </div>
                       <div className="app-review-count">
                         {appAverageRatings.myHyundai.count} reviews
-                        {platformFilter !== 'all' && (
-                          <span className="platform-label">
-                            {' '}• {platformFilter === 'ios' ? 'iOS' : 'Android'}
-                          </span>
-                        )}
+                        <span className="platform-label">
+                          {' '}• {platformFilter === 'ios' ? 'iOS' : 'Android'}
+                        </span>
                       </div>
                     </div>
                   )}
@@ -1423,18 +1413,16 @@ const EnhancedDashboard = ({ data, isLoading }) => {
                       </div>
                       <div className="app-review-count">
                         {appAverageRatings.genesis.count} reviews
-                        {platformFilter !== 'all' && (
-                          <span className="platform-label">
-                            {' '}• {platformFilter === 'ios' ? 'iOS' : 'Android'}
-                          </span>
-                        )}
+                        <span className="platform-label">
+                          {' '}• {platformFilter === 'ios' ? 'iOS' : 'Android'}
+                        </span>
                       </div>
                     </div>
                   )}
                   
                   {appAverageRatings.myHyundai.count === 0 && appAverageRatings.genesis.count === 0 && (
                     <div className="no-app-data">
-                      No {platformFilter !== 'all' ? `${platformFilter === 'ios' ? 'iOS' : 'Android'} ` : ''}reviews found for Hyundai or Genesis apps
+                      No {platformFilter === 'ios' ? 'iOS' : 'Android'} reviews found for Hyundai or Genesis apps
                     </div>
                   )}
                 </div>
