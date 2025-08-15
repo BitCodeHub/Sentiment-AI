@@ -1263,64 +1263,6 @@ const EnhancedDashboard = ({ data, isLoading }) => {
               </h3>
             </div>
             
-            {/* Date Range Filter for Rating Distribution */}
-            <div className="rating-date-filter">
-              <button 
-                ref={ratingDateRangeRef}
-                className="date-range-button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  e.preventDefault();
-                  setShowRatingDatePicker(!showRatingDatePicker);
-                }}
-              >
-                <Calendar size={16} />
-                <span>
-                  {selectedDateRange.start && selectedDateRange.end ? 
-                    `${new Date(selectedDateRange.start).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${new Date(selectedDateRange.end).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}` : 
-                    'All Dates'
-                  }
-                </span>
-                {selectedDateRange.start && (
-                  <button
-                    className="clear-date-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      clearDateRange();
-                    }}
-                  >
-                    <X size={14} />
-                  </button>
-                )}
-              </button>
-              
-              {/* Date Range Popup for Rating Distribution */}
-              {showRatingDatePicker && createPortal(
-                <div 
-                  className="date-range-popup"
-                  style={{
-                    position: 'absolute',
-                    top: ratingDateRangeRef.current ? 
-                      ratingDateRangeRef.current.getBoundingClientRect().bottom + window.scrollY + 8 : 0,
-                    left: ratingDateRangeRef.current ? 
-                      ratingDateRangeRef.current.getBoundingClientRect().left + window.scrollX : 0,
-                    zIndex: 9999
-                  }}
-                >
-                  <DateRangeCalendar
-                    dateRange={selectedDateRange}
-                    onDateRangeChange={(range) => {
-                      handleDateRangeChange(range);
-                      if (range.start && range.end) {
-                        setTimeout(() => setShowRatingDatePicker(false), 100);
-                      }
-                    }}
-                  />
-                </div>,
-                document.body
-              )}
-            </div>
-            
             <div className="enhanced-rating-chart-container">
               <div className="rating-bars">
                 {[
@@ -1413,20 +1355,80 @@ const EnhancedDashboard = ({ data, isLoading }) => {
               
               {/* App-specific Average Ratings */}
               <div className="app-ratings-section">
-                {/* Platform Filter */}
-                <div className="platform-filter">
-                  <button 
-                    className={`platform-btn ${platformFilter === 'ios' ? 'active' : ''}`}
-                    onClick={() => setPlatformFilter('ios')}
-                  >
-                    iOS
-                  </button>
-                  <button 
-                    className={`platform-btn ${platformFilter === 'android' ? 'active' : ''}`}
-                    onClick={() => setPlatformFilter('android')}
-                  >
-                    Android
-                  </button>
+                {/* Platform and Date Filters */}
+                <div className="rating-filters">
+                  <div className="platform-filter">
+                    <button 
+                      className={`platform-btn ${platformFilter === 'ios' ? 'active' : ''}`}
+                      onClick={() => setPlatformFilter('ios')}
+                    >
+                      iOS
+                    </button>
+                    <button 
+                      className={`platform-btn ${platformFilter === 'android' ? 'active' : ''}`}
+                      onClick={() => setPlatformFilter('android')}
+                    >
+                      Android
+                    </button>
+                  </div>
+                  
+                  <div className="rating-date-filter">
+                    <button 
+                      ref={ratingDateRangeRef}
+                      className="filter-button date-filter"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        setShowRatingDatePicker(!showRatingDatePicker);
+                      }}
+                    >
+                      <Calendar size={16} />
+                      <span>
+                        {selectedDateRange.start && selectedDateRange.end ? 
+                          `${new Date(selectedDateRange.start).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${new Date(selectedDateRange.end).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}` : 
+                          dateRange ? dateRange.display : 'All Dates'
+                        }
+                      </span>
+                      {selectedDateRange.start ? (
+                        <X 
+                          size={14} 
+                          className="clear-icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            clearDateRange();
+                          }}
+                        />
+                      ) : (
+                        <ChevronDown size={14} className="dropdown-icon" />
+                      )}
+                    </button>
+                    
+                    {/* Date Range Popup */}
+                    {showRatingDatePicker && createPortal(
+                      <div 
+                        className="date-range-popup"
+                        style={{
+                          position: 'absolute',
+                          top: ratingDateRangeRef.current ? 
+                            ratingDateRangeRef.current.getBoundingClientRect().bottom + window.scrollY + 8 : 0,
+                          left: ratingDateRangeRef.current ? 
+                            ratingDateRangeRef.current.getBoundingClientRect().left + window.scrollX : 0,
+                          zIndex: 9999
+                        }}
+                      >
+                        <DateRangeCalendar
+                          dateRange={selectedDateRange}
+                          onDateRangeChange={(range) => {
+                            handleDateRangeChange(range);
+                            if (range.start && range.end) {
+                              setTimeout(() => setShowRatingDatePicker(false), 100);
+                            }
+                          }}
+                        />
+                      </div>,
+                      document.body
+                    )}
+                  </div>
                 </div>
                 
                 <div className="app-ratings">

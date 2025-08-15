@@ -2922,14 +2922,21 @@ html {
 
 /* Enhanced Chart Styles */
 
-/* Rating Date Filter */
-.rating-date-filter {
+/* Rating Filters Container */
+.rating-filters {
   display: flex;
+  align-items: center;
   justify-content: center;
-  padding: 1rem 1.5rem 0;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
 }
 
-.rating-date-filter .date-range-button {
+.rating-date-filter {
+  display: flex;
+}
+
+.rating-date-filter .filter-button {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -2938,36 +2945,33 @@ html {
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   font-size: 0.875rem;
+  font-weight: 500;
   color: #475569;
   cursor: pointer;
   transition: all 0.2s ease;
   position: relative;
+  min-width: 180px;
 }
 
-.rating-date-filter .date-range-button:hover {
+.rating-date-filter .filter-button:hover {
   background: #f8fafc;
   border-color: #cbd5e1;
 }
 
-.rating-date-filter .clear-date-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  padding: 0;
-  margin-left: 0.5rem;
-  background: #ef4444;
-  border: none;
-  border-radius: 50%;
-  color: white;
+.rating-date-filter .clear-icon {
+  margin-left: auto;
   cursor: pointer;
-  transition: all 0.2s ease;
+  color: #94a3b8;
+  transition: color 0.2s ease;
 }
 
-.rating-date-filter .clear-date-btn:hover {
-  background: #dc2626;
-  transform: scale(1.1);
+.rating-date-filter .clear-icon:hover {
+  color: #ef4444;
+}
+
+.rating-date-filter .dropdown-icon {
+  margin-left: auto;
+  color: #94a3b8;
 }
 
 /* Enhanced Rating Distribution Chart */
@@ -3204,8 +3208,6 @@ html {
 .platform-filter {
   display: flex;
   gap: 0.5rem;
-  margin-bottom: 1.5rem;
-  justify-content: center;
 }
 
 .platform-btn {
@@ -3619,10 +3621,15 @@ html {
     grid-template-columns: 1fr;
   }
   
-  /* Rating date filter responsive */
-  .rating-date-filter .date-range-button {
+  /* Rating filters responsive */
+  .rating-filters {
+    gap: 0.5rem;
+  }
+  
+  .rating-date-filter .filter-button {
     font-size: 0.75rem;
     padding: 0.375rem 0.75rem;
+    min-width: 140px;
   }
 }
 
