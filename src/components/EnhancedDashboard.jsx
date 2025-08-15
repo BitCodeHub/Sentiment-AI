@@ -759,6 +759,7 @@ const EnhancedDashboard = ({ data, isLoading }) => {
         onViewChange={setActiveView}
         isOpen={sidebarOpen}
         onToggle={() => setSidebarOpen(!sidebarOpen)}
+        showBenchmark={false}
       />
       
       <div className={`dashboard-content dashboard-with-sidebar ${sidebarOpen ? 'sidebar-open' : ''}`}>
