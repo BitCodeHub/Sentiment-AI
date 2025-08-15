@@ -458,6 +458,42 @@ const EnhancedDashboard = ({ data, isLoading }) => {
     return distribution;
   }, [filteredReviews]);
 
+  // Calculate average ratings for specific apps
+  const appAverageRatings = useMemo(() => {
+    const appRatings = {
+      myHyundai: { total: 0, count: 0, average: 0 },
+      genesis: { total: 0, count: 0, average: 0 }
+    };
+    
+    filteredReviews.forEach(review => {
+      const appName = review.appName || review.App || '';
+      const rating = review.rating || review.Rating || 0;
+      
+      // Check for MyHyundai with Bluelink (both variations)
+      if (appName === 'MyHyundai with Blue Link' || appName === 'MyHyundai with Bluelink') {
+        appRatings.myHyundai.total += rating;
+        appRatings.myHyundai.count++;
+      }
+      
+      // Check for Genesis Intelligent App
+      if (appName === 'Genesis Intelligent App') {
+        appRatings.genesis.total += rating;
+        appRatings.genesis.count++;
+      }
+    });
+    
+    // Calculate averages
+    if (appRatings.myHyundai.count > 0) {
+      appRatings.myHyundai.average = appRatings.myHyundai.total / appRatings.myHyundai.count;
+    }
+    
+    if (appRatings.genesis.count > 0) {
+      appRatings.genesis.average = appRatings.genesis.total / appRatings.genesis.count;
+    }
+    
+    return appRatings;
+  }, [filteredReviews]);
+
   // Click outside handler for the popup
   useEffect(() => {
     if (!showDatePicker) return;
@@ -1262,6 +1298,57 @@ const EnhancedDashboard = ({ data, isLoading }) => {
                   <span>{filteredReviews.length.toLocaleString()}</span>
                   <span>Total Reviews</span>
                 </div>
+              </div>
+              
+              {/* App-specific Average Ratings */}
+              <div className="app-ratings">
+                {appAverageRatings.myHyundai.count > 0 && (
+                  <div className="app-rating-item">
+                    <div className="app-name">MyHyundai with Bluelink</div>
+                    <div className="app-rating-value">
+                      <span className="app-rating-number">
+                        {appAverageRatings.myHyundai.average.toFixed(1)}
+                      </span>
+                      <span className="app-rating-stars">
+                        {[1,2,3,4,5].map(star => (
+                          <span 
+                            key={star}
+                            className={`star ${star <= Math.round(appAverageRatings.myHyundai.average) ? 'filled' : 'empty'}`}
+                          >
+                            ★
+                          </span>
+                        ))}
+                      </span>
+                    </div>
+                    <div className="app-review-count">
+                      {appAverageRatings.myHyundai.count} reviews
+                    </div>
+                  </div>
+                )}
+                
+                {appAverageRatings.genesis.count > 0 && (
+                  <div className="app-rating-item">
+                    <div className="app-name">Genesis Intelligent App</div>
+                    <div className="app-rating-value">
+                      <span className="app-rating-number">
+                        {appAverageRatings.genesis.average.toFixed(1)}
+                      </span>
+                      <span className="app-rating-stars">
+                        {[1,2,3,4,5].map(star => (
+                          <span 
+                            key={star}
+                            className={`star ${star <= Math.round(appAverageRatings.genesis.average) ? 'filled' : 'empty'}`}
+                          >
+                            ★
+                          </span>
+                        ))}
+                      </span>
+                    </div>
+                    <div className="app-review-count">
+                      {appAverageRatings.genesis.count} reviews
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
