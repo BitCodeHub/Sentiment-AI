@@ -1314,33 +1314,8 @@ const EnhancedDashboard = ({ data, isLoading }) => {
                 })}
               </div>
               
-              {/* Rating Summary */}
+              {/* Rating Summary - Total Reviews Only */}
               <div className="rating-summary">
-                <div className="average-rating">
-                  <span className="average-label">Average Rating</span>
-                  <div className="average-value">
-                    <span className="average-number">
-                      {filteredReviews.length > 0 ? 
-                        ((filteredRatingDistribution[5] * 5 + 
-                          filteredRatingDistribution[4] * 4 + 
-                          filteredRatingDistribution[3] * 3 + 
-                          filteredRatingDistribution[2] * 2 + 
-                          filteredRatingDistribution[1] * 1) / filteredReviews.length).toFixed(1)
-                        : '0.0'
-                      }
-                    </span>
-                    <div className="average-stars">
-                      {[1,2,3,4,5].map(star => (
-                        <span 
-                          key={star}
-                          className={`star ${star <= Math.round((filteredRatingDistribution[5] * 5 + filteredRatingDistribution[4] * 4 + filteredRatingDistribution[3] * 3 + filteredRatingDistribution[2] * 2 + filteredRatingDistribution[1] * 1) / (filteredReviews.length || 1)) ? 'filled' : 'empty'}`}
-                        >
-                          ★
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
                 <div className="total-reviews">
                   <span>{filteredReviews.length.toLocaleString()}</span>
                   <span>Total Reviews</span>

@@ -3066,9 +3066,8 @@ html {
 
 /* Rating Summary Section */
 .rating-summary {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2rem;
+  display: flex;
+  justify-content: center;
   padding: 1.5rem;
   background: linear-gradient(135deg, #f8fafc, #e2e8f0);
   border-radius: 16px;
