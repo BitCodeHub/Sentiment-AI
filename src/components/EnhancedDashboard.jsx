@@ -469,14 +469,29 @@ const EnhancedDashboard = ({ data, isLoading }) => {
     // Debug: Log unique app names to see what's in the data
     const uniqueApps = new Set();
     const uniqueStores = new Set();
+    const genesisReviews = [];
+    
     filteredReviews.forEach(review => {
       const appName = review.appName || review.App || '';
       const store = review['App Store'] || review.Store || '';
       if (appName) uniqueApps.add(appName);
       if (store) uniqueStores.add(store);
+      
+      // Collect all reviews that might be Genesis-related
+      if (appName.toLowerCase().includes('genesis')) {
+        genesisReviews.push({
+          appName: appName,
+          rating: review.rating || review.Rating || 0,
+          store: store
+        });
+      }
     });
+    
+    console.log('=== APP RATINGS DEBUG ===');
     console.log('Unique app names in data:', Array.from(uniqueApps));
     console.log('Unique stores in data:', Array.from(uniqueStores));
+    console.log('Genesis-related reviews found:', genesisReviews.length);
+    console.log('Genesis reviews:', genesisReviews);
     
     filteredReviews.forEach(review => {
       const appName = review.appName || review.App || '';
@@ -489,14 +504,23 @@ const EnhancedDashboard = ({ data, isLoading }) => {
         if (platformFilter === 'android' && store !== 'Google Play') return;
       }
       
-      // Check for MyHyundai with Bluelink (both variations)
-      if (appName === 'MyHyundai with Blue Link' || appName === 'MyHyundai with Bluelink') {
+      // Check for apps with case-insensitive matching
+      const appNameLower = appName.toLowerCase().trim();
+      
+      // Check for MyHyundai with Bluelink
+      if (appNameLower === 'myhyundai with blue link' || 
+          appNameLower === 'myhyundai with bluelink' ||
+          appNameLower.includes('myhyundai')) {
         appRatings.myHyundai.total += rating;
         appRatings.myHyundai.count++;
       }
       
-      // Check for Genesis Intelligent App
-      if (appName === 'Genesis Intelligent App') {
+      // Check for Genesis app - more flexible matching
+      if (appNameLower === 'genesis intelligent app' || 
+          appNameLower === 'genesis intelligent assistant' ||
+          appNameLower === 'genesis' ||
+          appNameLower.includes('genesis intelligent') ||
+          appNameLower.includes('genesis connected')) {
         appRatings.genesis.total += rating;
         appRatings.genesis.count++;
       }
