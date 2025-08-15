@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, RadarChart, Radar,
   PolarGrid, PolarAngleAxis, PolarRadiusAxis, AreaChart, Area,
@@ -13,10 +13,11 @@ import {
   ChevronDown, ChevronUp, X, Download, RefreshCw, 
   Calendar, CheckCircle, Star, GitCompare, Trophy,
   Users, MessageSquare, BarChart3, Activity,
-  ArrowUp, ArrowDown, Minus
+  ArrowUp, ArrowDown, Minus, FileText
 } from 'lucide-react';
 import Sidebar from './Sidebar';
 import SentimentWordCloud from './SentimentWordCloud';
+import DeepContentAnalysis from './DeepContentAnalysis';
 import './BenchmarkDashboard.css';
 
 const COLORS = {
@@ -32,6 +33,8 @@ const BenchmarkDashboard = ({ benchmarkData }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedMetric, setSelectedMetric] = useState('overview');
   const [showAdvancedAnalytics, setShowAdvancedAnalytics] = useState(false);
+  const [showDeepAnalysis, setShowDeepAnalysis] = useState(false);
+  const [deepAnalysisData, setDeepAnalysisData] = useState(null);
   const [timeFrame, setTimeFrame] = useState('30'); // 30, 60, 90, all days
 
   const { user, competitor } = benchmarkData;
@@ -57,6 +60,17 @@ const BenchmarkDashboard = ({ benchmarkData }) => {
   
   const userGrowthRate = calculateGrowthRate(user);
   const competitorGrowthRate = calculateGrowthRate(competitor);
+  
+  // Perform deep content analysis when component mounts or data changes
+  useEffect(() => {
+    if (user.reviews && competitor.reviews && user.reviews.length > 0 && competitor.reviews.length > 0) {
+      const analysis = performDeepContentAnalysis(
+        { reviews: user.reviews, appName: userAppName },
+        { reviews: competitor.reviews, appName: competitorAppName }
+      );
+      setDeepAnalysisData(analysis);
+    }
+  }, [user.reviews, competitor.reviews, userAppName, competitorAppName]);
 
   // Calculate comparative metrics
   const comparativeMetrics = useMemo(() => {
@@ -398,6 +412,15 @@ const BenchmarkDashboard = ({ benchmarkData }) => {
                 </span>
               </div>
             </div>
+            <div className="header-actions">
+              <button 
+                className="deep-analysis-toggle"
+                onClick={() => setShowDeepAnalysis(!showDeepAnalysis)}
+              >
+                <FileText size={20} />
+                {showDeepAnalysis ? 'Hide' : 'Show'} Deep Content Analysis
+              </button>
+            </div>
           </div>
           
           {/* Winner Badge */}
@@ -415,8 +438,56 @@ const BenchmarkDashboard = ({ benchmarkData }) => {
             )}
           </div>
         </div>
+        
+        {/* Deep Analysis Toggle */}
+        <div className="analysis-toggle-section">
+          <button
+            className={`analysis-toggle-btn ${showDeepAnalysis ? 'active' : ''}`}
+            onClick={() => setShowDeepAnalysis(!showDeepAnalysis)}
+          >
+            <FileText size={20} />
+            {showDeepAnalysis ? 'Hide' : 'Show'} Deep Content Analysis
+          </button>
+          <p className="analysis-toggle-desc">
+            {showDeepAnalysis 
+              ? 'Viewing comprehensive review content analysis with AI-powered insights'
+              : 'Analyze all reviews to identify opportunities, gaps, and actionable recommendations'
+            }
+          </p>
+        </div>
+
+        {/* Deep Content Analysis Section */}
+        {showDeepAnalysis && deepAnalysisData && (
+          <>
+            <DeepContentAnalysis 
+              userReviews={user.reviews || []}
+              competitorReviews={competitor.reviews || []}
+              userAppName={userAppName}
+              competitorAppName={competitorAppName}
+              analysisData={deepAnalysisData}
+            />
+            
+            <div className="analysis-charts-grid">
+              <IssueFrequencyChart 
+                userAnalysis={deepAnalysisData.userAnalysis}
+                competitorAnalysis={deepAnalysisData.competitorAnalysis}
+                userAppName={userAppName}
+                competitorAppName={competitorAppName}
+              />
+              
+              <SentimentByCategory 
+                userAnalysis={deepAnalysisData.userAnalysis}
+                competitorAnalysis={deepAnalysisData.competitorAnalysis}
+                userAppName={userAppName}
+                competitorAppName={competitorAppName}
+              />
+            </div>
+          </>
+        )}
 
         {/* Key Metrics Comparison */}
+        {!showDeepAnalysis && (
+          <>
         <h2 className="section-title">
           <BarChart3 size={24} />
           Key Performance Metrics
@@ -959,6 +1030,8 @@ const BenchmarkDashboard = ({ benchmarkData }) => {
             </div>
           </CardContent>
         </Card>
+        </>
+        )}
       </div>
     </div>
   );

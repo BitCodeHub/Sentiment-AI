@@ -92,6 +92,31 @@
   margin-bottom: 1rem;
 }
 
+.header-actions {
+  margin-top: 1rem;
+}
+
+.deep-analysis-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.deep-analysis-toggle:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
 .app-name {
   font-weight: 700;
   padding: 0.375rem 1rem;
@@ -1164,4 +1189,63 @@
   font-size: 0.875rem;
   color: #64748b;
   font-weight: 500;
+}
+
+/* Deep Analysis Toggle Section */
+.analysis-toggle-section {
+  margin-bottom: 2rem;
+  text-align: center;
+  padding: 2rem;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.05), rgba(59, 130, 246, 0.05));
+  border-radius: 16px;
+  border: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+.analysis-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 2rem;
+  border-radius: 12px;
+  border: 2px solid #8b5cf6;
+  background: white;
+  color: #8b5cf6;
+  font-size: 1.125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-bottom: 1rem;
+}
+
+.analysis-toggle-btn:hover {
+  background: #8b5cf6;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(139, 92, 246, 0.3);
+}
+
+.analysis-toggle-btn.active {
+  background: #8b5cf6;
+  color: white;
+}
+
+.analysis-toggle-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.analysis-toggle-desc {
+  font-size: 1rem;
+  color: #64748b;
+  margin: 0;
+  font-weight: 500;
+}
+
+/* Analysis Charts Grid */
+.analysis-charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+  gap: 2rem;
+  margin-top: 2rem;
+  margin-bottom: 2rem;
 }
