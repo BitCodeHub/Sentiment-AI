@@ -1060,3 +1060,108 @@
   height: 20px;
   color: #3b82f6;
 }
+
+/* Performance Score Section */
+.performance-score-section {
+  margin-bottom: 2rem;
+}
+
+.performance-score-card {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(249, 115, 22, 0.05));
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.score-comparison {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.score-item {
+  flex: 1;
+  text-align: center;
+  padding: 1.5rem;
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  transition: transform 0.2s ease;
+}
+
+.score-item:hover {
+  transform: translateY(-2px);
+}
+
+.score-item.user {
+  border-left: 4px solid #3b82f6;
+}
+
+.score-item.competitor {
+  border-left: 4px solid #f97316;
+}
+
+.score-value {
+  font-size: 3rem;
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: 0.5rem;
+}
+
+.score-item.user .score-value {
+  color: #3b82f6;
+}
+
+.score-item.competitor .score-value {
+  color: #f97316;
+}
+
+.score-label {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #64748b;
+  margin-bottom: 1rem;
+}
+
+.score-bar {
+  height: 10px;
+  background: #e5e7eb;
+  border-radius: 5px;
+  overflow: hidden;
+  margin-top: 1rem;
+}
+
+.score-fill {
+  height: 100%;
+  transition: width 1s ease;
+  border-radius: 5px;
+}
+
+.score-item.user .score-fill {
+  background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
+}
+
+.score-item.competitor .score-fill {
+  background: linear-gradient(90deg, #f97316 0%, #ea580c 100%);
+}
+
+.score-vs {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #94a3b8;
+}
+
+.score-breakdown {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  padding: 1rem;
+  background: rgba(248, 250, 252, 0.5);
+  border-radius: 8px;
+}
+
+.breakdown-item {
+  font-size: 0.875rem;
+  color: #64748b;
+  font-weight: 500;
+}

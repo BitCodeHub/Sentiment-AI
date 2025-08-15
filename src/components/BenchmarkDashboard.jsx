@@ -33,7 +33,6 @@ const BenchmarkDashboard = ({ benchmarkData }) => {
   const [selectedMetric, setSelectedMetric] = useState('overview');
   const [showAdvancedAnalytics, setShowAdvancedAnalytics] = useState(false);
   const [timeFrame, setTimeFrame] = useState('30'); // 30, 60, 90, all days
-  const [timeRange, setTimeRange] = useState('30'); // days
 
   const { user, competitor } = benchmarkData;
 
