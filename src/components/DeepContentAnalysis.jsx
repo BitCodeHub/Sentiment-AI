@@ -13,9 +13,10 @@ import {
   Lightbulb, TrendingUp, TrendingDown, Target, Shield,
   MessageSquare, Star, Activity, Zap, AlertTriangle,
   CheckCircle, XCircle, ArrowRight, Filter, Search,
-  Download, RefreshCw, ChevronDown, ChevronUp
+  Download, RefreshCw, ChevronDown, ChevronUp, Sparkles
 } from 'lucide-react';
 import { performDeepContentAnalysis } from '../services/deepContentAnalysis';
+import { testGeminiConnection, initializeGeminiModel } from '../services/geminiService';
 import IssueFrequencyChart from './IssueFrequencyChart';
 import SentimentByCategory from './SentimentByCategory';
 import './DeepContentAnalysis.css';
@@ -35,26 +36,216 @@ const COLORS = {
 const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, competitorAppName }) => {
   const [analysis, setAnalysis] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [viewMode, setViewMode] = useState('overview'); // overview, technical, features, comparison
   const [expandedSections, setExpandedSections] = useState({});
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     const runAnalysis = async () => {
       setLoading(true);
+      setError(null);
       try {
+        // First test Gemini connection
+        console.log('Testing Gemini connection...');
+        const geminiTest = await testGeminiConnection();
+        console.log('Gemini test result:', geminiTest);
+        
+        console.log('Starting deep analysis with:', {
+          userReviewsCount: userReviews?.length || 0,
+          competitorReviewsCount: competitorReviews?.length || 0,
+          userSample: userReviews?.[0],
+          competitorSample: competitorReviews?.[0]
+        });
+        
         const result = await performDeepContentAnalysis(userReviews, competitorReviews);
+        console.log('Deep analysis result:', result);
         setAnalysis(result);
       } catch (error) {
         console.error('Deep analysis failed:', error);
+        setError(error.message || 'Failed to perform analysis');
+        // Set a basic analysis structure to avoid blank screen
+        const defaultPainPoints = {
+          technical: { 
+            count: 0, 
+            subcategories: {
+              performance: { count: 0, examples: [] },
+              stability: { count: 0, examples: [] },
+              functionality: { count: 0, examples: [] }
+            }, 
+            examples: [] 
+          },
+          usability: { 
+            count: 0, 
+            subcategories: {
+              navigation: { count: 0, examples: [] },
+              interface: { count: 0, examples: [] },
+              complexity: { count: 0, examples: [] }
+            }, 
+            examples: [] 
+          },
+          pricing: { 
+            count: 0, 
+            subcategories: {
+              value: { count: 0, examples: [] },
+              subscription: { count: 0, examples: [] },
+              features: { count: 0, examples: [] }
+            }, 
+            examples: [] 
+          },
+          features: { 
+            count: 0, 
+            subcategories: {
+              missing: { count: 0, examples: [] },
+              improvement: { count: 0, examples: [] },
+              request: { count: 0, examples: [] }
+            }, 
+            examples: [] 
+          },
+          support: { 
+            count: 0, 
+            subcategories: {
+              responsiveness: { count: 0, examples: [] },
+              quality: { count: 0, examples: [] },
+              availability: { count: 0, examples: [] }
+            }, 
+            examples: [] 
+          }
+        };
+        
+        const defaultSatisfaction = {
+          performance: { count: 0, weight: 1.2, examples: [] },
+          usability: { count: 0, weight: 1.1, examples: [] },
+          features: { count: 0, weight: 1.0, examples: [] },
+          value: { count: 0, weight: 0.9, examples: [] },
+          overall: { count: 0, weight: 1.3, examples: [] }
+        };
+        
+        setAnalysis({
+          user: {
+            totalReviews: userReviews?.length || 0,
+            technicalIssues: [],
+            featureRequests: [],
+            painPoints: defaultPainPoints,
+            satisfaction: defaultSatisfaction
+          },
+          competitor: {
+            totalReviews: competitorReviews?.length || 0,
+            technicalIssues: [],
+            featureRequests: [],
+            painPoints: defaultPainPoints,
+            satisfaction: defaultSatisfaction
+          },
+          comparison: {
+            gaps: [],
+            opportunities: [],
+            userStrengths: [],
+            competitorStrengths: [],
+            commonIssues: []
+          },
+          recommendations: {
+            immediate: [],
+            shortTerm: [],
+            longTerm: []
+          }
+        });
       }
       setLoading(false);
     };
 
-    if (userReviews.length > 0 && competitorReviews.length > 0) {
+    if (userReviews && competitorReviews && userReviews.length > 0 && competitorReviews.length > 0) {
       runAnalysis();
+    } else {
+      setLoading(false);
+      setError('No reviews data available for analysis');
+      // Also set the default analysis structure when no data
+      const defaultPainPoints = {
+        technical: { 
+          count: 0, 
+          subcategories: {
+            performance: { count: 0, examples: [] },
+            stability: { count: 0, examples: [] },
+            functionality: { count: 0, examples: [] }
+          }, 
+          examples: [] 
+        },
+        usability: { 
+          count: 0, 
+          subcategories: {
+            navigation: { count: 0, examples: [] },
+            interface: { count: 0, examples: [] },
+            complexity: { count: 0, examples: [] }
+          }, 
+          examples: [] 
+        },
+        pricing: { 
+          count: 0, 
+          subcategories: {
+            value: { count: 0, examples: [] },
+            subscription: { count: 0, examples: [] },
+            features: { count: 0, examples: [] }
+          }, 
+          examples: [] 
+        },
+        features: { 
+          count: 0, 
+          subcategories: {
+            missing: { count: 0, examples: [] },
+            improvement: { count: 0, examples: [] },
+            request: { count: 0, examples: [] }
+          }, 
+          examples: [] 
+        },
+        support: { 
+          count: 0, 
+          subcategories: {
+            responsiveness: { count: 0, examples: [] },
+            quality: { count: 0, examples: [] },
+            availability: { count: 0, examples: [] }
+          }, 
+          examples: [] 
+        }
+      };
+      
+      const defaultSatisfaction = {
+        performance: { count: 0, weight: 1.2, examples: [] },
+        usability: { count: 0, weight: 1.1, examples: [] },
+        features: { count: 0, weight: 1.0, examples: [] },
+        value: { count: 0, weight: 0.9, examples: [] },
+        overall: { count: 0, weight: 1.3, examples: [] }
+      };
+      
+      setAnalysis({
+        user: {
+          totalReviews: 0,
+          technicalIssues: [],
+          featureRequests: [],
+          painPoints: defaultPainPoints,
+          satisfaction: defaultSatisfaction
+        },
+        competitor: {
+          totalReviews: 0,
+          technicalIssues: [],
+          featureRequests: [],
+          painPoints: defaultPainPoints,
+          satisfaction: defaultSatisfaction
+        },
+        comparison: {
+          gaps: [],
+          opportunities: [],
+          userStrengths: [],
+          competitorStrengths: [],
+          commonIssues: []
+        },
+        recommendations: {
+          immediate: [],
+          shortTerm: [],
+          longTerm: []
+        }
+      });
     }
-  }, [userReviews, competitorReviews]);
+  }, [userReviews, competitorReviews, retryCount]);
 
   const toggleSection = (section) => {
     setExpandedSections(prev => ({
@@ -65,10 +256,10 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
 
   // Prepare data for technical issues comparison
   const technicalIssuesComparison = useMemo(() => {
-    if (!analysis) return [];
+    if (!analysis || !analysis.user?.technicalIssues || !analysis.competitor?.technicalIssues) return [];
     
-    const userIssues = new Map(analysis.user.technicalIssues.map(i => [i.issue, i]));
-    const competitorIssues = new Map(analysis.competitor.technicalIssues.map(i => [i.issue, i]));
+    const userIssues = new Map((analysis.user.technicalIssues || []).map(i => [i.issue, i]));
+    const competitorIssues = new Map((analysis.competitor.technicalIssues || []).map(i => [i.issue, i]));
     
     const allIssues = new Set([...userIssues.keys(), ...competitorIssues.keys()]);
     
@@ -83,25 +274,33 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
 
   // Prepare pain points radar data
   const painPointsRadarData = useMemo(() => {
-    if (!analysis) return [];
+    if (!analysis || !analysis.user?.painPoints || !analysis.competitor?.painPoints) return [];
     
     return Object.keys(analysis.user.painPoints).map(category => ({
       category: category.charAt(0).toUpperCase() + category.slice(1),
-      [userAppName]: (analysis.user.painPoints[category].count / analysis.user.totalReviews) * 100,
-      [competitorAppName]: (analysis.competitor.painPoints[category].count / analysis.competitor.totalReviews) * 100
+      [userAppName]: analysis.user.totalReviews > 0 
+        ? (analysis.user.painPoints[category]?.count || 0) / analysis.user.totalReviews * 100 
+        : 0,
+      [competitorAppName]: analysis.competitor.totalReviews > 0 
+        ? (analysis.competitor.painPoints[category]?.count || 0) / analysis.competitor.totalReviews * 100 
+        : 0
     }));
   }, [analysis, userAppName, competitorAppName]);
 
   // Prepare satisfaction comparison
   const satisfactionComparison = useMemo(() => {
-    if (!analysis) return [];
+    if (!analysis || !analysis.user?.satisfaction || !analysis.competitor?.satisfaction) return [];
     
     return Object.keys(analysis.user.satisfaction).map(category => ({
       category: category.charAt(0).toUpperCase() + category.slice(1),
-      [userAppName]: (analysis.user.satisfaction[category].count / analysis.user.totalReviews) * 100,
-      [competitorAppName]: (analysis.competitor.satisfaction[category].count / analysis.competitor.totalReviews) * 100,
-      userCount: analysis.user.satisfaction[category].count,
-      competitorCount: analysis.competitor.satisfaction[category].count
+      [userAppName]: analysis.user.totalReviews > 0 
+        ? (analysis.user.satisfaction[category]?.count || 0) / analysis.user.totalReviews * 100 
+        : 0,
+      [competitorAppName]: analysis.competitor.totalReviews > 0 
+        ? (analysis.competitor.satisfaction[category]?.count || 0) / analysis.competitor.totalReviews * 100 
+        : 0,
+      userCount: analysis.user.satisfaction[category]?.count || 0,
+      competitorCount: analysis.competitor.satisfaction[category]?.count || 0
     })).sort((a, b) => (b.userCount + b.competitorCount) - (a.userCount + a.competitorCount));
   }, [analysis, userAppName, competitorAppName]);
 
@@ -132,13 +331,18 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
     );
   }
 
-  if (!analysis) {
+  if (!analysis && !loading) {
     return (
       <div className="deep-analysis-error">
         <AlertCircle size={48} />
         <p>Unable to perform analysis. Please try again.</p>
+        {error && <p style={{fontSize: '0.875rem', color: '#64748b', marginTop: '0.5rem'}}>{error}</p>}
       </div>
     );
+  }
+
+  if (!analysis) {
+    return null; // Don't render anything if analysis is not ready
   }
 
   return (
@@ -177,6 +381,101 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
         </div>
       </div>
 
+      {/* AI Insights Banner or Warning */}
+      {analysis && (
+        <Card className={analysis.geminiInsights || analysis.user?.aiInsights || analysis.competitor?.aiInsights ? "ai-insights-banner" : "analysis-warning-banner"}>
+          <CardHeader>
+            <CardTitle>
+              {analysis.geminiInsights || analysis.user?.aiInsights || analysis.competitor?.aiInsights ? (
+                <>
+                  <Sparkles size={20} />
+                  AI-Powered Insights (Google Gemini)
+                </>
+              ) : (
+                <>
+                  <AlertCircle size={20} />
+                  Pattern-Based Analysis
+                </>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p>
+              {analysis.geminiInsights || analysis.user?.aiInsights || analysis.competitor?.aiInsights
+                ? "Deep analysis powered by Google Gemini AI provides intelligent insights and recommendations based on review content."
+                : "Analysis is based on pattern matching. Attempting to connect to Gemini AI..."}
+            </p>
+            {error && error !== 'No reviews data available for analysis' && (
+              <p style={{fontSize: '0.875rem', color: '#f59e0b', marginTop: '0.5rem'}}>
+                Note: Gemini AI connection is being established. Results will improve once connected.
+              </p>
+            )}
+            {(!analysis.geminiInsights && !analysis.user?.aiInsights && !analysis.competitor?.aiInsights) && (
+              <button
+                onClick={async () => {
+                  setLoading(true);
+                  try {
+                    // Reinitialize Gemini model
+                    console.log('Reinitializing Gemini model...');
+                    const initResult = await initializeGeminiModel();
+                    console.log('Gemini reinitialization result:', initResult);
+                    
+                    // Retry the analysis
+                    setRetryCount(prev => prev + 1);
+                  } catch (error) {
+                    console.error('Failed to reinitialize Gemini:', error);
+                  }
+                  setLoading(false);
+                }}
+                style={{
+                  marginTop: '1rem',
+                  padding: '0.5rem 1rem',
+                  background: '#8b5cf6',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem',
+                  fontWeight: '500',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}
+              >
+                <RefreshCw size={16} />
+                Retry AI Connection
+              </button>
+            )}
+            {/* Temporary debug button */}
+            <button
+              onClick={async () => {
+                console.log('Testing Gemini connection...');
+                const testResult = await testGeminiConnection();
+                console.log('Test result:', testResult);
+                alert(`Gemini Test Result: ${testResult.success ? 'Success!' : 'Failed - ' + testResult.error}`);
+              }}
+              style={{
+                marginTop: '0.5rem',
+                marginLeft: (!analysis.geminiInsights && !analysis.user?.aiInsights && !analysis.competitor?.aiInsights) ? '0' : '1rem',
+                padding: '0.5rem 1rem',
+                background: '#3b82f6',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '0.875rem',
+                fontWeight: '500',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}
+            >
+              Test Gemini Connection
+            </button>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Overview Mode */}
       {viewMode === 'overview' && (
         <div className="overview-section">
@@ -190,7 +489,7 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="insight-count">{analysis.comparison.gaps.filter(g => g.severity === 'high').length}</div>
+                <div className="insight-count">{analysis.comparison?.gaps?.filter(g => g.severity === 'high').length || 0}</div>
                 <p className="insight-description">Areas where competitor significantly outperforms</p>
               </CardContent>
             </Card>
@@ -203,7 +502,7 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="insight-count">{analysis.comparison.opportunities.length}</div>
+                <div className="insight-count">{analysis.comparison?.opportunities?.length || 0}</div>
                 <p className="insight-description">Areas where you can gain competitive advantage</p>
               </CardContent>
             </Card>
@@ -216,7 +515,7 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="insight-count">{analysis.comparison.userStrengths.length}</div>
+                <div className="insight-count">{analysis.comparison?.userStrengths?.length || 0}</div>
                 <p className="insight-description">Areas where you excel over competitor</p>
               </CardContent>
             </Card>
@@ -229,7 +528,7 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="insight-count">{analysis.comparison.commonIssues.length}</div>
+                <div className="insight-count">{analysis.comparison?.commonIssues?.length || 0}</div>
                 <p className="insight-description">Issues affecting both apps</p>
               </CardContent>
             </Card>
@@ -332,7 +631,7 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
 
           {/* Detailed Technical Issues */}
           <div className="technical-details-grid">
-            {Object.entries(analysis.user.painPoints).map(([category, data]) => {
+            {Object.entries(analysis.user?.painPoints || {}).map(([category, data]) => {
               if (data.count === 0) return null;
               const isExpanded = expandedSections[`tech-${category}`];
               
@@ -355,15 +654,15 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
                   {isExpanded && (
                     <CardContent>
                       <div className="subcategories">
-                        {Object.entries(data.subcategories).map(([subcat, subcatData]) => {
-                          if (subcatData.count === 0) return null;
+                        {Object.entries(data.subcategories || {}).map(([subcat, subcatData]) => {
+                          if (!subcatData || subcatData.count === 0) return null;
                           return (
                             <div key={subcat} className="subcategory">
                               <div className="subcat-header">
                                 <span className="subcat-name">{subcat}</span>
                                 <span className="subcat-count">{subcatData.count} mentions</span>
                               </div>
-                              {subcatData.examples.length > 0 && (
+                              {subcatData.examples && subcatData.examples.length > 0 && (
                                 <div className="examples">
                                   {subcatData.examples.map((example, idx) => (
                                     <div key={idx} className="example">
@@ -405,7 +704,7 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
               </CardHeader>
               <CardContent>
                 <div className="feature-list">
-                  {analysis.user.featureRequests.slice(0, 10).map((request, idx) => (
+                  {(analysis.user?.featureRequests || []).slice(0, 10).map((request, idx) => (
                     <div key={idx} className="feature-item">
                       <span className="feature-number">{idx + 1}</span>
                       <span className="feature-text">{request.request}</span>
@@ -425,7 +724,7 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
               </CardHeader>
               <CardContent>
                 <div className="feature-list">
-                  {analysis.competitor.featureRequests.slice(0, 10).map((request, idx) => (
+                  {(analysis.competitor?.featureRequests || []).slice(0, 10).map((request, idx) => (
                     <div key={idx} className="feature-item">
                       <span className="feature-number">{idx + 1}</span>
                       <span className="feature-text">{request.request}</span>
@@ -444,8 +743,8 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
             </CardHeader>
             <CardContent>
               <div className="opportunities-list">
-                {analysis.competitor.featureRequests.slice(0, 5).map((request, idx) => {
-                  const userHasRequest = analysis.user.featureRequests.find(r => 
+                {(analysis.competitor?.featureRequests || []).slice(0, 5).map((request, idx) => {
+                  const userHasRequest = (analysis.user?.featureRequests || []).find(r => 
                     r.request.toLowerCase().includes(request.request.toLowerCase().split(' ')[0])
                   );
                   
@@ -485,7 +784,7 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
             </CardHeader>
             <CardContent>
               <div className="gaps-list">
-                {analysis.comparison.gaps.map((gap, idx) => (
+                {(analysis.comparison?.gaps || []).map((gap, idx) => (
                   <div key={idx} className={`gap-item severity-${gap.severity}`}>
                     <div className="gap-header">
                       <span className="gap-category">{gap.category.charAt(0).toUpperCase() + gap.category.slice(1)}</span>
@@ -521,7 +820,7 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
             </CardHeader>
             <CardContent>
               <div className="opportunities-grid">
-                {analysis.comparison.opportunities.map((opp, idx) => (
+                {(analysis.comparison?.opportunities || []).map((opp, idx) => (
                   <div key={idx} className="opportunity-card">
                     <h4>{opp.category.charAt(0).toUpperCase() + opp.category.slice(1)}</h4>
                     <p>{opp.description}</p>
@@ -549,7 +848,7 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
                     Immediate Actions (1-2 weeks)
                   </h3>
                   <div className="recommendations-list">
-                    {analysis.recommendations.immediate.map((rec, idx) => (
+                    {(analysis.recommendations?.immediate || []).map((rec, idx) => (
                       <div key={idx} className="recommendation-item">
                         <div className="rec-header">
                           <h4>{rec.title}</h4>
@@ -575,7 +874,7 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
                     Short-term Improvements (1-3 months)
                   </h3>
                   <div className="recommendations-list">
-                    {analysis.recommendations.shortTerm.map((rec, idx) => (
+                    {(analysis.recommendations?.shortTerm || []).map((rec, idx) => (
                       <div key={idx} className="recommendation-item">
                         <div className="rec-header">
                           <h4>{rec.title}</h4>
@@ -604,7 +903,7 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
                     Long-term Strategy (3-6 months)
                   </h3>
                   <div className="recommendations-list">
-                    {analysis.recommendations.longTerm.map((rec, idx) => (
+                    {(analysis.recommendations?.longTerm || []).map((rec, idx) => (
                       <div key={idx} className="recommendation-item">
                         <div className="rec-header">
                           <h4>{rec.title}</h4>

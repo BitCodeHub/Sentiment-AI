@@ -1,6 +1,5 @@
 // Deep Content Analysis Service for Reviews
-import { categorizeReviewWithAI } from './enhancedCategorization';
-import { analyzeReviewWithMockAI } from './mockAiAnalysis';
+import { analyzeReviewsWithGemini, compareAppsWithGemini } from './geminiService';
 
 // Common complaint patterns and categories
 const COMPLAINT_PATTERNS = {
@@ -72,51 +71,134 @@ const POSITIVE_PATTERNS = {
 // Extract technical issues from reviews
 function extractTechnicalIssues(reviews) {
   const issues = new Map();
+  const issueDetails = new Map();
   const technicalKeywords = COMPLAINT_PATTERNS.technical.keywords;
   
   reviews.forEach(review => {
-    const text = review.text.toLowerCase();
+    // Handle different review text field names
+    const text = (review.text || review.content || review['Review Text'] || review.Body || '').toLowerCase();
+    const rating = review.rating || review.Rating || 0;
+    
     technicalKeywords.forEach(keyword => {
       if (text.includes(keyword)) {
         const count = issues.get(keyword) || 0;
         issues.set(keyword, count + 1);
+        
+        // Store details for better insights
+        if (!issueDetails.has(keyword)) {
+          issueDetails.set(keyword, {
+            examples: [],
+            avgRating: 0,
+            totalRating: 0
+          });
+        }
+        
+        const details = issueDetails.get(keyword);
+        details.totalRating += rating;
+        if (details.examples.length < 3) {
+          details.examples.push(text.substring(0, 150));
+        }
       }
     });
   });
   
   return Array.from(issues.entries())
-    .map(([issue, count]) => ({ issue, count, percentage: (count / reviews.length) * 100 }))
+    .map(([issue, count]) => {
+      const details = issueDetails.get(issue);
+      const severity = count > reviews.length * 0.1 ? 'high' : 
+                      count > reviews.length * 0.05 ? 'medium' : 'low';
+      
+      return { 
+        issue, 
+        count, 
+        percentage: (count / reviews.length) * 100,
+        frequency: count,
+        severity,
+        avgRating: details ? (details.totalRating / count).toFixed(1) : 0,
+        examples: details?.examples || [],
+        impact: `Affects ${((count / reviews.length) * 100).toFixed(1)}% of users`
+      };
+    })
     .sort((a, b) => b.count - a.count);
 }
 
 // Extract feature requests
 function extractFeatureRequests(reviews) {
   const requests = new Map();
+  const requestDetails = new Map();
+  
   const requestPatterns = [
     /would like (.*?) to/gi,
     /please add (.*?)[\.\,\!]/gi,
     /wish (.*?) could/gi,
     /need (.*?) feature/gi,
     /should have (.*?)[\.\,\!]/gi,
-    /missing (.*?)[\.\,\!]/gi
+    /missing (.*?)[\.\,\!]/gi,
+    /want (.*?) to/gi,
+    /hope (.*?) will/gi,
+    /request (.*?)[\.\,\!]/gi
+  ];
+  
+  // Also look for common feature keywords
+  const featureKeywords = [
+    'dark mode', 'offline', 'sync', 'export', 'import', 'backup',
+    'notification', 'widget', 'theme', 'customiz', 'integrat',
+    'automat', 'schedul', 'remind', 'share', 'collaborat'
   ];
   
   reviews.forEach(review => {
-    const text = review.text;
+    const text = review.text || review.content || review['Review Text'] || review.Body || '';
+    const rating = review.rating || review.Rating || 0;
+    
+    // Pattern-based extraction
     requestPatterns.forEach(pattern => {
       const matches = text.matchAll(pattern);
       for (const match of matches) {
-        const request = match[1].trim();
+        const request = match[1].trim().toLowerCase();
         if (request.length > 3 && request.length < 50) {
           const count = requests.get(request) || 0;
           requests.set(request, count + 1);
+          
+          if (!requestDetails.has(request)) {
+            requestDetails.set(request, { ratings: [] });
+          }
+          requestDetails.get(request).ratings.push(rating);
         }
+      }
+    });
+    
+    // Keyword-based extraction
+    const lowerText = text.toLowerCase();
+    featureKeywords.forEach(keyword => {
+      if (lowerText.includes(keyword) && lowerText.includes('want') || lowerText.includes('need') || lowerText.includes('wish')) {
+        const count = requests.get(keyword) || 0;
+        requests.set(keyword, count + 1);
+        
+        if (!requestDetails.has(keyword)) {
+          requestDetails.set(keyword, { ratings: [] });
+        }
+        requestDetails.get(keyword).ratings.push(rating);
       }
     });
   });
   
   return Array.from(requests.entries())
-    .map(([request, count]) => ({ request, count }))
+    .map(([request, count]) => {
+      const details = requestDetails.get(request);
+      const avgRating = details ? 
+        (details.ratings.reduce((a, b) => a + b, 0) / details.ratings.length).toFixed(1) : 0;
+      
+      return { 
+        request,
+        feature: request,
+        count,
+        requestCount: count,
+        priority: count > reviews.length * 0.05 ? 'high' : 
+                 count > reviews.length * 0.02 ? 'medium' : 'low',
+        avgUserRating: avgRating,
+        userBenefit: `Requested by ${count} users (${((count / reviews.length) * 100).toFixed(1)}%)`
+      };
+    })
     .sort((a, b) => b.count - a.count)
     .slice(0, 20);
 }
@@ -124,6 +206,18 @@ function extractFeatureRequests(reviews) {
 // Analyze pain points
 function analyzePainPoints(reviews) {
   const painPoints = {};
+  
+  if (!reviews || reviews.length === 0) {
+    // Return empty structure
+    Object.keys(COMPLAINT_PATTERNS).forEach(category => {
+      painPoints[category] = {
+        count: 0,
+        subcategories: {},
+        examples: []
+      };
+    });
+    return painPoints;
+  }
   
   Object.keys(COMPLAINT_PATTERNS).forEach(category => {
     painPoints[category] = {
@@ -141,7 +235,7 @@ function analyzePainPoints(reviews) {
     });
     
     reviews.forEach(review => {
-      const text = review.text.toLowerCase();
+      const text = (review.text || review.content || review['Review Text'] || review.Body || '').toLowerCase();
       if (pattern.keywords.some(keyword => text.includes(keyword))) {
         painPoints[category].count++;
         
@@ -151,9 +245,9 @@ function analyzePainPoints(reviews) {
             painPoints[category].subcategories[subcat].count++;
             if (painPoints[category].subcategories[subcat].examples.length < 3) {
               painPoints[category].subcategories[subcat].examples.push({
-                text: review.text.substring(0, 200),
-                rating: review.rating,
-                date: review.date
+                text: (review.text || review.content || review['Review Text'] || review.Body || '').substring(0, 200),
+                rating: review.rating || review.Rating,
+                date: review.date || review.Date
               });
             }
           }
@@ -161,9 +255,9 @@ function analyzePainPoints(reviews) {
         
         if (painPoints[category].examples.length < 5) {
           painPoints[category].examples.push({
-            text: review.text.substring(0, 200),
-            rating: review.rating,
-            date: review.date
+            text: (review.text || review.content || review['Review Text'] || review.Body || '').substring(0, 200),
+            rating: review.rating || review.Rating,
+            date: review.date || review.Date
           });
         }
       }
@@ -177,6 +271,18 @@ function analyzePainPoints(reviews) {
 function analyzeSatisfactionAreas(reviews) {
   const satisfaction = {};
   
+  if (!reviews || reviews.length === 0) {
+    // Return empty structure
+    Object.keys(POSITIVE_PATTERNS).forEach(category => {
+      satisfaction[category] = {
+        count: 0,
+        weight: POSITIVE_PATTERNS[category].weight,
+        examples: []
+      };
+    });
+    return satisfaction;
+  }
+  
   Object.keys(POSITIVE_PATTERNS).forEach(category => {
     satisfaction[category] = {
       count: 0,
@@ -185,14 +291,14 @@ function analyzeSatisfactionAreas(reviews) {
     };
     
     reviews.forEach(review => {
-      const text = review.text.toLowerCase();
+      const text = (review.text || review.content || review['Review Text'] || review.Body || '').toLowerCase();
       if (POSITIVE_PATTERNS[category].keywords.some(keyword => text.includes(keyword))) {
         satisfaction[category].count++;
         if (satisfaction[category].examples.length < 5) {
           satisfaction[category].examples.push({
-            text: review.text.substring(0, 200),
-            rating: review.rating,
-            date: review.date
+            text: (review.text || review.content || review['Review Text'] || review.Body || '').substring(0, 200),
+            rating: review.rating || review.Rating,
+            date: review.date || review.Date
           });
         }
       }
@@ -297,13 +403,28 @@ function generateRecommendations(analysis, comparison) {
         description: `Your app has ${gap.difference}% more ${gap.category} complaints than competitor`,
         impact: 'high',
         effort: 'medium',
+        action: `Focus on resolving top ${gap.category} issues to match competitor performance`,
         metrics: {
           currentRate: gap.userRate,
           targetRate: gap.competitorRate,
           potentialImprovement: gap.difference
-        }
+        },
+        estimatedImprovement: `Could improve user satisfaction by ${(gap.difference * 0.7).toFixed(1)}%`
       });
     }
+  });
+  
+  // Add critical technical issues as immediate fixes
+  const criticalIssues = analysis.technicalIssues.filter(issue => issue.severity === 'high');
+  criticalIssues.slice(0, 3).forEach(issue => {
+    recommendations.immediate.push({
+      title: `Fix "${issue.issue}" Problems`,
+      description: `${issue.count} users (${issue.percentage.toFixed(1)}%) experiencing this issue`,
+      impact: 'high',
+      effort: 'medium',
+      action: `Investigate and fix "${issue.issue}" errors affecting ${issue.impact}`,
+      rationale: `Users with this issue rate the app ${issue.avgRating}/5 on average`
+    });
   });
   
   // Short-term improvements
@@ -316,12 +437,29 @@ function generateRecommendations(analysis, comparison) {
             description: `${((subcatData.count / analysis.totalReviews) * 100).toFixed(1)}% of users report ${subcat} issues`,
             impact: 'medium',
             effort: 'medium',
+            action: `Redesign ${subcat} experience based on user feedback`,
             examples: subcatData.examples.slice(0, 2)
           });
         }
       });
     }
   });
+  
+  // Feature requests
+  if (analysis.featureRequests.length > 0) {
+    const highPriorityRequests = analysis.featureRequests.filter(r => r.priority === 'high');
+    const topRequests = highPriorityRequests.length > 0 ? highPriorityRequests : analysis.featureRequests.slice(0, 5);
+    
+    recommendations.shortTerm.push({
+      title: 'Implement High-Priority Feature Requests',
+      description: `Users frequently request these features`,
+      impact: 'high',
+      effort: 'variable',
+      action: 'Prioritize development of most requested features',
+      features: topRequests,
+      implementation: 'Start with features requested by users with higher ratings'
+    });
+  }
   
   // Long-term strategic recommendations
   comparison.competitorStrengths.forEach(strength => {
@@ -330,19 +468,21 @@ function generateRecommendations(analysis, comparison) {
       description: `Competitor has ${strength.advantage}% advantage in ${strength.category} satisfaction`,
       impact: 'high',
       effort: 'high',
-      strategy: `Study competitor's approach to ${strength.category} and implement similar improvements`
+      strategy: `Study competitor's approach to ${strength.category} and implement similar improvements`,
+      timeframe: 'long-term',
+      recommendation: `Conduct user research to understand why competitor excels in ${strength.category}`
     });
   });
   
-  // Feature requests
-  if (analysis.featureRequests.length > 0) {
-    const topRequests = analysis.featureRequests.slice(0, 5);
-    recommendations.shortTerm.push({
-      title: 'Implement Top Feature Requests',
-      description: `Users frequently request these features`,
+  // Add market positioning recommendation
+  if (comparison.gaps.length > comparison.opportunities.length) {
+    recommendations.longTerm.push({
+      title: 'Strengthen Market Position',
+      description: 'Focus on differentiation and unique value proposition',
       impact: 'high',
-      effort: 'variable',
-      features: topRequests
+      effort: 'high',
+      strategy: 'Develop features that competitor lacks while fixing critical issues',
+      timeframe: 'long-term'
     });
   }
   
@@ -351,29 +491,229 @@ function generateRecommendations(analysis, comparison) {
 
 // Main analysis function
 export async function performDeepContentAnalysis(userReviews, competitorReviews) {
-  // User app analysis
+  console.log('Starting deep content analysis:', {
+    userReviewsCount: userReviews?.length || 0,
+    competitorReviewsCount: competitorReviews?.length || 0
+  });
+  
+  try {
+    // Try Gemini AI first, but make it optional
+    let userGeminiAnalysis = null;
+    let competitorGeminiAnalysis = null;
+    let geminiComparison = null;
+    
+    // Always attempt Gemini AI analysis
+    const skipGemini = false; // Always use AI
+    
+    if (!skipGemini) {
+      try {
+        console.log('Attempting Gemini analysis...');
+        
+        // Import the initialization function
+        const { initializeGeminiModel } = await import('./geminiService');
+        
+        // Ensure model is initialized
+        console.log('Checking Gemini model initialization...');
+        const initResult = await initializeGeminiModel();
+        console.log('Gemini initialization result:', initResult);
+        
+        [userGeminiAnalysis, competitorGeminiAnalysis] = await Promise.all([
+          analyzeReviewsWithGemini(userReviews, { appName: 'User App' }).catch(err => {
+            console.warn('Gemini analysis failed for user app:', err.message);
+            return null;
+          }),
+          analyzeReviewsWithGemini(competitorReviews, { appName: 'Competitor App' }).catch(err => {
+            console.warn('Gemini analysis failed for competitor app:', err.message);
+            return null;
+          })
+        ]);
+        
+        if (userGeminiAnalysis || competitorGeminiAnalysis) {
+          console.log('At least one Gemini analysis succeeded');
+        } else {
+          console.log('Both Gemini analyses returned null');
+        }
+      } catch (err) {
+        console.error('Gemini analysis error:', err);
+      }
+    }
+
+    // Get competitive comparison from Gemini
+    if (!skipGemini && (userGeminiAnalysis || competitorGeminiAnalysis)) {
+      geminiComparison = await compareAppsWithGemini(
+        userReviews, 
+        competitorReviews, 
+        'User App', 
+        'Competitor App'
+      ).catch(err => {
+        console.warn('Gemini comparison failed:', err);
+        return null;
+      });
+    }
+
+    console.log('Gemini analysis results:', {
+      userGeminiAnalysis: !!userGeminiAnalysis,
+      competitorGeminiAnalysis: !!competitorGeminiAnalysis
+    });
+
+    // Combine AI insights with pattern-based analysis
+    const userAnalysis = {
+      totalReviews: userReviews?.length || 0,
+      technicalIssues: userGeminiAnalysis?.technicalIssues || extractTechnicalIssues(userReviews || []),
+      featureRequests: userGeminiAnalysis?.featureRequests || extractFeatureRequests(userReviews || []),
+      painPoints: userGeminiAnalysis?.painPoints?.categories || analyzePainPoints(userReviews || []),
+      satisfaction: userGeminiAnalysis?.positiveAspects?.categories || analyzeSatisfactionAreas(userReviews || []),
+      aiInsights: userGeminiAnalysis
+    };
+    
+    const competitorAnalysis = {
+      totalReviews: competitorReviews?.length || 0,
+      technicalIssues: competitorGeminiAnalysis?.technicalIssues || extractTechnicalIssues(competitorReviews || []),
+      featureRequests: competitorGeminiAnalysis?.featureRequests || extractFeatureRequests(competitorReviews || []),
+      painPoints: competitorGeminiAnalysis?.painPoints?.categories || analyzePainPoints(competitorReviews || []),
+      satisfaction: competitorGeminiAnalysis?.positiveAspects?.categories || analyzeSatisfactionAreas(competitorReviews || []),
+      aiInsights: competitorGeminiAnalysis
+    };
+    
+    // Comparative analysis
+    const comparison = geminiComparison ? {
+      gaps: extractGapsFromGemini(geminiComparison),
+      opportunities: extractOpportunitiesFromGemini(geminiComparison),
+      userStrengths: geminiComparison.competitivePositioning?.['User App']?.strengths || [],
+      competitorStrengths: geminiComparison.competitivePositioning?.['Competitor App']?.strengths || [],
+      commonIssues: findCommonIssues(userAnalysis, competitorAnalysis)
+    } : performComparativeAnalysis(userAnalysis, competitorAnalysis);
+    
+    // Generate recommendations
+    const recommendations = geminiComparison?.strategicRecommendations ? 
+      formatGeminiRecommendations(geminiComparison.strategicRecommendations) :
+      generateRecommendations(userAnalysis, comparison);
+    
+    const result = {
+      user: userAnalysis,
+      competitor: competitorAnalysis,
+      comparison,
+      recommendations,
+      geminiInsights: geminiComparison
+    };
+    
+    console.log('Deep analysis completed successfully:', {
+      userTechnicalIssues: result.user.technicalIssues.length,
+      competitorTechnicalIssues: result.competitor.technicalIssues.length,
+      gaps: result.comparison.gaps.length,
+      recommendations: Object.keys(result.recommendations).map(k => `${k}: ${result.recommendations[k].length}`)
+    });
+    
+    return result;
+  } catch (error) {
+    console.error('Deep analysis error:', error);
+    // Fallback to pattern-based analysis
+    console.log('Falling back to pattern-based analysis');
+    return performPatternBasedAnalysis(userReviews, competitorReviews);
+  }
+}
+
+// Helper function to extract gaps from Gemini response
+function extractGapsFromGemini(geminiComparison) {
+  return (geminiComparison.performanceGaps || []).map(gap => ({
+    category: gap.area,
+    userRate: gap.userPerformance,
+    competitorRate: gap.competitorPerformance,
+    difference: gap.competitorPerformance - gap.userPerformance,
+    severity: gap.severity,
+    description: gap.gap
+  }));
+}
+
+// Helper function to extract opportunities from Gemini response
+function extractOpportunitiesFromGemini(geminiComparison) {
+  return (geminiComparison.marketInsights?.userOpportunities || []).map(opp => ({
+    category: 'market',
+    description: opp,
+    advantage: 'high'
+  }));
+}
+
+// Helper function to format Gemini recommendations
+function formatGeminiRecommendations(recommendations) {
+  const formatted = {
+    immediate: [],
+    shortTerm: [],
+    longTerm: []
+  };
+
+  recommendations.forEach(rec => {
+    const formattedRec = {
+      title: rec.recommendation,
+      description: rec.expectedImpact,
+      impact: rec.priority <= 3 ? 'high' : 'medium',
+      implementation: rec.implementation
+    };
+
+    if (rec.timeframe === 'immediate') {
+      formatted.immediate.push(formattedRec);
+    } else if (rec.timeframe === 'short-term') {
+      formatted.shortTerm.push(formattedRec);
+    } else {
+      formatted.longTerm.push(formattedRec);
+    }
+  });
+
+  return formatted;
+}
+
+// Helper function to find common issues
+function findCommonIssues(userAnalysis, competitorAnalysis) {
+  const commonIssues = [];
+  
+  if (userAnalysis.technicalIssues && competitorAnalysis.technicalIssues) {
+    const userIssueNames = new Set(userAnalysis.technicalIssues.map(i => i.issue));
+    competitorAnalysis.technicalIssues.forEach(issue => {
+      if (userIssueNames.has(issue.issue)) {
+        commonIssues.push({
+          category: 'technical',
+          issue: issue.issue,
+          userRate: userAnalysis.technicalIssues.find(i => i.issue === issue.issue)?.frequency || 0,
+          competitorRate: issue.frequency
+        });
+      }
+    });
+  }
+  
+  return commonIssues;
+}
+
+// Fallback pattern-based analysis
+function performPatternBasedAnalysis(userReviews, competitorReviews) {
+  console.log('Performing pattern-based analysis');
+  
+  // Ensure reviews are arrays
+  const safeUserReviews = Array.isArray(userReviews) ? userReviews : [];
+  const safeCompetitorReviews = Array.isArray(competitorReviews) ? competitorReviews : [];
+  
   const userAnalysis = {
-    totalReviews: userReviews.length,
-    technicalIssues: extractTechnicalIssues(userReviews),
-    featureRequests: extractFeatureRequests(userReviews),
-    painPoints: analyzePainPoints(userReviews),
-    satisfaction: analyzeSatisfactionAreas(userReviews)
+    totalReviews: safeUserReviews.length,
+    technicalIssues: extractTechnicalIssues(safeUserReviews),
+    featureRequests: extractFeatureRequests(safeUserReviews),
+    painPoints: analyzePainPoints(safeUserReviews),
+    satisfaction: analyzeSatisfactionAreas(safeUserReviews)
   };
   
-  // Competitor app analysis
   const competitorAnalysis = {
-    totalReviews: competitorReviews.length,
-    technicalIssues: extractTechnicalIssues(competitorReviews),
-    featureRequests: extractFeatureRequests(competitorReviews),
-    painPoints: analyzePainPoints(competitorReviews),
-    satisfaction: analyzeSatisfactionAreas(competitorReviews)
+    totalReviews: safeCompetitorReviews.length,
+    technicalIssues: extractTechnicalIssues(safeCompetitorReviews),
+    featureRequests: extractFeatureRequests(safeCompetitorReviews),
+    painPoints: analyzePainPoints(safeCompetitorReviews),
+    satisfaction: analyzeSatisfactionAreas(safeCompetitorReviews)
   };
   
-  // Comparative analysis
   const comparison = performComparativeAnalysis(userAnalysis, competitorAnalysis);
-  
-  // Generate recommendations
   const recommendations = generateRecommendations(userAnalysis, comparison);
+  
+  console.log('Pattern-based analysis completed:', {
+    userTechnicalIssues: userAnalysis.technicalIssues.length,
+    competitorTechnicalIssues: competitorAnalysis.technicalIssues.length
+  });
   
   return {
     user: userAnalysis,

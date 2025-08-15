@@ -15,6 +15,7 @@ import { Loader, Download } from 'lucide-react';
 import './App.css';
 
 function App() {
+  console.log('App component rendering...');
   const [isLoading, setIsLoading] = useState(false);
   const [data, setData] = useState(null);
   const [benchmarkData, setBenchmarkData] = useState(null);
@@ -130,7 +131,8 @@ function App() {
   };
 
 
-  return (
+  try {
+    return (
     <Router>
       <div className="app">
         <RateLimitNotification />
@@ -214,6 +216,15 @@ function App() {
       </div>
     </Router>
   );
+  } catch (error) {
+    console.error('App render error:', error);
+    return (
+      <div style={{ padding: '20px', color: 'red' }}>
+        <h2>Error rendering app</h2>
+        <pre>{error.toString()}</pre>
+      </div>
+    );
+  }
 }
 
 export default App;

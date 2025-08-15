@@ -18,6 +18,7 @@ import {
 import Sidebar from './Sidebar';
 import SentimentWordCloud from './SentimentWordCloud';
 import DeepContentAnalysis from './DeepContentAnalysis';
+import { performDeepContentAnalysis } from '../services/deepContentAnalysis';
 import './BenchmarkDashboard.css';
 
 const COLORS = {
@@ -63,13 +64,21 @@ const BenchmarkDashboard = ({ benchmarkData }) => {
   
   // Perform deep content analysis when component mounts or data changes
   useEffect(() => {
-    if (user.reviews && competitor.reviews && user.reviews.length > 0 && competitor.reviews.length > 0) {
-      const analysis = performDeepContentAnalysis(
-        { reviews: user.reviews, appName: userAppName },
-        { reviews: competitor.reviews, appName: competitorAppName }
-      );
-      setDeepAnalysisData(analysis);
-    }
+    const runAnalysis = async () => {
+      if (user.reviews && competitor.reviews && user.reviews.length > 0 && competitor.reviews.length > 0) {
+        try {
+          const analysis = await performDeepContentAnalysis(
+            user.reviews,
+            competitor.reviews
+          );
+          setDeepAnalysisData(analysis);
+        } catch (error) {
+          console.error('Deep analysis failed:', error);
+        }
+      }
+    };
+    
+    runAnalysis();
   }, [user.reviews, competitor.reviews, userAppName, competitorAppName]);
 
   // Calculate comparative metrics
@@ -457,32 +466,13 @@ const BenchmarkDashboard = ({ benchmarkData }) => {
         </div>
 
         {/* Deep Content Analysis Section */}
-        {showDeepAnalysis && deepAnalysisData && (
-          <>
-            <DeepContentAnalysis 
-              userReviews={user.reviews || []}
-              competitorReviews={competitor.reviews || []}
-              userAppName={userAppName}
-              competitorAppName={competitorAppName}
-              analysisData={deepAnalysisData}
-            />
-            
-            <div className="analysis-charts-grid">
-              <IssueFrequencyChart 
-                userAnalysis={deepAnalysisData.userAnalysis}
-                competitorAnalysis={deepAnalysisData.competitorAnalysis}
-                userAppName={userAppName}
-                competitorAppName={competitorAppName}
-              />
-              
-              <SentimentByCategory 
-                userAnalysis={deepAnalysisData.userAnalysis}
-                competitorAnalysis={deepAnalysisData.competitorAnalysis}
-                userAppName={userAppName}
-                competitorAppName={competitorAppName}
-              />
-            </div>
-          </>
+        {showDeepAnalysis && (
+          <DeepContentAnalysis 
+            userReviews={user.reviews || []}
+            competitorReviews={competitor.reviews || []}
+            userAppName={userAppName}
+            competitorAppName={competitorAppName}
+          />
         )}
 
         {/* Key Metrics Comparison */}
