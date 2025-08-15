@@ -2991,6 +2991,7 @@ html {
   overflow: hidden;
   animation: fadeInDown 0.2s ease;
   min-width: 700px;
+  max-height: 500px;
 }
 
 .rating-date-picker-dropdown .date-range-calendar {
@@ -3003,6 +3004,12 @@ html {
   background: transparent;
   margin: 0;
   padding: 0;
+  height: auto;
+  max-height: 500px;
+}
+
+.rating-date-picker-dropdown .date-range-filter {
+  width: 100%;
 }
 
 @keyframes fadeInDown {

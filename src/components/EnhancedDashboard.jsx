@@ -576,7 +576,7 @@ const EnhancedDashboard = ({ data, isLoading }) => {
     if (!showRatingDatePicker) return;
     
     const handleClickOutside = (event) => {
-      const popup = document.querySelectorAll('.date-range-popup')[1]; // Get the second popup
+      const popup = document.querySelector('.rating-date-picker-dropdown');
       const button = ratingDateRangeRef.current;
       
       // Don't close if clicking the button or inside the popup
