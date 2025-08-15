@@ -48,6 +48,7 @@ const EnhancedDashboard = ({ data, isLoading }) => {
   const [selectedTimeRange, setSelectedTimeRange] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all');
+  const [platformFilter, setPlatformFilter] = useState('all'); // New platform filter state
   const [metadataFilters, setMetadataFilters] = useState({
     appName: 'all',
     device: 'all',
@@ -467,15 +468,26 @@ const EnhancedDashboard = ({ data, isLoading }) => {
     
     // Debug: Log unique app names to see what's in the data
     const uniqueApps = new Set();
+    const uniqueStores = new Set();
     filteredReviews.forEach(review => {
       const appName = review.appName || review.App || '';
+      const store = review['App Store'] || review.Store || '';
       if (appName) uniqueApps.add(appName);
+      if (store) uniqueStores.add(store);
     });
     console.log('Unique app names in data:', Array.from(uniqueApps));
+    console.log('Unique stores in data:', Array.from(uniqueStores));
     
     filteredReviews.forEach(review => {
       const appName = review.appName || review.App || '';
       const rating = review.rating || review.Rating || 0;
+      const store = review['App Store'] || review.Store || '';
+      
+      // Apply platform filter
+      if (platformFilter !== 'all') {
+        if (platformFilter === 'ios' && store !== 'iOS') return;
+        if (platformFilter === 'android' && store !== 'Google Play') return;
+      }
       
       // Check for MyHyundai with Bluelink (both variations)
       if (appName === 'MyHyundai with Blue Link' || appName === 'MyHyundai with Bluelink') {
@@ -501,13 +513,13 @@ const EnhancedDashboard = ({ data, isLoading }) => {
       appRatings.genesis.average = appRatings.genesis.total / appRatings.genesis.count;
     }
     
-    console.log('App ratings calculated:', {
+    console.log(`App ratings calculated (${platformFilter}):`, {
       myHyundai: appRatings.myHyundai,
       genesis: appRatings.genesis
     });
     
     return appRatings;
-  }, [filteredReviews]);
+  }, [filteredReviews, platformFilter]);
 
   // Click outside handler for the popup
   useEffect(() => {
@@ -1316,54 +1328,94 @@ const EnhancedDashboard = ({ data, isLoading }) => {
               </div>
               
               {/* App-specific Average Ratings */}
-              <div className="app-ratings">
-                {appAverageRatings.myHyundai.count > 0 && (
-                  <div className="app-rating-item">
-                    <div className="app-name">MyHyundai with Bluelink</div>
-                    <div className="app-rating-value">
-                      <span className="app-rating-number">
-                        {appAverageRatings.myHyundai.average.toFixed(1)}
-                      </span>
-                      <span className="app-rating-stars">
-                        {[1,2,3,4,5].map(star => (
-                          <span 
-                            key={star}
-                            className={`star ${star <= Math.round(appAverageRatings.myHyundai.average) ? 'filled' : 'empty'}`}
-                          >
-                            ★
-                          </span>
-                        ))}
-                      </span>
-                    </div>
-                    <div className="app-review-count">
-                      {appAverageRatings.myHyundai.count} reviews
-                    </div>
-                  </div>
-                )}
+              <div className="app-ratings-section">
+                {/* Platform Filter */}
+                <div className="platform-filter">
+                  <button 
+                    className={`platform-btn ${platformFilter === 'all' ? 'active' : ''}`}
+                    onClick={() => setPlatformFilter('all')}
+                  >
+                    All Platforms
+                  </button>
+                  <button 
+                    className={`platform-btn ${platformFilter === 'ios' ? 'active' : ''}`}
+                    onClick={() => setPlatformFilter('ios')}
+                  >
+                    iOS
+                  </button>
+                  <button 
+                    className={`platform-btn ${platformFilter === 'android' ? 'active' : ''}`}
+                    onClick={() => setPlatformFilter('android')}
+                  >
+                    Android
+                  </button>
+                </div>
                 
-                {appAverageRatings.genesis.count > 0 && (
-                  <div className="app-rating-item">
-                    <div className="app-name">Genesis Intelligent Assistant</div>
-                    <div className="app-rating-value">
-                      <span className="app-rating-number">
-                        {appAverageRatings.genesis.average.toFixed(1)}
-                      </span>
-                      <span className="app-rating-stars">
-                        {[1,2,3,4,5].map(star => (
-                          <span 
-                            key={star}
-                            className={`star ${star <= Math.round(appAverageRatings.genesis.average) ? 'filled' : 'empty'}`}
-                          >
-                            ★
+                <div className="app-ratings">
+                  {appAverageRatings.myHyundai.count > 0 && (
+                    <div className="app-rating-item">
+                      <div className="app-name">MyHyundai with Bluelink</div>
+                      <div className="app-rating-value">
+                        <span className="app-rating-number">
+                          {appAverageRatings.myHyundai.average.toFixed(1)}
+                        </span>
+                        <span className="app-rating-stars">
+                          {[1,2,3,4,5].map(star => (
+                            <span 
+                              key={star}
+                              className={`star ${star <= Math.round(appAverageRatings.myHyundai.average) ? 'filled' : 'empty'}`}
+                            >
+                              ★
+                            </span>
+                          ))}
+                        </span>
+                      </div>
+                      <div className="app-review-count">
+                        {appAverageRatings.myHyundai.count} reviews
+                        {platformFilter !== 'all' && (
+                          <span className="platform-label">
+                            {' '}• {platformFilter === 'ios' ? 'iOS' : 'Android'}
                           </span>
-                        ))}
-                      </span>
+                        )}
+                      </div>
                     </div>
-                    <div className="app-review-count">
-                      {appAverageRatings.genesis.count} reviews
+                  )}
+                  
+                  {appAverageRatings.genesis.count > 0 && (
+                    <div className="app-rating-item">
+                      <div className="app-name">Genesis Intelligent Assistant</div>
+                      <div className="app-rating-value">
+                        <span className="app-rating-number">
+                          {appAverageRatings.genesis.average.toFixed(1)}
+                        </span>
+                        <span className="app-rating-stars">
+                          {[1,2,3,4,5].map(star => (
+                            <span 
+                              key={star}
+                              className={`star ${star <= Math.round(appAverageRatings.genesis.average) ? 'filled' : 'empty'}`}
+                            >
+                              ★
+                            </span>
+                          ))}
+                        </span>
+                      </div>
+                      <div className="app-review-count">
+                        {appAverageRatings.genesis.count} reviews
+                        {platformFilter !== 'all' && (
+                          <span className="platform-label">
+                            {' '}• {platformFilter === 'ios' ? 'iOS' : 'Android'}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                  
+                  {appAverageRatings.myHyundai.count === 0 && appAverageRatings.genesis.count === 0 && (
+                    <div className="no-app-data">
+                      No {platformFilter !== 'all' ? `${platformFilter === 'ios' ? 'iOS' : 'Android'} ` : ''}reviews found for Hyundai or Genesis apps
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>

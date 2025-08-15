@@ -3146,14 +3146,54 @@ html {
   letter-spacing: 0.05em;
 }
 
-/* App-specific Ratings */
+/* App-specific Ratings Section */
+.app-ratings-section {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(59, 130, 246, 0.1);
+}
+
+/* Platform Filter */
+.platform-filter {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  justify-content: center;
+}
+
+.platform-btn {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #64748b;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.platform-btn:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.platform-btn.active {
+  color: white;
+  background: #3b82f6;
+  border-color: #3b82f6;
+}
+
+.platform-btn.active:hover {
+  background: #2563eb;
+  border-color: #2563eb;
+}
+
+/* App Ratings Grid */
 .app-ratings {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 1.5rem;
-  margin-top: 1.5rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid rgba(59, 130, 246, 0.1);
 }
 
 .app-rating-item {
@@ -3204,6 +3244,20 @@ html {
 .app-review-count {
   font-size: 0.75rem;
   color: #64748b;
+  text-align: center;
+}
+
+.platform-label {
+  color: #3b82f6;
+  font-weight: 500;
+}
+
+.no-app-data {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 2rem;
+  color: #64748b;
+  font-size: 0.875rem;
 }
 
 /* Enhanced Sentiment Analysis */
