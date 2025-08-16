@@ -302,6 +302,120 @@
   animation: slideIn 0.6s ease-out 0.3s backwards;
 }
 
+/* Pain Points Summary */
+.pain-points-summary {
+  margin-bottom: 2rem;
+}
+
+.pain-points-summary .section-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pain-points-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.pain-point-summary-card {
+  background: white;
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e2e8f0;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.pain-point-summary-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+}
+
+.pain-point-summary-card .card-icon {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  opacity: 0.1;
+  transform: scale(2);
+}
+
+.pain-point-summary-card.features .card-icon { color: #3b82f6; }
+.pain-point-summary-card.support .card-icon { color: #10b981; }
+.pain-point-summary-card.usability .card-icon { color: #f59e0b; }
+.pain-point-summary-card.technical .card-icon { color: #ef4444; }
+.pain-point-summary-card.pricing .card-icon { color: #8b5cf6; }
+.pain-point-summary-card.other .card-icon { color: #64748b; }
+
+.pain-point-summary-card .card-header h4 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 1rem;
+  position: relative;
+  z-index: 1;
+}
+
+.pain-point-summary-card .app-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.pain-point-summary-card .app-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.pain-point-summary-card .app-label {
+  font-size: 0.875rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.pain-point-summary-card .issue-count {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.pain-point-summary-card .comparison {
+  text-align: center;
+  padding: 0.5rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.pain-point-summary-card .comparison.worse {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.pain-point-summary-card .comparison.better {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.pain-point-summary-card .comparison.similar {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
 .technical-details-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));

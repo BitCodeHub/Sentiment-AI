@@ -1106,7 +1106,125 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
       {/* Technical Issues Mode */}
       {viewMode === 'technical' && (
         <div className="technical-section">
-          <Card className="analysis-card">
+          {/* Pain Points Summary Cards */}
+          <div className="pain-points-summary">
+            <h3 className="section-title">Issue Categories Comparison</h3>
+            <div className="pain-points-grid">
+              {(() => {
+                const categories = ['features', 'support', 'usability', 'technical', 'pricing', 'other'];
+                const categoryIcons = {
+                  features: <HeartHandshake />,
+                  support: <Users />,
+                  usability: <Activity />,
+                  technical: <Bug />,
+                  pricing: <DollarSign />,
+                  other: <AlertTriangle />
+                };
+                
+                return categories.map(category => {
+                  const userCount = analysis.user?.painPoints?.[category]?.count || 0;
+                  const competitorCount = analysis.competitor?.painPoints?.[category]?.count || 0;
+                  const userTotal = analysis.user?.totalReviews || 1;
+                  const competitorTotal = analysis.competitor?.totalReviews || 1;
+                  
+                  const userPercentage = (userCount / userTotal * 100).toFixed(1);
+                  const competitorPercentage = (competitorCount / competitorTotal * 100).toFixed(1);
+                  
+                  let comparisonText = '';
+                  let comparisonClass = '';
+                  if (userPercentage > competitorPercentage * 1.1) {
+                    comparisonText = `↑ ${(userPercentage - competitorPercentage).toFixed(1)}% worse`;
+                    comparisonClass = 'worse';
+                  } else if (competitorPercentage > userPercentage * 1.1) {
+                    comparisonText = `↓ ${(competitorPercentage - userPercentage).toFixed(1)}% better`;
+                    comparisonClass = 'better';
+                  } else {
+                    comparisonText = '≈ Similar';
+                    comparisonClass = 'similar';
+                  }
+                  
+                  return (
+                    <Card key={category} className={`pain-point-summary-card ${category}`}>
+                      <div className="card-icon">
+                        {categoryIcons[category]}
+                      </div>
+                      <div className="card-header">
+                        <h4>{category.charAt(0).toUpperCase() + category.slice(1)}</h4>
+                      </div>
+                      <div className="card-body">
+                        <div className="app-stats">
+                          <div className="app-stat">
+                            <span className="app-label">{userAppName}</span>
+                            <span className="issue-count">{userCount} issues</span>
+                          </div>
+                          <div className="app-stat">
+                            <span className="app-label">{competitorAppName}</span>
+                            <span className="issue-count">{competitorCount} issues</span>
+                          </div>
+                        </div>
+                        <div className={`comparison ${comparisonClass}`}>
+                          {comparisonText}
+                        </div>
+                      </div>
+                    </Card>
+                  );
+                });
+              })()}
+            </div>
+          </div>
+
+          {/* Issue Distribution Chart */}
+          <Card className="analysis-card" style={{ marginTop: '2rem' }}>
+            <CardHeader>
+              <CardTitle>Your App's Issue Distribution</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={(() => {
+                      const painPoints = analysis.user?.painPoints || {};
+                      return Object.entries(painPoints)
+                        .filter(([_, data]) => data?.count > 0)
+                        .map(([category, data]) => ({
+                          name: category.charAt(0).toUpperCase() + category.slice(1),
+                          value: data.count,
+                          percentage: ((data.count / analysis.user?.totalReviews || 1) * 100).toFixed(1)
+                        }));
+                    })()}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percentage }) => `${name}: ${percentage}%`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {(() => {
+                      const colors = {
+                        Technical: COLORS.critical,
+                        Usability: COLORS.high,
+                        Pricing: COLORS.medium,
+                        Features: COLORS.user,
+                        Support: COLORS.positive,
+                        Other: COLORS.neutral
+                      };
+                      const painPoints = analysis.user?.painPoints || {};
+                      return Object.entries(painPoints)
+                        .filter(([_, data]) => data?.count > 0)
+                        .map(([category], index) => (
+                          <Cell key={`cell-${index}`} fill={colors[category.charAt(0).toUpperCase() + category.slice(1)] || COLORS.neutral} />
+                        ));
+                    })()}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          {/* Technical Issues Breakdown */}
+          <Card className="analysis-card" style={{ marginTop: '2rem' }}>
             <CardHeader>
               <CardTitle>
                 <Bug size={20} />
