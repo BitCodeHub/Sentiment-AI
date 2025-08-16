@@ -408,6 +408,13 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
             </CardTitle>
           </CardHeader>
           <CardContent>
+            {/* Debug logging */}
+            {console.log('AI Analysis Debug:', {
+              hasGeminiInsights: !!analysis.geminiInsights,
+              hasUserAiInsights: !!analysis.user?.aiInsights,
+              hasCompetitorAiInsights: !!analysis.competitor?.aiInsights,
+              shouldShowEnableButton: !(analysis.geminiInsights || analysis.user?.aiInsights || analysis.competitor?.aiInsights)
+            })}
             <p>
               {analysis.geminiInsights || analysis.user?.aiInsights || analysis.competitor?.aiInsights
                 ? "Deep analysis powered by Google Gemini 2.5 AI provides intelligent insights and recommendations based on review content."
@@ -419,7 +426,8 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
               </p>
             )}
             <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem', flexWrap: 'wrap' }}>
-              {(!analysis.geminiInsights && !analysis.user?.aiInsights && !analysis.competitor?.aiInsights) && (
+              {/* Show Enable AI button when no AI insights are present */}
+              {!(analysis.geminiInsights || analysis.user?.aiInsights || analysis.competitor?.aiInsights) && (
                 <button
                   onClick={async () => {
                     setLoading(true);
@@ -445,20 +453,31 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
                     }
                   }}
                   style={{
-                    padding: '0.5rem 1rem',
-                    background: '#8b5cf6',
+                    padding: '0.75rem 1.5rem',
+                    background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
                     color: 'white',
-                    border: 'none',
-                    borderRadius: '6px',
+                    border: '2px solid #8b5cf6',
+                    borderRadius: '8px',
                     cursor: 'pointer',
-                    fontSize: '0.875rem',
-                    fontWeight: '500',
+                    fontSize: '1rem',
+                    fontWeight: '600',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '0.5rem'
+                    gap: '0.5rem',
+                    boxShadow: '0 4px 6px rgba(139, 92, 246, 0.3)',
+                    transition: 'all 0.2s ease',
+                    animation: 'pulse 2s infinite'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.transform = 'translateY(-2px)';
+                    e.target.style.boxShadow = '0 6px 12px rgba(139, 92, 246, 0.4)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.transform = 'translateY(0)';
+                    e.target.style.boxShadow = '0 4px 6px rgba(139, 92, 246, 0.3)';
                   }}
                 >
-                  <RefreshCw size={16} />
+                  <Sparkles size={18} />
                   Enable AI Analysis
                 </button>
               )}
