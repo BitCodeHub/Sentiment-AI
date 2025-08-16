@@ -319,6 +319,17 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
       competitorTotalReviews: analysis?.competitor?.totalReviews
     });
     
+    // Additional debug: check individual categories
+    if (analysis?.user?.satisfaction) {
+      console.log('User satisfaction details:', {
+        performance: analysis.user.satisfaction.performance,
+        usability: analysis.user.satisfaction.usability,
+        features: analysis.user.satisfaction.features,
+        value: analysis.user.satisfaction.value,
+        overall: analysis.user.satisfaction.overall
+      });
+    }
+    
     // Ensure satisfaction is an object before using Object.keys
     const userSatisfaction = analysis.user.satisfaction;
     if (!userSatisfaction || typeof userSatisfaction !== 'object') return [];
@@ -601,14 +612,25 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
               </button>
               <button
                 onClick={async () => {
-                  console.log('Testing satisfaction analysis...');
-                  const { testSatisfactionAnalysis } = await import('../utils/testSatisfactionAnalysis');
-                  const result = testSatisfactionAnalysis();
-                  console.log('Test completed, check console for results');
+                  const { testSatisfactionAnalysis, checkReviewsForPositiveKeywords } = await import('../utils/testSatisfactionAnalysis');
+                  console.log('=== Testing Satisfaction Analysis ===');
+                  testSatisfactionAnalysis();
+                  console.log('\n=== Checking User Reviews ===');
+                  if (userReviews && userReviews.length > 0) {
+                    checkReviewsForPositiveKeywords(userReviews);
+                  } else {
+                    console.log('No user reviews available');
+                  }
+                  console.log('\n=== Checking Competitor Reviews ===');
+                  if (competitorReviews && competitorReviews.length > 0) {
+                    checkReviewsForPositiveKeywords(competitorReviews);
+                  } else {
+                    console.log('No competitor reviews available');
+                  }
                 }}
                 style={{
                   padding: '0.5rem 1rem',
-                  background: '#8b5cf6',
+                  background: '#059669',
                   color: 'white',
                   border: 'none',
                   borderRadius: '6px',
@@ -620,6 +642,7 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
                   gap: '0.5rem'
                 }}
               >
+                <Bug size={16} />
                 Test Satisfaction
               </button>
             </div>

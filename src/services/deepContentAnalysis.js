@@ -77,8 +77,9 @@ const POSITIVE_PATTERNS = {
   },
   overall: {
     keywords: ['perfect', 'excellent', 'amazing', 'best', 'love it', 'recommend', '5 stars',
-               'highly recommend', 'must have', 'essential', 'fantastic app', 'wonderful',
-               'outstanding', 'superb', 'brilliant', 'great overall', 'very satisfied', 'happy with'],
+               'highly recommend', 'must have', 'essential', 'very satisfied', 'great overall',
+               'wonderful', 'fantastic app', 'superb', 'outstanding', 'impressed', 'brilliant',
+               'happy with', 'very good', 'really good', 'absolutely love'],
     weight: 1.3
   }
 };
@@ -301,6 +302,16 @@ function analyzeSatisfactionAreas(reviews) {
       };
     });
     return satisfaction;
+  }
+  
+  // Log review structure for debugging
+  if (reviews.length > 0) {
+    const sampleReview = reviews[0];
+    console.log('Review structure:', {
+      fields: Object.keys(sampleReview),
+      sampleText: sampleReview.text || sampleReview.content || sampleReview['Review Text'] || sampleReview.Body || 'NO TEXT FOUND',
+      rating: sampleReview.rating || sampleReview.Rating
+    });
   }
   
   Object.keys(POSITIVE_PATTERNS).forEach(category => {
@@ -722,7 +733,11 @@ export async function performDeepContentAnalysis(userReviews, competitorReviews)
     });
 
     // Combine AI insights with pattern-based analysis
-    const userSatisfactionRaw = userGeminiAnalysis?.positiveAspects || analyzeSatisfactionAreas(userReviews || []);
+    // Check multiple possible locations for satisfaction data from Gemini
+    const userSatisfactionRaw = userGeminiAnalysis?.positiveAspects || 
+                               userGeminiAnalysis?.satisfaction || 
+                               userGeminiAnalysis?.satisfactionAreas ||
+                               analyzeSatisfactionAreas(userReviews || []);
     const userSatisfactionNormalized = normalizeSatisfaction(userSatisfactionRaw);
     
     console.log('User satisfaction processing:', {
@@ -753,7 +768,11 @@ export async function performDeepContentAnalysis(userReviews, competitorReviews)
       });
     }
     
-    const competitorSatisfactionRaw = competitorGeminiAnalysis?.positiveAspects || analyzeSatisfactionAreas(competitorReviews || []);
+    // Check multiple possible locations for satisfaction data from Gemini
+    const competitorSatisfactionRaw = competitorGeminiAnalysis?.positiveAspects || 
+                                      competitorGeminiAnalysis?.satisfaction || 
+                                      competitorGeminiAnalysis?.satisfactionAreas ||
+                                      analyzeSatisfactionAreas(competitorReviews || []);
     const competitorSatisfactionNormalized = normalizeSatisfaction(competitorSatisfactionRaw);
     
     console.log('Competitor satisfaction processing:', {
@@ -926,5 +945,7 @@ export {
   analyzePainPoints,
   analyzeSatisfactionAreas,
   performComparativeAnalysis,
-  generateRecommendations
+  generateRecommendations,
+  POSITIVE_PATTERNS,
+  COMPLAINT_PATTERNS
 };
