@@ -561,8 +561,8 @@ export async function performDeepContentAnalysis(userReviews, competitorReviews)
       totalReviews: userReviews?.length || 0,
       technicalIssues: userGeminiAnalysis?.technicalIssues || extractTechnicalIssues(userReviews || []),
       featureRequests: userGeminiAnalysis?.featureRequests || extractFeatureRequests(userReviews || []),
-      painPoints: userGeminiAnalysis?.painPoints?.categories || analyzePainPoints(userReviews || []),
-      satisfaction: userGeminiAnalysis?.positiveAspects?.categories || analyzeSatisfactionAreas(userReviews || []),
+      painPoints: userGeminiAnalysis?.painPoints?.categories || userGeminiAnalysis?.painPoints || analyzePainPoints(userReviews || []),
+      satisfaction: userGeminiAnalysis?.positiveAspects?.categories || userGeminiAnalysis?.positiveAspects || analyzeSatisfactionAreas(userReviews || []),
       aiInsights: userGeminiAnalysis
     };
     
@@ -570,8 +570,8 @@ export async function performDeepContentAnalysis(userReviews, competitorReviews)
       totalReviews: competitorReviews?.length || 0,
       technicalIssues: competitorGeminiAnalysis?.technicalIssues || extractTechnicalIssues(competitorReviews || []),
       featureRequests: competitorGeminiAnalysis?.featureRequests || extractFeatureRequests(competitorReviews || []),
-      painPoints: competitorGeminiAnalysis?.painPoints?.categories || analyzePainPoints(competitorReviews || []),
-      satisfaction: competitorGeminiAnalysis?.positiveAspects?.categories || analyzeSatisfactionAreas(competitorReviews || []),
+      painPoints: competitorGeminiAnalysis?.painPoints?.categories || competitorGeminiAnalysis?.painPoints || analyzePainPoints(competitorReviews || []),
+      satisfaction: competitorGeminiAnalysis?.positiveAspects?.categories || competitorGeminiAnalysis?.positiveAspects || analyzeSatisfactionAreas(competitorReviews || []),
       aiInsights: competitorGeminiAnalysis
     };
     

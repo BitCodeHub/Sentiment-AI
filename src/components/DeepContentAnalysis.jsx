@@ -686,13 +686,14 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
           <div className="technical-details-grid">
             {(() => {
               const painPoints = analysis.user?.painPoints;
-              if (!painPoints || typeof painPoints !== 'object') return null;
+              if (!painPoints || typeof painPoints !== 'object' || Array.isArray(painPoints)) return null;
               
-              return Object.entries(painPoints).map(([category, data]) => {
-              if (!data || !data.count || data.count === 0) return null;
-              const isExpanded = expandedSections[`tech-${category}`];
-              
-              return (
+              try {
+                return Object.entries(painPoints).map(([category, data]) => {
+                if (!data || typeof data !== 'object' || !data.count || data.count === 0) return null;
+                const isExpanded = expandedSections[`tech-${category}`];
+                
+                return (
                 <Card key={category} className="pain-point-card">
                   <CardHeader 
                     className="clickable-header"
@@ -712,11 +713,13 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
                     <CardContent>
                       <div className="subcategories">
                         {(() => {
-                          const subcats = data.subcategories;
-                          if (!subcats || typeof subcats !== 'object') return null;
-                          return Object.entries(subcats).map(([subcat, subcatData]) => {
-                          if (!subcatData || !subcatData.count || subcatData.count === 0) return null;
-                          return (
+                          const subcats = data?.subcategories;
+                          if (!subcats || typeof subcats !== 'object' || Array.isArray(subcats)) return null;
+                          
+                          try {
+                            return Object.entries(subcats).map(([subcat, subcatData]) => {
+                            if (!subcatData || typeof subcatData !== 'object' || !subcatData.count || subcatData.count === 0) return null;
+                            return (
                             <div key={subcat} className="subcategory">
                               <div className="subcat-header">
                                 <span className="subcat-name">{subcat}</span>
@@ -741,6 +744,10 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
                             </div>
                           );
                         });
+                          } catch (error) {
+                            console.error('Error rendering subcategories:', error);
+                            return null;
+                          }
                         })()}
                       </div>
                     </CardContent>
@@ -748,6 +755,10 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
                 </Card>
               );
             });
+              } catch (error) {
+                console.error('Error rendering pain points:', error);
+                return null;
+              }
             })()}
           </div>
         </div>
