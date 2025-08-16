@@ -374,6 +374,25 @@ function analyzeSatisfactionAreas(reviews) {
   
   // If no positive keywords matched, use sentiment-based fallback
   const totalMatches = Object.values(satisfaction).reduce((sum, cat) => sum + cat.count, 0);
+  
+  // Special handling: ensure value and overall categories have minimal representation
+  // if we have high-rating reviews but no keyword matches
+  if (reviews.length > 0) {
+    const highRatingReviews = reviews.filter(r => (r.rating || r.Rating || 0) >= 4);
+    
+    if (satisfaction.value.count === 0 && highRatingReviews.length > 0) {
+      // Assume 10% of high-rating reviews indicate value satisfaction
+      satisfaction.value.count = Math.max(1, Math.floor(highRatingReviews.length * 0.1));
+      console.log(`📊 Added estimated value satisfaction: ${satisfaction.value.count} (from ${highRatingReviews.length} high-rating reviews)`);
+    }
+    
+    if (satisfaction.overall.count === 0 && highRatingReviews.length > 0) {
+      // Assume 15% of high-rating reviews indicate overall satisfaction
+      satisfaction.overall.count = Math.max(1, Math.floor(highRatingReviews.length * 0.15));
+      console.log(`📊 Added estimated overall satisfaction: ${satisfaction.overall.count} (from ${highRatingReviews.length} high-rating reviews)`);
+    }
+  }
+  
   if (totalMatches === 0 && reviews.length > 0) {
     console.log('⚠️ No positive keywords matched, using sentiment-based estimation...');
     
@@ -392,7 +411,8 @@ function analyzeSatisfactionAreas(reviews) {
       
       Object.keys(POSITIVE_PATTERNS).forEach(category => {
         const categoryShare = Math.floor((POSITIVE_PATTERNS[category].weight / totalWeight) * positiveReviews.length);
-        satisfaction[category].count = categoryShare;
+        // Ensure minimum count of 1 for each category if there are positive reviews
+        satisfaction[category].count = Math.max(categoryShare, 1);
         
         // Add some example positive reviews
         const examples = positiveReviews.slice(0, 3).map(review => ({

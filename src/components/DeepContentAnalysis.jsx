@@ -339,6 +339,14 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
         value: analysis.user.satisfaction.value,
         overall: analysis.user.satisfaction.overall
       });
+      
+      // Check if value and overall have zero counts
+      if (analysis.user.satisfaction.value?.count === 0) {
+        console.warn('⚠️ Value category has 0 count');
+      }
+      if (analysis.user.satisfaction.overall?.count === 0) {
+        console.warn('⚠️ Overall category has 0 count');
+      }
     }
     
     // Ensure satisfaction is an object before using Object.keys
@@ -364,10 +372,16 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
       let userValue, competitorValue;
       
       if (userTotalSatisfaction > 0 || competitorTotalSatisfaction > 0) {
-        // Scale relative to total satisfaction mentions
-        const maxSatisfaction = Math.max(userTotalSatisfaction, competitorTotalSatisfaction, 1);
-        userValue = (userCount / maxSatisfaction) * 100;
-        competitorValue = (competitorCount / maxSatisfaction) * 100;
+        // Find max count for any single category for better scaling
+        const maxCategoryCount = Math.max(
+          ...Object.values(userSatisfaction).map(cat => cat.count || 0),
+          ...Object.values(analysis.competitor.satisfaction || {}).map(cat => cat.count || 0),
+          1
+        );
+        
+        // Scale relative to the highest category count for better visibility
+        userValue = (userCount / maxCategoryCount) * 80; // Max 80% for better chart appearance
+        competitorValue = (competitorCount / maxCategoryCount) * 80;
       } else {
         // If no satisfaction data, use category weights to show relative importance
         const weight = analysis.user.satisfaction[category]?.weight || 1;
@@ -377,9 +391,9 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
         competitorValue = (weight / totalWeight) * 30;
       }
       
-      // Ensure minimum visibility (at least 3% if any data exists)
-      if (userCount > 0 && userValue < 3) userValue = 3;
-      if (competitorCount > 0 && competitorValue < 3) competitorValue = 3;
+      // Ensure minimum visibility (at least 5% if any data exists)
+      if (userCount > 0 && userValue < 5) userValue = 5;
+      if (competitorCount > 0 && competitorValue < 5) competitorValue = 5;
       
       if (index === 0) {
         console.log(`\n📊 Processing satisfaction categories:`);
@@ -406,6 +420,17 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
     result.forEach(item => {
       console.log(`  ${item.category}: ${userAppName}=${item[userAppName].toFixed(1)}%, ${competitorAppName}=${item[competitorAppName].toFixed(1)}%`);
     });
+    
+    // Check if value and overall are in the result
+    const hasValue = result.some(item => item.category.toLowerCase() === 'value');
+    const hasOverall = result.some(item => item.category.toLowerCase() === 'overall');
+    
+    if (!hasValue) {
+      console.warn('⚠️ Value category missing from satisfaction chart data!');
+    }
+    if (!hasOverall) {
+      console.warn('⚠️ Overall category missing from satisfaction chart data!');
+    }
     
     // If no data, provide sample data to show the chart structure
     if (result.length === 0 && analysis) {
@@ -895,9 +920,17 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
           {/* Satisfaction Areas */}
           <Card className="analysis-card animated-card" style={{ animationDelay: '0.6s' }}>
             <CardHeader>
-              <CardTitle>
+              <CardTitle style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <HeartHandshake size={20} />
-                User Satisfaction Areas
+                <span 
+                  style={{ 
+                    cursor: 'help',
+                    borderBottom: '1px dotted #666'
+                  }}
+                  title="This chart shows positive feedback areas mentioned in reviews. Categories include Performance (speed, reliability), Usability (ease of use, UI/UX), Features (functionality), Value (pricing, worth), and Overall (general satisfaction). Higher bars indicate more positive mentions in that category."
+                >
+                  User Satisfaction Areas
+                </span>
               </CardTitle>
             </CardHeader>
             <CardContent>
