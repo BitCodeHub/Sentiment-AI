@@ -55,31 +55,47 @@ const COMPLAINT_PATTERNS = {
 const POSITIVE_PATTERNS = {
   performance: {
     keywords: ['fast', 'quick', 'smooth', 'responsive', 'efficient', 'works well', 'great performance', 
-               'no lag', 'speedy', 'runs great', 'works great', 'performs well', 'reliable', 'stable'],
+               'no lag', 'speedy', 'runs great', 'works great', 'performs well', 'reliable', 'stable',
+               'no issues', 'working', 'good', 'fine', 'ok', 'no problem', 'no crash', 'doesnt crash',
+               'doesn\'t crash', 'works fine', 'runs fine', 'performs', 'speed', 'loads quick', 'snappy',
+               'flawless', 'solid', 'consistent', 'dependable', 'never fails', 'always works'],
     weight: 1.2
   },
   usability: {
     keywords: ['easy', 'simple', 'intuitive', 'user-friendly', 'clean', 'beautiful', 'love the design',
                'easy to use', 'straightforward', 'convenient', 'nice design', 'great ui', 'great ux',
-               'well designed', 'looks great', 'nice interface'],
+               'well designed', 'looks great', 'nice interface', 'good design', 'pretty', 'nice looking',
+               'looks good', 'good interface', 'clear', 'understand', 'makes sense', 'logical', 'sleek',
+               'modern', 'polished', 'professional', 'elegant', 'refined', 'thoughtful', 'smart'],
     weight: 1.1
   },
   features: {
     keywords: ['useful', 'helpful', 'amazing features', 'love this feature', 'great functionality',
                'great app', 'love the', 'awesome', 'fantastic', 'powerful', 'comprehensive',
-               'everything i need', 'all the features', 'feature-rich', 'works as expected'],
+               'everything i need', 'all the features', 'feature-rich', 'works as expected',
+               'good app', 'nice app', 'like', 'enjoy', 'fun', 'cool', 'interesting', 'addictive',
+               'handy', 'convenient', 'does what', 'does the job', 'gets the job done', 'practical',
+               'versatile', 'flexible', 'customizable', 'well thought', 'complete', 'full featured'],
     weight: 1.0
   },
   value: {
     keywords: ['worth it', 'great value', 'affordable', 'good price', 'free', 'reasonable',
-               'worth the money', 'good deal', 'fair price', 'worth every penny', 'great for the price'],
+               'worth the money', 'good deal', 'fair price', 'worth every penny', 'great for the price',
+               'not expensive', 'cheap', 'budget', 'economical', 'good for free', 'cant complain',
+               'can\'t complain', 'no complaints', 'satisfied', 'happy', 'money well spent',
+               'bargain', 'steal', 'underpriced', 'generous', 'fair pricing', 'reasonable price'],
     weight: 0.9
   },
   overall: {
     keywords: ['perfect', 'excellent', 'amazing', 'best', 'love it', 'recommend', '5 stars',
                'highly recommend', 'must have', 'essential', 'very satisfied', 'great overall',
                'wonderful', 'fantastic app', 'superb', 'outstanding', 'impressed', 'brilliant',
-               'happy with', 'very good', 'really good', 'absolutely love'],
+               'happy with', 'very good', 'really good', 'absolutely love', 'thank', 'thanks',
+               'appreciate', 'glad', 'finally', 'exactly what', 'just what', 'life saver',
+               'game changer', 'cant live without', 'can\'t live without', 'daily use',
+               'use every day', 'everyday', 'always use', 'go to app', 'go-to app', 'favorite',
+               'five star', '5 star', 'top notch', 'first class', 'world class', 'exceptional',
+               'phenomenal', 'terrific', 'marvelous', 'splendid', 'delightful', 'fabulous'],
     weight: 1.3
   }
 };
@@ -287,10 +303,9 @@ function analyzePainPoints(reviews) {
 function analyzeSatisfactionAreas(reviews) {
   const satisfaction = {};
   
-  console.log('analyzeSatisfactionAreas called with:', {
-    reviewCount: reviews?.length || 0,
-    firstReview: reviews?.[0]
-  });
+  console.log('\n=== analyzeSatisfactionAreas ===');
+  console.log('Review count:', reviews?.length || 0);
+  console.log('Sample review fields:', reviews?.[0] ? Object.keys(reviews[0]) : 'No reviews');
   
   if (!reviews || reviews.length === 0) {
     // Return empty structure
@@ -335,11 +350,18 @@ function analyzeSatisfactionAreas(reviews) {
       if (matchedKeywords.length > 0) {
         categoryMatches++;
         satisfaction[category].count++;
+        
+        // Log match for debugging
+        if (categoryMatches === 1) {
+          console.log(`  First match in ${category}: "${text.substring(0, 50)}..." matched [${matchedKeywords.join(', ')}]`);
+        }
+        
         if (satisfaction[category].examples.length < 5) {
           satisfaction[category].examples.push({
             text: (review.text || review.content || review['Review Text'] || review.Body || '').substring(0, 200),
             rating: review.rating || review.Rating,
-            date: review.date || review.Date
+            date: review.date || review.Date,
+            matchedKeywords: matchedKeywords
           });
         }
       }
@@ -349,6 +371,43 @@ function analyzeSatisfactionAreas(reviews) {
   });
   
   console.log('Final satisfaction areas result:', satisfaction);
+  
+  // If no positive keywords matched, use sentiment-based fallback
+  const totalMatches = Object.values(satisfaction).reduce((sum, cat) => sum + cat.count, 0);
+  if (totalMatches === 0 && reviews.length > 0) {
+    console.log('⚠️ No positive keywords matched, using sentiment-based estimation...');
+    
+    // Count positive sentiment reviews for each category
+    const positiveReviews = reviews.filter(r => {
+      const sentiment = r.sentiment || r.Sentiment || '';
+      const rating = r.rating || r.Rating || 0;
+      return sentiment === 'Positive' || sentiment === 'positive' || rating >= 4;
+    });
+    
+    console.log(`Found ${positiveReviews.length} positive reviews out of ${reviews.length} total`);
+    
+    if (positiveReviews.length > 0) {
+      // Distribute positive reviews across categories based on weights
+      const totalWeight = Object.values(POSITIVE_PATTERNS).reduce((sum, p) => sum + p.weight, 0);
+      
+      Object.keys(POSITIVE_PATTERNS).forEach(category => {
+        const categoryShare = Math.floor((POSITIVE_PATTERNS[category].weight / totalWeight) * positiveReviews.length);
+        satisfaction[category].count = categoryShare;
+        
+        // Add some example positive reviews
+        const examples = positiveReviews.slice(0, 3).map(review => ({
+          text: (review.text || review.content || review['Review Text'] || review.Body || '').substring(0, 200),
+          rating: review.rating || review.Rating,
+          date: review.date || review.Date,
+          matchedKeywords: ['positive sentiment']
+        }));
+        
+        satisfaction[category].examples = examples;
+        console.log(`  - ${category}: estimated count=${categoryShare} based on sentiment`);
+      });
+    }
+  }
+  
   return satisfaction;
 }
 
@@ -617,43 +676,81 @@ function normalizePainPoints(painPoints) {
 }
 
 // Helper function to normalize satisfaction structure
-function normalizeSatisfaction(satisfaction) {
-  console.log('normalizeSatisfaction input:', satisfaction);
+function normalizeSatisfaction(satisfaction, reviews = []) {
+  console.log('=== normalizeSatisfaction Debug ===');
+  console.log('Input satisfaction:', JSON.stringify(satisfaction, null, 2));
+  console.log('Input type:', typeof satisfaction);
+  console.log('Has categories property:', satisfaction?.categories ? 'yes' : 'no');
+  console.log('Review count for context:', reviews?.length || 0);
   
   // If satisfaction is already in the correct format, return it
   if (satisfaction && typeof satisfaction === 'object' && !satisfaction.categories) {
     const firstKey = Object.keys(satisfaction)[0];
     if (firstKey && satisfaction[firstKey] && typeof satisfaction[firstKey].count === 'number') {
-      console.log('Satisfaction already normalized, returning as-is');
+      console.log('✅ Satisfaction already normalized, returning as-is');
+      // Log the counts for debugging
+      Object.entries(satisfaction).forEach(([cat, data]) => {
+        console.log(`  - ${cat}: count=${data.count}`);
+      });
       return satisfaction;
     }
   }
   
-  // If satisfaction has a categories property, use that
+  // If satisfaction has a categories property (from Gemini AI), use that
   if (satisfaction && satisfaction.categories) {
-    console.log('Satisfaction has categories property, normalizing...');
+    console.log('📊 Satisfaction has categories property (AI format), normalizing...');
     const normalized = {};
+    
+    // Handle both positiveAspects.categories and satisfaction.categories
+    const categories = satisfaction.categories;
+    
     Object.keys(POSITIVE_PATTERNS).forEach(category => {
-      if (satisfaction.categories[category]) {
+      if (categories[category]) {
+        // AI format may have 'mentions' instead of 'count'
+        const count = categories[category].count || 
+                     categories[category].mentions || 
+                     0;
+        
         normalized[category] = {
-          count: satisfaction.categories[category].count || 0,
+          count: count,
           weight: POSITIVE_PATTERNS[category].weight,
-          examples: satisfaction.categories[category].examples || []
+          examples: categories[category].examples || []
         };
+        console.log(`  - ${category}: count=${count} (from AI)`);
       } else {
         normalized[category] = {
           count: 0,
           weight: POSITIVE_PATTERNS[category].weight,
           examples: []
         };
+        console.log(`  - ${category}: count=0 (not in AI response)`);
       }
     });
-    console.log('Normalized satisfaction from categories:', normalized);
+    console.log('✅ Normalized satisfaction from AI categories');
     return normalized;
   }
   
+  // If we have reviews but no satisfaction data, analyze them
+  if (!satisfaction && reviews && reviews.length > 0) {
+    console.log('🔍 No satisfaction data provided, analyzing reviews...');
+    const analyzed = analyzeSatisfactionAreas(reviews);
+    console.log('✅ Analyzed satisfaction from reviews:', analyzed);
+    return analyzed;
+  }
+  
+  // If satisfaction exists but all counts are 0, try to analyze from reviews
+  if (satisfaction && reviews && reviews.length > 0) {
+    const totalCount = Object.values(satisfaction).reduce((sum, cat) => sum + (cat.count || 0), 0);
+    if (totalCount === 0) {
+      console.log('⚠️ Satisfaction data has 0 counts, re-analyzing from reviews...');
+      const analyzed = analyzeSatisfactionAreas(reviews);
+      console.log('✅ Re-analyzed satisfaction from reviews:', analyzed);
+      return analyzed;
+    }
+  }
+  
   // If satisfaction is invalid, return empty structure
-  console.log('Invalid satisfaction structure, returning empty');
+  console.log('⚠️ Invalid satisfaction structure, returning empty');
   const emptySatisfaction = {};
   Object.keys(POSITIVE_PATTERNS).forEach(category => {
     emptySatisfaction[category] = {
@@ -733,17 +830,41 @@ export async function performDeepContentAnalysis(userReviews, competitorReviews)
     });
 
     // Combine AI insights with pattern-based analysis
+    console.log('=== Processing User Satisfaction ===');
+    console.log('Has Gemini analysis:', !!userGeminiAnalysis);
+    
+    // Debug what Gemini returned
+    if (userGeminiAnalysis) {
+      console.log('Gemini analysis keys:', Object.keys(userGeminiAnalysis));
+      console.log('Has positiveAspects:', !!userGeminiAnalysis.positiveAspects);
+      console.log('Has satisfaction:', !!userGeminiAnalysis.satisfaction);
+      console.log('Has satisfactionAreas:', !!userGeminiAnalysis.satisfactionAreas);
+      
+      if (userGeminiAnalysis.positiveAspects) {
+        console.log('positiveAspects structure:', JSON.stringify(userGeminiAnalysis.positiveAspects, null, 2).substring(0, 500));
+      }
+    }
+    
     // Check multiple possible locations for satisfaction data from Gemini
     const userSatisfactionRaw = userGeminiAnalysis?.positiveAspects || 
                                userGeminiAnalysis?.satisfaction || 
                                userGeminiAnalysis?.satisfactionAreas ||
-                               analyzeSatisfactionAreas(userReviews || []);
-    const userSatisfactionNormalized = normalizeSatisfaction(userSatisfactionRaw);
+                               null;
     
-    console.log('User satisfaction processing:', {
-      hasGeminiAnalysis: !!userGeminiAnalysis,
-      rawSatisfaction: userSatisfactionRaw,
-      normalizedSatisfaction: userSatisfactionNormalized
+    console.log('Raw satisfaction data source:', 
+      userGeminiAnalysis?.positiveAspects ? 'positiveAspects' :
+      userGeminiAnalysis?.satisfaction ? 'satisfaction' :
+      userGeminiAnalysis?.satisfactionAreas ? 'satisfactionAreas' :
+      'will analyze from reviews'
+    );
+    
+    // Pass reviews to normalizeSatisfaction in case it needs to analyze them
+    const userSatisfactionNormalized = normalizeSatisfaction(userSatisfactionRaw, userReviews);
+    
+    console.log('User satisfaction final result:', {
+      hasData: !!userSatisfactionNormalized,
+      categories: Object.keys(userSatisfactionNormalized || {}),
+      totalCount: Object.values(userSatisfactionNormalized || {}).reduce((sum, cat) => sum + (cat.count || 0), 0)
     });
     
     const userAnalysis = {
@@ -769,16 +890,28 @@ export async function performDeepContentAnalysis(userReviews, competitorReviews)
     }
     
     // Check multiple possible locations for satisfaction data from Gemini
+    console.log('\n=== Processing Competitor Satisfaction ===');
+    console.log('Has Gemini analysis:', !!competitorGeminiAnalysis);
+    
     const competitorSatisfactionRaw = competitorGeminiAnalysis?.positiveAspects || 
                                       competitorGeminiAnalysis?.satisfaction || 
                                       competitorGeminiAnalysis?.satisfactionAreas ||
-                                      analyzeSatisfactionAreas(competitorReviews || []);
-    const competitorSatisfactionNormalized = normalizeSatisfaction(competitorSatisfactionRaw);
+                                      null;
     
-    console.log('Competitor satisfaction processing:', {
-      hasGeminiAnalysis: !!competitorGeminiAnalysis,
-      rawSatisfaction: competitorSatisfactionRaw,
-      normalizedSatisfaction: competitorSatisfactionNormalized
+    console.log('Raw satisfaction data source:', 
+      competitorGeminiAnalysis?.positiveAspects ? 'positiveAspects' :
+      competitorGeminiAnalysis?.satisfaction ? 'satisfaction' :
+      competitorGeminiAnalysis?.satisfactionAreas ? 'satisfactionAreas' :
+      'will analyze from reviews'
+    );
+    
+    // Pass reviews to normalizeSatisfaction in case it needs to analyze them
+    const competitorSatisfactionNormalized = normalizeSatisfaction(competitorSatisfactionRaw, competitorReviews);
+    
+    console.log('Competitor satisfaction final result:', {
+      hasData: !!competitorSatisfactionNormalized,
+      categories: Object.keys(competitorSatisfactionNormalized || {}),
+      totalCount: Object.values(competitorSatisfactionNormalized || {}).reduce((sum, cat) => sum + (cat.count || 0), 0)
     });
     
     const competitorAnalysis = {

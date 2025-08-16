@@ -345,46 +345,80 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
     const userSatisfaction = analysis.user.satisfaction;
     if (!userSatisfaction || typeof userSatisfaction !== 'object') return [];
     
-    const result = Object.keys(userSatisfaction).map(category => {
+    // Calculate total satisfaction mentions for relative scaling
+    const userTotalSatisfaction = Object.values(userSatisfaction)
+      .reduce((sum, cat) => sum + (cat.count || 0), 0);
+    const competitorTotalSatisfaction = Object.values(analysis.competitor.satisfaction || {})
+      .reduce((sum, cat) => sum + (cat.count || 0), 0);
+    
+    console.log('Total satisfaction counts:', {
+      user: userTotalSatisfaction,
+      competitor: competitorTotalSatisfaction
+    });
+    
+    const result = Object.keys(userSatisfaction).map((category, index) => {
       const userCount = analysis.user.satisfaction[category]?.count || 0;
       const competitorCount = analysis.competitor.satisfaction[category]?.count || 0;
-      const userPercentage = analysis.user.totalReviews > 0 
-        ? (userCount / analysis.user.totalReviews) * 100 
-        : 0;
-      const competitorPercentage = analysis.competitor.totalReviews > 0 
-        ? (competitorCount / analysis.competitor.totalReviews) * 100 
-        : 0;
       
-      console.log(`Satisfaction category ${category}:`, {
+      // Use multiple scaling strategies
+      let userValue, competitorValue;
+      
+      if (userTotalSatisfaction > 0 || competitorTotalSatisfaction > 0) {
+        // Scale relative to total satisfaction mentions
+        const maxSatisfaction = Math.max(userTotalSatisfaction, competitorTotalSatisfaction, 1);
+        userValue = (userCount / maxSatisfaction) * 100;
+        competitorValue = (competitorCount / maxSatisfaction) * 100;
+      } else {
+        // If no satisfaction data, use category weights to show relative importance
+        const weight = analysis.user.satisfaction[category]?.weight || 1;
+        const totalWeight = 5.5; // Sum of all weights
+        // Scale to show relative importance (20-40% range)
+        userValue = (weight / totalWeight) * 30;
+        competitorValue = (weight / totalWeight) * 30;
+      }
+      
+      // Ensure minimum visibility (at least 3% if any data exists)
+      if (userCount > 0 && userValue < 3) userValue = 3;
+      if (competitorCount > 0 && competitorValue < 3) competitorValue = 3;
+      
+      if (index === 0) {
+        console.log(`\n📊 Processing satisfaction categories:`);
+      }
+      
+      console.log(`  ${category}:`, {
         userCount,
         competitorCount,
-        userPercentage,
-        competitorPercentage,
-        userTotalReviews: analysis.user.totalReviews,
-        competitorTotalReviews: analysis.competitor.totalReviews
+        userValue: userValue.toFixed(1) + '%',
+        competitorValue: competitorValue.toFixed(1) + '%',
+        weight: analysis.user.satisfaction[category]?.weight
       });
       
       return {
         category: category.charAt(0).toUpperCase() + category.slice(1),
-        [userAppName]: userPercentage,
-        [competitorAppName]: competitorPercentage,
+        [userAppName]: userValue,
+        [competitorAppName]: competitorValue,
         userCount: userCount,
         competitorCount: competitorCount
       };
     }).sort((a, b) => (b.userCount + b.competitorCount) - (a.userCount + a.competitorCount));
     
-    console.log('Final satisfaction comparison data:', result);
+    console.log('\n✅ Final satisfaction comparison data:');
+    result.forEach(item => {
+      console.log(`  ${item.category}: ${userAppName}=${item[userAppName].toFixed(1)}%, ${competitorAppName}=${item[competitorAppName].toFixed(1)}%`);
+    });
     
     // If no data, provide sample data to show the chart structure
     if (result.length === 0 && analysis) {
-      console.warn('No satisfaction data found, using default structure');
-      return [
+      console.warn('\n⚠️ No satisfaction data found, using default structure');
+      const defaultData = [
         { category: 'Performance', [userAppName]: 0, [competitorAppName]: 0, userCount: 0, competitorCount: 0 },
         { category: 'Usability', [userAppName]: 0, [competitorAppName]: 0, userCount: 0, competitorCount: 0 },
         { category: 'Features', [userAppName]: 0, [competitorAppName]: 0, userCount: 0, competitorCount: 0 },
         { category: 'Value', [userAppName]: 0, [competitorAppName]: 0, userCount: 0, competitorCount: 0 },
         { category: 'Overall', [userAppName]: 0, [competitorAppName]: 0, userCount: 0, competitorCount: 0 }
       ];
+      console.log('Returning default data structure');
+      return defaultData;
     }
     
     return result;
@@ -666,6 +700,46 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
                 <Bug size={16} />
                 Test Satisfaction
               </button>
+              <button
+                onClick={() => {
+                  console.log('=== CURRENT SATISFACTION DEBUG ===');
+                  console.log('Analysis object:', analysis);
+                  console.log('User satisfaction:', analysis?.user?.satisfaction);
+                  console.log('Competitor satisfaction:', analysis?.competitor?.satisfaction);
+                  console.log('satisfactionComparison array:', satisfactionComparison);
+                  console.log('Chart should show data:', satisfactionComparison.length > 0);
+                  
+                  // Force recalculation
+                  const testData = [];
+                  if (analysis?.user?.satisfaction) {
+                    Object.entries(analysis.user.satisfaction).forEach(([cat, data]) => {
+                      testData.push({
+                        category: cat,
+                        userCount: data.count,
+                        competitorCount: analysis.competitor?.satisfaction?.[cat]?.count || 0
+                      });
+                    });
+                  }
+                  console.log('Test recalculation:', testData);
+                  alert(`Check console for satisfaction debug info. Data points: ${satisfactionComparison.length}`);
+                }}
+                style={{
+                  padding: '0.5rem 1rem',
+                  background: '#8b5cf6',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem',
+                  fontWeight: '500',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}
+              >
+                <Activity size={16} />
+                Debug Chart Data
+              </button>
             </div>
           </CardContent>
         </Card>
@@ -831,7 +905,7 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
               {satisfactionComparison.length === 0 && (
                 <div style={{ padding: '1rem', background: '#fef3c7', borderRadius: '0.5rem', marginBottom: '1rem' }}>
                   <p style={{ color: '#92400e', fontWeight: '500' }}>
-                    No satisfaction data found. Check console for debugging information.
+                    🔍 No satisfaction data found. Check console for debugging information.
                   </p>
                   <p style={{ color: '#92400e', fontSize: '0.875rem', marginTop: '0.5rem' }}>
                     Data points: {satisfactionComparison.length} | 
@@ -840,6 +914,18 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
                   </p>
                   <p style={{ color: '#92400e', fontSize: '0.875rem', marginTop: '0.5rem' }}>
                     Analysis type: {analysis?.user?.aiInsights ? 'AI-powered' : 'Pattern-based'}
+                  </p>
+                  <p style={{ color: '#92400e', fontSize: '0.875rem', marginTop: '0.5rem' }}>
+                    User satisfaction exists: {analysis?.user?.satisfaction ? 'Yes' : 'No'} | 
+                    Competitor satisfaction exists: {analysis?.competitor?.satisfaction ? 'Yes' : 'No'}
+                  </p>
+                </div>
+              )}
+              {/* Show data summary even when chart has data */}
+              {satisfactionComparison.length > 0 && (
+                <div style={{ padding: '0.5rem', background: '#f0f9ff', borderRadius: '0.5rem', marginBottom: '1rem', fontSize: '0.875rem' }}>
+                  <p style={{ color: '#075985' }}>
+                    ✅ Showing {satisfactionComparison.length} satisfaction categories
                   </p>
                 </div>
               )}

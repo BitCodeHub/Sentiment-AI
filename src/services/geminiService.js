@@ -337,6 +337,22 @@ Please analyze these reviews and return a valid JSON response with this structur
         analysisData = parseGeminiTextResponse(text);
       }
 
+      // Transform positiveAspects to satisfaction format if needed
+      if (analysisData && analysisData.positiveAspects && analysisData.positiveAspects.categories) {
+        console.log('Transforming positiveAspects to satisfaction format');
+        analysisData.satisfaction = analysisData.satisfaction || {};
+        
+        // Map positiveAspects categories to satisfaction
+        Object.entries(analysisData.positiveAspects.categories).forEach(([key, value]) => {
+          analysisData.satisfaction[key] = {
+            count: value.mentions || value.count || 0,
+            examples: value.examples || []
+          };
+        });
+        
+        console.log('Transformed satisfaction data:', analysisData.satisfaction);
+      }
+
       // Cache the result
       analysisCache.set(cacheKey, {
         data: analysisData,
