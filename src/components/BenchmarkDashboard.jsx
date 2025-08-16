@@ -13,7 +13,7 @@ import {
   ChevronDown, ChevronUp, X, Download, RefreshCw, 
   Calendar, CheckCircle, Star, GitCompare, Trophy,
   Users, MessageSquare, BarChart3, Activity,
-  ArrowUp, ArrowDown, Minus, FileText
+  ArrowUp, ArrowDown, Minus, FileText, Loader2
 } from 'lucide-react';
 import Sidebar from './Sidebar';
 import SentimentWordCloud from './SentimentWordCloud';
@@ -34,9 +34,11 @@ const BenchmarkDashboard = ({ benchmarkData }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedMetric, setSelectedMetric] = useState('overview');
   const [showAdvancedAnalytics, setShowAdvancedAnalytics] = useState(false);
-  const [showDeepAnalysis, setShowDeepAnalysis] = useState(false);
+  const [showDeepAnalysis, setShowDeepAnalysis] = useState(true); // Show by default
   const [deepAnalysisData, setDeepAnalysisData] = useState(null);
   const [timeFrame, setTimeFrame] = useState('30'); // 30, 60, 90, all days
+  const [analysisLoading, setAnalysisLoading] = useState(true);
+  const [analysisProgress, setAnalysisProgress] = useState(0);
 
   const { user, competitor } = benchmarkData;
 
@@ -62,24 +64,47 @@ const BenchmarkDashboard = ({ benchmarkData }) => {
   const userGrowthRate = calculateGrowthRate(user);
   const competitorGrowthRate = calculateGrowthRate(competitor);
   
-  // Perform deep content analysis when component mounts or data changes
+  // Perform deep content analysis automatically when component mounts or data changes
   useEffect(() => {
     const runAnalysis = async () => {
       if (user.reviews && competitor.reviews && user.reviews.length > 0 && competitor.reviews.length > 0) {
+        setAnalysisLoading(true);
+        setAnalysisProgress(0);
+        
+        // Simulate progress updates
+        const progressInterval = setInterval(() => {
+          setAnalysisProgress(prev => {
+            if (prev >= 90) {
+              clearInterval(progressInterval);
+              return 90;
+            }
+            return prev + 10;
+          });
+        }, 200);
+        
         try {
           const analysis = await performDeepContentAnalysis(
             user.reviews,
             competitor.reviews
           );
           setDeepAnalysisData(analysis);
+          setAnalysisProgress(100);
+          
+          // Show deep analysis automatically after loading
+          setTimeout(() => {
+            setShowDeepAnalysis(true);
+            setAnalysisLoading(false);
+          }, 500);
         } catch (error) {
           console.error('Deep analysis failed:', error);
+          setAnalysisLoading(false);
+          clearInterval(progressInterval);
         }
       }
     };
     
     runAnalysis();
-  }, [user.reviews, competitor.reviews, userAppName, competitorAppName]);
+  }, [user.reviews, competitor.reviews]);
 
   // Calculate comparative metrics
   const comparativeMetrics = useMemo(() => {
@@ -422,13 +447,29 @@ const BenchmarkDashboard = ({ benchmarkData }) => {
               </div>
             </div>
             <div className="header-actions">
-              <button 
-                className="deep-analysis-toggle"
-                onClick={() => setShowDeepAnalysis(!showDeepAnalysis)}
-              >
-                <FileText size={20} />
-                {showDeepAnalysis ? 'Hide' : 'Show'} Deep Content Analysis
-              </button>
+              {analysisLoading ? (
+                <div className="analysis-progress">
+                  <Loader2 size={20} className="spin" />
+                  <span>Analyzing {user.reviews.length + competitor.reviews.length} reviews... {analysisProgress}%</span>
+                  <div className="progress-bar">
+                    <div className="progress-fill" style={{ width: `${analysisProgress}%` }} />
+                  </div>
+                </div>
+              ) : (
+                <button 
+                  className="deep-analysis-toggle active"
+                  onClick={() => setShowDeepAnalysis(!showDeepAnalysis)}
+                >
+                  <FileText size={20} />
+                  {showDeepAnalysis ? 'Hide' : 'Show'} Deep Content Analysis
+                  {deepAnalysisData?.geminiInsights && (
+                    <span className="ai-badge">
+                      <Sparkles size={14} />
+                      AI-Powered
+                    </span>
+                  )}
+                </button>
+              )}
             </div>
           </div>
           
@@ -448,35 +489,56 @@ const BenchmarkDashboard = ({ benchmarkData }) => {
           </div>
         </div>
         
-        {/* Deep Analysis Toggle */}
-        <div className="analysis-toggle-section">
-          <button
-            className={`analysis-toggle-btn ${showDeepAnalysis ? 'active' : ''}`}
-            onClick={() => setShowDeepAnalysis(!showDeepAnalysis)}
-          >
-            <FileText size={20} />
-            {showDeepAnalysis ? 'Hide' : 'Show'} Deep Content Analysis
-          </button>
-          <p className="analysis-toggle-desc">
-            {showDeepAnalysis 
-              ? 'Viewing comprehensive review content analysis with AI-powered insights'
-              : 'Analyze all reviews to identify opportunities, gaps, and actionable recommendations'
-            }
-          </p>
-        </div>
+        {/* Analysis Status Banner */}
+        {analysisLoading && (
+          <div className="analysis-status-banner">
+            <div className="status-content">
+              <div className="status-icon">
+                <Activity size={24} className="pulse" />
+              </div>
+              <div className="status-text">
+                <h3>Deep Analysis in Progress</h3>
+                <p>Analyzing {user.reviews.length + competitor.reviews.length} reviews to generate insights...</p>
+              </div>
+              <div className="status-progress">
+                <div className="progress-circle">
+                  <svg viewBox="0 0 36 36">
+                    <path
+                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                      fill="none"
+                      stroke="#e2e8f0"
+                      strokeWidth="3"
+                    />
+                    <path
+                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                      fill="none"
+                      stroke="#8b5cf6"
+                      strokeWidth="3"
+                      strokeDasharray={`${analysisProgress}, 100`}
+                    />
+                  </svg>
+                  <span className="progress-text">{analysisProgress}%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Deep Content Analysis Section */}
-        {showDeepAnalysis && (
-          <DeepContentAnalysis 
-            userReviews={user.reviews || []}
-            competitorReviews={competitor.reviews || []}
-            userAppName={userAppName}
-            competitorAppName={competitorAppName}
-          />
+        {showDeepAnalysis && !analysisLoading && (
+          <div className="deep-analysis-container animated-entry">
+            <DeepContentAnalysis 
+              userReviews={user.reviews || []}
+              competitorReviews={competitor.reviews || []}
+              userAppName={userAppName}
+              competitorAppName={competitorAppName}
+              initialAnalysisData={deepAnalysisData}
+            />
+          </div>
         )}
 
         {/* Key Metrics Comparison */}
-        {!showDeepAnalysis && (
+        {(!showDeepAnalysis || analysisLoading) && (
           <>
         <h2 className="section-title">
           <BarChart3 size={24} />

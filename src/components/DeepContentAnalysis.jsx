@@ -19,6 +19,7 @@ import { performDeepContentAnalysis } from '../services/deepContentAnalysis';
 import { testGeminiConnection, initializeGeminiModel } from '../services/geminiService';
 import IssueFrequencyChart from './IssueFrequencyChart';
 import SentimentByCategory from './SentimentByCategory';
+import CompetitiveInsightsVisualizer from './CompetitiveInsightsVisualizer';
 import './DeepContentAnalysis.css';
 
 const COLORS = {
@@ -33,16 +34,26 @@ const COLORS = {
   neutral: '#64748b'
 };
 
-const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, competitorAppName }) => {
-  const [analysis, setAnalysis] = useState(null);
-  const [loading, setLoading] = useState(true);
+const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, competitorAppName, initialAnalysisData }) => {
+  const [analysis, setAnalysis] = useState(initialAnalysisData || null);
+  const [loading, setLoading] = useState(!initialAnalysisData);
   const [error, setError] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [viewMode, setViewMode] = useState('overview'); // overview, technical, features, comparison
   const [expandedSections, setExpandedSections] = useState({});
   const [retryCount, setRetryCount] = useState(0);
+  const [animateCharts, setAnimateCharts] = useState(false);
 
   useEffect(() => {
+    // Use initial data if provided
+    if (initialAnalysisData) {
+      setAnalysis(initialAnalysisData);
+      setLoading(false);
+      // Trigger chart animations after mount
+      setTimeout(() => setAnimateCharts(true), 100);
+      return;
+    }
+
     const runAnalysis = async () => {
       setLoading(true);
       setError(null);
@@ -167,9 +178,9 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
       setLoading(false);
     };
 
-    if (userReviews && competitorReviews && userReviews.length > 0 && competitorReviews.length > 0) {
+    if (!initialAnalysisData && userReviews && competitorReviews && userReviews.length > 0 && competitorReviews.length > 0) {
       runAnalysis();
-    } else {
+    } else if (!initialAnalysisData) {
       setLoading(false);
       setError('No reviews data available for analysis');
       // Also set the default analysis structure when no data
@@ -258,7 +269,7 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
         }
       });
     }
-  }, [userReviews, competitorReviews, retryCount]);
+  }, [userReviews, competitorReviews, retryCount, initialAnalysisData]);
 
   const toggleSection = (section) => {
     setExpandedSections(prev => ({
@@ -423,34 +434,44 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
   return (
     <div className="deep-content-analysis">
       {/* Header with View Mode Selector */}
-      <div className="analysis-header">
+      <div className="analysis-header elevated">
         <h2 className="analysis-title">
-          <Activity size={28} />
+          <Activity size={28} className="icon-glow" />
           Deep Content Analysis
+          {analysis?.geminiInsights && (
+            <span className="ai-powered-badge">
+              <Sparkles size={16} />
+              AI-Enhanced
+            </span>
+          )}
         </h2>
-        <div className="view-mode-selector">
+        <div className="view-mode-selector modern">
           <button
             className={`mode-button ${viewMode === 'overview' ? 'active' : ''}`}
             onClick={() => setViewMode('overview')}
           >
+            <Activity size={16} />
             Overview
           </button>
           <button
             className={`mode-button ${viewMode === 'technical' ? 'active' : ''}`}
             onClick={() => setViewMode('technical')}
           >
+            <Bug size={16} />
             Technical Issues
           </button>
           <button
             className={`mode-button ${viewMode === 'features' ? 'active' : ''}`}
             onClick={() => setViewMode('features')}
           >
+            <Lightbulb size={16} />
             Features & Requests
           </button>
           <button
             className={`mode-button ${viewMode === 'comparison' ? 'active' : ''}`}
             onClick={() => setViewMode('comparison')}
           >
+            <Target size={16} />
             Competitive Analysis
           </button>
         </div>
@@ -654,77 +675,133 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
       {viewMode === 'overview' && (
         <div className="overview-section">
           {/* Key Insights Summary */}
-          <div className="insights-summary">
-            <Card className="insight-card critical">
+          <div className="insights-summary animated-grid">
+            <Card className="insight-card critical animated-card" style={{ animationDelay: '0.1s' }}>
+              <div className="card-background-effect" />
               <CardHeader>
                 <CardTitle>
-                  <AlertTriangle size={20} />
+                  <div className="icon-wrapper critical">
+                    <AlertTriangle size={20} />
+                  </div>
                   Critical Gaps
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="insight-count">{analysis.comparison?.gaps?.filter(g => g.severity === 'high').length || 0}</div>
+                <div className="insight-count animated-number">{analysis.comparison?.gaps?.filter(g => g.severity === 'high').length || 0}</div>
                 <p className="insight-description">Areas where competitor significantly outperforms</p>
+                <div className="insight-sparkline">
+                  <svg viewBox="0 0 100 20">
+                    <polyline
+                      points="0,10 20,8 40,12 60,6 80,14 100,4"
+                      fill="none"
+                      stroke="#ef4444"
+                      strokeWidth="2"
+                    />
+                  </svg>
+                </div>
               </CardContent>
             </Card>
 
-            <Card className="insight-card opportunity">
+            <Card className="insight-card opportunity animated-card" style={{ animationDelay: '0.2s' }}>
+              <div className="card-background-effect" />
               <CardHeader>
                 <CardTitle>
-                  <Target size={20} />
+                  <div className="icon-wrapper opportunity">
+                    <Target size={20} />
+                  </div>
                   Opportunities
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="insight-count">{analysis.comparison?.opportunities?.length || 0}</div>
+                <div className="insight-count animated-number">{analysis.comparison?.opportunities?.length || 0}</div>
                 <p className="insight-description">Areas where you can gain competitive advantage</p>
+                <div className="insight-sparkline">
+                  <svg viewBox="0 0 100 20">
+                    <polyline
+                      points="0,15 20,12 40,8 60,10 80,5 100,2"
+                      fill="none"
+                      stroke="#10b981"
+                      strokeWidth="2"
+                    />
+                  </svg>
+                </div>
               </CardContent>
             </Card>
 
-            <Card className="insight-card strength">
+            <Card className="insight-card strength animated-card" style={{ animationDelay: '0.3s' }}>
+              <div className="card-background-effect" />
               <CardHeader>
                 <CardTitle>
-                  <Shield size={20} />
+                  <div className="icon-wrapper strength">
+                    <Shield size={20} />
+                  </div>
                   Your Strengths
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="insight-count">{analysis.comparison?.userStrengths?.length || 0}</div>
+                <div className="insight-count animated-number">{analysis.comparison?.userStrengths?.length || 0}</div>
                 <p className="insight-description">Areas where you excel over competitor</p>
+                <div className="insight-sparkline">
+                  <svg viewBox="0 0 100 20">
+                    <polyline
+                      points="0,18 20,15 40,10 60,8 80,6 100,3"
+                      fill="none"
+                      stroke="#3b82f6"
+                      strokeWidth="2"
+                    />
+                  </svg>
+                </div>
               </CardContent>
             </Card>
 
-            <Card className="insight-card common">
+            <Card className="insight-card common animated-card" style={{ animationDelay: '0.4s' }}>
+              <div className="card-background-effect" />
               <CardHeader>
                 <CardTitle>
-                  <Users size={20} />
+                  <div className="icon-wrapper common">
+                    <Users size={20} />
+                  </div>
                   Common Issues
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="insight-count">{analysis.comparison?.commonIssues?.length || 0}</div>
+                <div className="insight-count animated-number">{analysis.comparison?.commonIssues?.length || 0}</div>
                 <p className="insight-description">Issues affecting both apps</p>
+                <div className="insight-sparkline">
+                  <svg viewBox="0 0 100 20">
+                    <polyline
+                      points="0,10 20,10 40,10 60,10 80,10 100,10"
+                      fill="none"
+                      stroke="#f59e0b"
+                      strokeWidth="2"
+                    />
+                  </svg>
+                </div>
               </CardContent>
             </Card>
           </div>
 
           {/* Pain Points Radar Chart */}
-          <Card className="analysis-card">
+          <Card className="analysis-card animated-card" style={{ animationDelay: '0.5s' }}>
             <CardHeader>
-              <CardTitle>Pain Points Comparison</CardTitle>
+              <CardTitle>
+                <Bug size={20} />
+                Pain Points Comparison
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={400}>
                 <RadarChart data={painPointsRadarData}>
-                  <PolarGrid />
-                  <PolarAngleAxis dataKey="category" />
-                  <PolarRadiusAxis angle={90} domain={[0, 'auto']} />
+                  <PolarGrid stroke="#e2e8f0" />
+                  <PolarAngleAxis dataKey="category" tick={{ fill: '#64748b' }} />
+                  <PolarRadiusAxis angle={90} domain={[0, 'auto']} tick={{ fill: '#64748b' }} />
                   <Radar
                     name={userAppName}
                     dataKey={userAppName}
                     stroke={COLORS.user}
                     fill={COLORS.user}
                     fillOpacity={0.6}
+                    strokeWidth={2}
                   />
                   <Radar
                     name={competitorAppName}
@@ -732,6 +809,7 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
                     stroke={COLORS.competitor}
                     fill={COLORS.competitor}
                     fillOpacity={0.6}
+                    strokeWidth={2}
                   />
                   <Legend />
                   <Tooltip content={<CustomTooltip />} />
@@ -741,9 +819,12 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
           </Card>
 
           {/* Satisfaction Areas */}
-          <Card className="analysis-card">
+          <Card className="analysis-card animated-card" style={{ animationDelay: '0.6s' }}>
             <CardHeader>
-              <CardTitle>User Satisfaction Areas</CardTitle>
+              <CardTitle>
+                <HeartHandshake size={20} />
+                User Satisfaction Areas
+              </CardTitle>
             </CardHeader>
             <CardContent>
               {/* Debug info */}
@@ -764,13 +845,23 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
               )}
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={satisfactionComparison}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="category" />
-                  <YAxis />
+                  <defs>
+                    <linearGradient id="userBarGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={COLORS.user} stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor={COLORS.user} stopOpacity={0.6}/>
+                    </linearGradient>
+                    <linearGradient id="competitorBarGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={COLORS.competitor} stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor={COLORS.competitor} stopOpacity={0.6}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis dataKey="category" tick={{ fill: '#64748b' }} />
+                  <YAxis tick={{ fill: '#64748b' }} />
                   <Tooltip content={<CustomTooltip />} />
                   <Legend />
-                  <Bar dataKey={userAppName} fill={COLORS.user} />
-                  <Bar dataKey={competitorAppName} fill={COLORS.competitor} />
+                  <Bar dataKey={userAppName} fill="url(#userBarGradient)" radius={[8, 8, 0, 0]} />
+                  <Bar dataKey={competitorAppName} fill="url(#competitorBarGradient)" radius={[8, 8, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -788,6 +879,13 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
           <SentimentByCategory
             userAnalysis={analysis.user}
             competitorAnalysis={analysis.competitor}
+            userAppName={userAppName}
+            competitorAppName={competitorAppName}
+          />
+
+          {/* Competitive Insights Visualizations */}
+          <CompetitiveInsightsVisualizer
+            analysis={analysis}
             userAppName={userAppName}
             competitorAppName={competitorAppName}
           />
