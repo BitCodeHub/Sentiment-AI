@@ -1078,28 +1078,6 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
             </CardContent>
           </Card>
 
-          {/* Issue Frequency Analysis */}
-          <IssueFrequencyChart 
-            userAnalysis={analysis.user}
-            competitorAnalysis={analysis.competitor}
-            userAppName={userAppName}
-            competitorAppName={competitorAppName}
-          />
-
-          {/* Sentiment By Category Analysis */}
-          <SentimentByCategory
-            userAnalysis={analysis.user}
-            competitorAnalysis={analysis.competitor}
-            userAppName={userAppName}
-            competitorAppName={competitorAppName}
-          />
-
-          {/* Competitive Insights Visualizations */}
-          <CompetitiveInsightsVisualizer
-            analysis={analysis}
-            userAppName={userAppName}
-            competitorAppName={competitorAppName}
-          />
         </div>
       )}
 
