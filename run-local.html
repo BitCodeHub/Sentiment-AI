@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Review Dashboard - Local Runner</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .solution {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .button {
+            display: inline-block;
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 10px 5px;
+        }
+        .button:hover {
+            background: #0056b3;
+        }
+        .code {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 3px;
+            font-family: monospace;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Review Dashboard - Localhost Connection Issue</h1>
+        
+        <div class="warning">
+            <h3>⚠️ Localhost Connection Blocked</h3>
+            <p>Your system is blocking localhost connections, likely due to ESET Cyber Security Pro or similar security software.</p>
+        </div>
+
+        <div class="solution">
+            <h3>✅ Solution Options</h3>
+            
+            <h4>Option 1: Open the Built App Directly</h4>
+            <p>Click below to open the built version of your app:</p>
+            <a href="file:///Users/jimmylam/Documents/sentiment/review-dashboard/dist/index.html" class="button">Open Review Dashboard</a>
+            
+            <h4>Option 2: Disable ESET Temporarily</h4>
+            <ol>
+                <li>Open ESET Cyber Security Pro</li>
+                <li>Go to Setup → Network protection</li>
+                <li>Toggle "Enable firewall" to OFF</li>
+                <li>Run: <span class="code">npm run dev</span></li>
+                <li>Access: <a href="http://localhost:5173">http://localhost:5173</a></li>
+            </ol>
+            
+            <h4>Option 3: Deploy to Vercel (Recommended)</h4>
+            <p>Deploy your app online for easy access:</p>
+            <div class="code">
+                npm install -g vercel<br>
+                vercel
+            </div>
+            
+            <h4>Option 4: Use npx serve</h4>
+            <p>Try serving with a different tool:</p>
+            <div class="code">
+                npx serve dist -p 8888
+            </div>
+        </div>
+
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
+            <p><strong>Note:</strong> The direct file:// approach may have limitations with API calls and routing, but will allow you to see and test the UI.</p>
+        </div>
+    </div>
+</body>
+</html>

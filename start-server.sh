@@ -1,36 +1,85 @@
 #!/bin/bash
 
-echo "Starting Review Dashboard..."
-echo "Attempting to start on multiple ports..."
+echo "========================================="
+echo "Review Dashboard Server Troubleshooter"
+echo "========================================="
+echo ""
 
-# Kill any existing processes
-pkill -f "vite" 2>/dev/null || true
-pkill -f "http-server" 2>/dev/null || true
-
-# Try different approaches
-echo "1. Trying Vite dev server on port 5173..."
-npm run dev &
-VITE_PID=$!
-
-sleep 3
-
-# Test if it's working
-if curl -s http://localhost:5173 > /dev/null 2>&1; then
-    echo "✅ Success! Open http://localhost:5173"
-else
-    echo "❌ Vite dev server failed, trying alternative..."
-    kill $VITE_PID 2>/dev/null || true
-    
-    echo "2. Building and serving production build..."
-    npm run build
-    
-    echo "3. Starting HTTP server on port 8888..."
-    npx http-server dist -p 8888 -o
+# Check for ESET
+if ps aux | grep -q "[e]sets_fwprompt"; then
+    echo "⚠️  WARNING: ESET Cyber Security Pro detected!"
+    echo "This is likely blocking localhost connections."
+    echo ""
+    echo "SOLUTION OPTIONS:"
+    echo "1. Temporarily disable ESET firewall:"
+    echo "   - Open ESET Cyber Security Pro"
+    echo "   - Go to Setup > Network protection"
+    echo "   - Toggle 'Enable firewall' to OFF"
+    echo ""
+    echo "2. Add firewall exception for Node.js:"
+    echo "   - In ESET, go to Setup > Network protection > Firewall"
+    echo "   - Click 'Rules and zones' > 'Setup...'"
+    echo "   - Add rule: Allow Node.js (usually at /usr/local/bin/node)"
+    echo "   - Set Direction: Both, Action: Allow"
+    echo ""
+    echo "Press Enter to continue anyway..."
+    read
 fi
 
+# Kill existing processes
+echo "Cleaning up existing processes..."
+pkill -f "vite" 2>/dev/null || true
+pkill -f "node test-server" 2>/dev/null || true
+pkill -f "serve" 2>/dev/null || true
+pkill -f "http-server" 2>/dev/null || true
+
+# Test localhost connectivity
 echo ""
-echo "If you're still having issues, try:"
-echo "1. Disable firewall temporarily"
-echo "2. Check if any antivirus is blocking localhost"
-echo "3. Try using 127.0.0.1 instead of localhost"
-echo "4. Run: sudo lsof -i :5173 (to check what's using the port)"
+echo "Testing localhost connectivity..."
+if ping -c 1 127.0.0.1 > /dev/null 2>&1; then
+    echo "✅ Loopback interface (127.0.0.1) is working"
+else
+    echo "❌ Loopback interface is not working - serious network issue!"
+    exit 1
+fi
+
+# Option 1: Try Vite dev server
+echo ""
+echo "Option 1: Starting Vite development server..."
+npm run dev &
+VITE_PID=$!
+sleep 5
+
+if lsof -i :5173 > /dev/null 2>&1; then
+    echo "✅ Server started on port 5173"
+    echo "Try opening: http://127.0.0.1:5173"
+    echo ""
+    echo "Press Ctrl+C to stop the server"
+    wait $VITE_PID
+else
+    echo "❌ Failed to start on port 5173"
+    kill $VITE_PID 2>/dev/null || true
+    
+    # Option 2: Try preview server
+    echo ""
+    echo "Option 2: Starting Vite preview server..."
+    npm run preview &
+    PREVIEW_PID=$!
+    sleep 5
+    
+    if lsof -i :4173 > /dev/null 2>&1; then
+        echo "✅ Server started on port 4173"
+        echo "Try opening: http://127.0.0.1:4173"
+        echo ""
+        echo "Press Ctrl+C to stop the server"
+        wait $PREVIEW_PID
+    else
+        echo "❌ Failed to start preview server"
+        kill $PREVIEW_PID 2>/dev/null || true
+        
+        # Option 3: Try serve command
+        echo ""
+        echo "Option 3: Using npx serve..."
+        npm run serve
+    fi
+fi
