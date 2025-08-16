@@ -23,12 +23,12 @@ export async function initializeGeminiModel() {
     
     genAI = new GoogleGenerativeAI(API_KEY);
     
-    // Try different models with better error handling
+    // Generation config optimized for latest models
     const generationConfig = {
       temperature: 0.7,
-      topK: 1,
-      topP: 1,
-      maxOutputTokens: 2048,
+      topK: 40,
+      topP: 0.95,
+      maxOutputTokens: 8192,  // Newer models support more tokens
     };
 
     const safetySettings = [
@@ -50,15 +50,17 @@ export async function initializeGeminiModel() {
       }
     ];
 
-    // Try models in order of availability (based on API key test)
+    // Try models in order from newest to oldest
     const modelsToTry = [
-      'gemini-1.5-flash',  // Fast and available
-      'gemini-1.5-flash-latest',
+      'gemini-2.5-flash',  // Latest and most advanced
+      'gemini-2.5-pro',
       'gemini-2.0-flash',
-      'gemini-2.5-flash',
-      'gemini-1.5-pro',
-      'gemini-1.5-pro-latest',
-      'gemini-2.0-flash-lite'
+      'gemini-2.0-flash-exp',  // Experimental version
+      'gemini-2.5-flash-lite',
+      'gemini-2.0-flash-lite',
+      'gemini-2.0-pro-exp',
+      'gemini-1.5-flash',  // Fallback to stable version
+      'gemini-1.5-flash-latest'
     ];
 
     const triedModels = [];
@@ -78,6 +80,7 @@ export async function initializeGeminiModel() {
         const testText = testResponse.text();
         
         console.log(`Model ${modelName} initialized and tested successfully`);
+        console.log(`Using latest model: ${modelName} with enhanced capabilities`);
         return { success: true, model: modelName, triedModels };
       } catch (error) {
         console.warn(`Model ${modelName} failed:`, error.message, error);
@@ -104,14 +107,14 @@ export async function initializeGeminiModel() {
       }
     }
     
-    // Try one more time with gemini-1.5-flash as a last resort
+    // Try one more time with gemini-2.5-flash as a last resort
     try {
-      console.log('Final attempt with basic gemini-1.5-flash configuration...');
-      model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      console.log('Final attempt with basic gemini-2.5-flash configuration...');
+      model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
       const testResult = await model.generateContent('Say OK');
       const testResponse = await testResult.response;
-      console.log('Basic gemini-1.5-flash model worked!');
-      return { success: true, model: 'gemini-1.5-flash', triedModels };
+      console.log('Basic gemini-2.5-flash model worked!');
+      return { success: true, model: 'gemini-2.5-flash', triedModels };
     } catch (finalError) {
       console.error('Final attempt failed:', finalError.message);
     }
