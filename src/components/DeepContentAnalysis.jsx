@@ -972,40 +972,260 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
             </Card>
           </div>
 
-          {/* Pain Points Radar Chart */}
+          {/* Pain Points Comparison - Interactive Version */}
           <Card className="analysis-card animated-card" style={{ animationDelay: '0.5s' }}>
             <CardHeader>
-              <CardTitle>
+              <CardTitle style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <Bug size={20} />
-                Pain Points Comparison
+                <span>Pain Points Comparison</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
+              {/* Explanation Text */}
+              <div style={{ 
+                padding: '1rem', 
+                background: '#f8fafc', 
+                borderRadius: '0.75rem', 
+                marginBottom: '1.5rem',
+                border: '1px solid #e2e8f0'
+              }}>
+                <p style={{ 
+                  color: '#475569', 
+                  fontSize: '0.875rem', 
+                  lineHeight: '1.5',
+                  margin: 0
+                }}>
+                  This chart compares the frequency of issues reported by users. Higher percentages indicate more users experiencing that type of problem. 
+                  <strong style={{ color: '#334155' }}> Hover over the bars to see actual customer reviews.</strong>
+                </p>
+              </div>
+
+              {/* Enhanced Bar Chart with Hover */}
               <ResponsiveContainer width="100%" height={400}>
-                <RadarChart data={radarDataWithDefaults}>
-                  <PolarGrid stroke="#e2e8f0" />
-                  <PolarAngleAxis dataKey="category" tick={{ fill: '#64748b' }} />
-                  <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fill: '#64748b' }} />
-                  <Radar
-                    name={userAppName}
-                    dataKey={userAppName}
-                    stroke={COLORS.user}
-                    fill={COLORS.user}
-                    fillOpacity={0.6}
-                    strokeWidth={2}
+                <BarChart 
+                  data={(() => {
+                    // Prepare data for bar chart
+                    const categories = ['technical', 'usability', 'features', 'support', 'pricing', 'other'];
+                    return categories.map(category => {
+                      const userCount = analysis.user?.painPoints?.[category]?.count || 0;
+                      const competitorCount = analysis.competitor?.painPoints?.[category]?.count || 0;
+                      const userTotal = analysis.user?.totalReviews || 1;
+                      const competitorTotal = analysis.competitor?.totalReviews || 1;
+                      
+                      return {
+                        category: category.charAt(0).toUpperCase() + category.slice(1),
+                        categoryKey: category,
+                        [userAppName]: (userCount / userTotal * 100),
+                        [competitorAppName]: (competitorCount / competitorTotal * 100),
+                        userCount,
+                        competitorCount,
+                        userExamples: analysis.user?.painPoints?.[category]?.subcategories?.functionality?.examples || [],
+                        competitorExamples: analysis.competitor?.painPoints?.[category]?.subcategories?.functionality?.examples || []
+                      };
+                    }).filter(item => item.userCount > 0 || item.competitorCount > 0);
+                  })()}
+                  margin={{ top: 20, right: 30, left: 40, bottom: 60 }}
+                >
+                  <defs>
+                    <linearGradient id="userGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={COLORS.user} stopOpacity={0.9}/>
+                      <stop offset="95%" stopColor={COLORS.user} stopOpacity={0.7}/>
+                    </linearGradient>
+                    <linearGradient id="competitorGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={COLORS.competitor} stopOpacity={0.9}/>
+                      <stop offset="95%" stopColor={COLORS.competitor} stopOpacity={0.7}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis 
+                    dataKey="category" 
+                    tick={{ fill: '#64748b', fontSize: 12 }}
+                    angle={0}
+                    textAnchor="middle"
                   />
-                  <Radar
-                    name={competitorAppName}
-                    dataKey={competitorAppName}
-                    stroke={COLORS.competitor}
-                    fill={COLORS.competitor}
-                    fillOpacity={0.6}
-                    strokeWidth={2}
+                  <YAxis 
+                    tick={{ fill: '#64748b' }}
+                    label={{ value: '% of Reviews', angle: -90, position: 'insideLeft', style: { fill: '#64748b' } }}
                   />
-                  <Legend />
-                  <Tooltip content={<CustomTooltip />} />
-                </RadarChart>
+                  <Tooltip 
+                    content={({ active, payload, label }) => {
+                      if (active && payload && payload.length) {
+                        const data = payload[0].payload;
+                        const categoryKey = data.categoryKey;
+                        
+                        // Category descriptions
+                        const categoryDescriptions = {
+                          technical: "Performance issues, crashes, bugs, and errors",
+                          usability: "Interface problems, navigation difficulties, and user experience issues",
+                          features: "Missing features, feature requests, and functionality limitations",
+                          support: "Customer service, response time, and help-related issues",
+                          pricing: "Cost concerns, subscription issues, and value for money",
+                          other: "General complaints and miscellaneous issues"
+                        };
+                        
+                        return (
+                          <div style={{
+                            background: 'white',
+                            padding: '1rem',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '0.5rem',
+                            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                            maxWidth: '400px'
+                          }}>
+                            <p style={{ 
+                              fontWeight: '600', 
+                              marginBottom: '0.5rem',
+                              color: '#1e293b',
+                              fontSize: '0.875rem'
+                            }}>
+                              {label}
+                            </p>
+                            <p style={{ 
+                              fontSize: '0.75rem', 
+                              color: '#64748b',
+                              marginBottom: '0.75rem',
+                              fontStyle: 'italic'
+                            }}>
+                              {categoryDescriptions[categoryKey]}
+                            </p>
+                            
+                            {payload.map((entry, index) => (
+                              <div key={index} style={{ marginBottom: '0.75rem' }}>
+                                <div style={{ 
+                                  display: 'flex', 
+                                  alignItems: 'center', 
+                                  gap: '0.5rem',
+                                  marginBottom: '0.25rem'
+                                }}>
+                                  <div style={{
+                                    width: '12px',
+                                    height: '12px',
+                                    backgroundColor: entry.color,
+                                    borderRadius: '2px'
+                                  }} />
+                                  <span style={{ fontWeight: '500', fontSize: '0.875rem' }}>
+                                    {entry.name}: {entry.value.toFixed(1)}%
+                                  </span>
+                                  <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                                    ({entry.name === userAppName ? data.userCount : data.competitorCount} reviews)
+                                  </span>
+                                </div>
+                                
+                                {/* Show sample reviews if available */}
+                                {categoryKey && analysis && (
+                                  <div style={{ marginTop: '0.5rem', marginLeft: '1.25rem' }}>
+                                    <p style={{ fontSize: '0.75rem', fontWeight: '500', color: '#475569', marginBottom: '0.25rem' }}>
+                                      Sample reviews:
+                                    </p>
+                                    {(() => {
+                                      const painPoints = entry.name === userAppName 
+                                        ? analysis.user?.painPoints?.[categoryKey]
+                                        : analysis.competitor?.painPoints?.[categoryKey];
+                                      
+                                      const examples = [];
+                                      if (painPoints?.subcategories) {
+                                        Object.values(painPoints.subcategories).forEach(subcat => {
+                                          if (subcat?.examples) {
+                                            examples.push(...subcat.examples.slice(0, 2));
+                                          }
+                                        });
+                                      }
+                                      
+                                      if (examples.length === 0) {
+                                        return (
+                                          <p style={{ fontSize: '0.7rem', color: '#94a3b8', fontStyle: 'italic' }}>
+                                            No review examples available
+                                          </p>
+                                        );
+                                      }
+                                      
+                                      return examples.slice(0, 2).map((example, idx) => (
+                                        <p key={idx} style={{ 
+                                          fontSize: '0.7rem', 
+                                          color: '#64748b',
+                                          marginBottom: '0.25rem',
+                                          fontStyle: 'italic',
+                                          borderLeft: '2px solid #e2e8f0',
+                                          paddingLeft: '0.5rem'
+                                        }}>
+                                          "{example.text || example}..."
+                                        </p>
+                                      ));
+                                    })()}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                  <Legend 
+                    wrapperStyle={{ paddingTop: '20px' }}
+                    iconType="rect"
+                  />
+                  <Bar 
+                    dataKey={userAppName} 
+                    fill="url(#userGradient)" 
+                    radius={[8, 8, 0, 0]}
+                    maxBarSize={60}
+                  />
+                  <Bar 
+                    dataKey={competitorAppName} 
+                    fill="url(#competitorGradient)" 
+                    radius={[8, 8, 0, 0]}
+                    maxBarSize={60}
+                  />
+                </BarChart>
               </ResponsiveContainer>
+
+              {/* Interactive Legend with Category Explanations */}
+              <div style={{ 
+                marginTop: '1.5rem', 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                gap: '0.75rem'
+              }}>
+                {[
+                  { key: 'technical', icon: '🐛', color: '#ef4444' },
+                  { key: 'usability', icon: '🎨', color: '#f97316' },
+                  { key: 'features', icon: '⚡', color: '#f59e0b' },
+                  { key: 'support', icon: '💬', color: '#3b82f6' },
+                  { key: 'pricing', icon: '💰', color: '#10b981' },
+                  { key: 'other', icon: '📋', color: '#8b5cf6' }
+                ].map(({ key, icon, color }) => {
+                  const userCount = analysis.user?.painPoints?.[key]?.count || 0;
+                  const competitorCount = analysis.competitor?.painPoints?.[key]?.count || 0;
+                  
+                  if (userCount === 0 && competitorCount === 0) return null;
+                  
+                  return (
+                    <div 
+                      key={key}
+                      style={{ 
+                        padding: '0.5rem',
+                        background: '#f8fafc',
+                        borderRadius: '0.5rem',
+                        border: '1px solid #e2e8f0',
+                        fontSize: '0.75rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}
+                    >
+                      <span style={{ fontSize: '1rem' }}>{icon}</span>
+                      <span style={{ fontWeight: '500', color: '#334155' }}>
+                        {key.charAt(0).toUpperCase() + key.slice(1)}:
+                      </span>
+                      <span style={{ color: '#64748b' }}>
+                        {userCount + competitorCount} total issues
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
             </CardContent>
           </Card>
 
