@@ -699,6 +699,19 @@ export async function performDeepContentAnalysis(userReviews, competitorReviews)
       aiInsights: userGeminiAnalysis
     };
     
+    // Production debugging
+    if (typeof window !== 'undefined' && window.location.hostname.includes('render.com')) {
+      console.log('[PRODUCTION DEBUG] Normalized user painPoints structure:', {
+        keys: Object.keys(userAnalysis.painPoints || {}),
+        technical: userAnalysis.painPoints?.technical ? {
+          hasCount: 'count' in userAnalysis.painPoints.technical,
+          count: userAnalysis.painPoints.technical.count,
+          hasSubcategories: 'subcategories' in userAnalysis.painPoints.technical,
+          subcatKeys: Object.keys(userAnalysis.painPoints.technical.subcategories || {})
+        } : 'missing'
+      });
+    }
+    
     const competitorAnalysis = {
       totalReviews: competitorReviews?.length || 0,
       technicalIssues: competitorGeminiAnalysis?.technicalIssues || extractTechnicalIssues(competitorReviews || []),
