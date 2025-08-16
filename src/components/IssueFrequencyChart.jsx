@@ -27,13 +27,13 @@ const CATEGORY_ICONS = {
 const IssueFrequencyChart = ({ userAnalysis, competitorAnalysis, userAppName, competitorAppName }) => {
   // Prepare data for issue frequency comparison
   const issueFrequencyData = useMemo(() => {
-    if (!userAnalysis || !competitorAnalysis) return [];
+    if (!userAnalysis || !competitorAnalysis || !userAnalysis.painPoints || !competitorAnalysis.painPoints) return [];
     
     const categories = Object.keys(userAnalysis.painPoints);
     
     return categories.map(category => {
-      const userCount = userAnalysis.painPoints[category].count;
-      const competitorCount = competitorAnalysis.painPoints[category].count;
+      const userCount = userAnalysis.painPoints[category]?.count || 0;
+      const competitorCount = competitorAnalysis.painPoints[category]?.count || 0;
       const userRate = (userCount / userAnalysis.totalReviews) * 100;
       const competitorRate = (competitorCount / competitorAnalysis.totalReviews) * 100;
       
@@ -51,15 +51,15 @@ const IssueFrequencyChart = ({ userAnalysis, competitorAnalysis, userAppName, co
 
   // Prepare treemap data for issue distribution
   const treemapData = useMemo(() => {
-    if (!userAnalysis) return [];
+    if (!userAnalysis || !userAnalysis.painPoints) return [];
     
     return Object.entries(userAnalysis.painPoints).map(([category, data]) => {
-      const subcategories = Object.entries(data.subcategories).map(([subcat, subcatData]) => ({
+      const subcategories = data?.subcategories ? Object.entries(data.subcategories).map(([subcat, subcatData]) => ({
         name: subcat,
-        size: subcatData.count,
+        size: subcatData?.count || 0,
         category,
-        percentage: ((subcatData.count / userAnalysis.totalReviews) * 100).toFixed(1)
-      }));
+        percentage: ((subcatData?.count || 0) / userAnalysis.totalReviews) * 100).toFixed(1)
+      })) : [];
       
       return {
         name: category,

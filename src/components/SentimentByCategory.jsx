@@ -27,14 +27,14 @@ const CATEGORY_COLORS = {
 const SentimentByCategory = ({ userAnalysis, competitorAnalysis, userAppName, competitorAppName }) => {
   // Calculate sentiment distribution by category
   const sentimentByCategoryData = useMemo(() => {
-    if (!userAnalysis || !competitorAnalysis) return [];
+    if (!userAnalysis || !competitorAnalysis || !userAnalysis.painPoints || !competitorAnalysis.painPoints) return [];
     
     const categories = Object.keys(userAnalysis.painPoints);
     
     return categories.map(category => {
       // For each category, calculate sentiment breakdown
-      const userPainPoint = userAnalysis.painPoints[category];
-      const competitorPainPoint = competitorAnalysis.painPoints[category];
+      const userPainPoint = userAnalysis.painPoints[category] || { count: 0 };
+      const competitorPainPoint = competitorAnalysis.painPoints[category] || { count: 0 };
       
       // Estimate sentiment distribution (in real app, this would come from actual analysis)
       const userNegativeRate = (userPainPoint.count / userAnalysis.totalReviews) * 100;

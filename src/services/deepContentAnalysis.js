@@ -42,6 +42,13 @@ const COMPLAINT_PATTERNS = {
       quality: ['helpful', 'unhelpful', 'support quality'],
       availability: ['contact', 'reach', 'available']
     }
+  },
+  other: {
+    keywords: ['other', 'general', 'miscellaneous', 'various'],
+    subcategories: {
+      general: ['other', 'general', 'miscellaneous'],
+      various: ['various', 'different', 'multiple']
+    }
   }
 };
 
@@ -489,6 +496,132 @@ function generateRecommendations(analysis, comparison) {
   return recommendations;
 }
 
+// Helper function to normalize painPoints structure
+function normalizePainPoints(painPoints) {
+  // If painPoints is already in the correct format, return it
+  if (painPoints && typeof painPoints === 'object' && !painPoints.categories) {
+    // Check if it has the expected structure (category keys with count property)
+    const firstKey = Object.keys(painPoints)[0];
+    if (firstKey && painPoints[firstKey] && typeof painPoints[firstKey].count === 'number') {
+      return painPoints;
+    }
+  }
+  
+  // If painPoints has a categories property, use that
+  if (painPoints && painPoints.categories) {
+    // Ensure each category has the required structure
+    const normalized = {};
+    Object.keys(COMPLAINT_PATTERNS).forEach(category => {
+      if (painPoints.categories[category]) {
+        // Initialize subcategories with proper structure
+        const subcategories = {};
+        Object.keys(COMPLAINT_PATTERNS[category].subcategories).forEach(subcat => {
+          subcategories[subcat] = {
+            count: 0,
+            examples: []
+          };
+        });
+        
+        // Merge with existing subcategories if they exist
+        if (painPoints.categories[category].subcategories) {
+          Object.entries(painPoints.categories[category].subcategories).forEach(([subcat, data]) => {
+            if (subcategories[subcat]) {
+              subcategories[subcat] = {
+                count: data.count || 0,
+                examples: data.examples || []
+              };
+            }
+          });
+        }
+        
+        normalized[category] = {
+          count: painPoints.categories[category].count || 0,
+          subcategories: subcategories,
+          examples: painPoints.categories[category].examples || []
+        };
+      } else {
+        // Initialize empty category if not present
+        const subcategories = {};
+        Object.keys(COMPLAINT_PATTERNS[category].subcategories).forEach(subcat => {
+          subcategories[subcat] = {
+            count: 0,
+            examples: []
+          };
+        });
+        
+        normalized[category] = {
+          count: 0,
+          subcategories: subcategories,
+          examples: []
+        };
+      }
+    });
+    return normalized;
+  }
+  
+  // If painPoints is invalid, return empty structure
+  const emptyPainPoints = {};
+  Object.keys(COMPLAINT_PATTERNS).forEach(category => {
+    const subcategories = {};
+    Object.keys(COMPLAINT_PATTERNS[category].subcategories).forEach(subcat => {
+      subcategories[subcat] = {
+        count: 0,
+        examples: []
+      };
+    });
+    
+    emptyPainPoints[category] = {
+      count: 0,
+      subcategories: subcategories,
+      examples: []
+    };
+  });
+  return emptyPainPoints;
+}
+
+// Helper function to normalize satisfaction structure
+function normalizeSatisfaction(satisfaction) {
+  // If satisfaction is already in the correct format, return it
+  if (satisfaction && typeof satisfaction === 'object' && !satisfaction.categories) {
+    const firstKey = Object.keys(satisfaction)[0];
+    if (firstKey && satisfaction[firstKey] && typeof satisfaction[firstKey].count === 'number') {
+      return satisfaction;
+    }
+  }
+  
+  // If satisfaction has a categories property, use that
+  if (satisfaction && satisfaction.categories) {
+    const normalized = {};
+    Object.keys(POSITIVE_PATTERNS).forEach(category => {
+      if (satisfaction.categories[category]) {
+        normalized[category] = {
+          count: satisfaction.categories[category].count || 0,
+          weight: POSITIVE_PATTERNS[category].weight,
+          examples: satisfaction.categories[category].examples || []
+        };
+      } else {
+        normalized[category] = {
+          count: 0,
+          weight: POSITIVE_PATTERNS[category].weight,
+          examples: []
+        };
+      }
+    });
+    return normalized;
+  }
+  
+  // If satisfaction is invalid, return empty structure
+  const emptySatisfaction = {};
+  Object.keys(POSITIVE_PATTERNS).forEach(category => {
+    emptySatisfaction[category] = {
+      count: 0,
+      weight: POSITIVE_PATTERNS[category].weight,
+      examples: []
+    };
+  });
+  return emptySatisfaction;
+}
+
 // Main analysis function
 export async function performDeepContentAnalysis(userReviews, competitorReviews) {
   console.log('Starting deep content analysis:', {
@@ -561,8 +694,8 @@ export async function performDeepContentAnalysis(userReviews, competitorReviews)
       totalReviews: userReviews?.length || 0,
       technicalIssues: userGeminiAnalysis?.technicalIssues || extractTechnicalIssues(userReviews || []),
       featureRequests: userGeminiAnalysis?.featureRequests || extractFeatureRequests(userReviews || []),
-      painPoints: userGeminiAnalysis?.painPoints?.categories || userGeminiAnalysis?.painPoints || analyzePainPoints(userReviews || []),
-      satisfaction: userGeminiAnalysis?.positiveAspects?.categories || userGeminiAnalysis?.positiveAspects || analyzeSatisfactionAreas(userReviews || []),
+      painPoints: normalizePainPoints(userGeminiAnalysis?.painPoints || analyzePainPoints(userReviews || [])),
+      satisfaction: normalizeSatisfaction(userGeminiAnalysis?.positiveAspects || analyzeSatisfactionAreas(userReviews || [])),
       aiInsights: userGeminiAnalysis
     };
     
@@ -570,8 +703,8 @@ export async function performDeepContentAnalysis(userReviews, competitorReviews)
       totalReviews: competitorReviews?.length || 0,
       technicalIssues: competitorGeminiAnalysis?.technicalIssues || extractTechnicalIssues(competitorReviews || []),
       featureRequests: competitorGeminiAnalysis?.featureRequests || extractFeatureRequests(competitorReviews || []),
-      painPoints: competitorGeminiAnalysis?.painPoints?.categories || competitorGeminiAnalysis?.painPoints || analyzePainPoints(competitorReviews || []),
-      satisfaction: competitorGeminiAnalysis?.positiveAspects?.categories || competitorGeminiAnalysis?.positiveAspects || analyzeSatisfactionAreas(competitorReviews || []),
+      painPoints: normalizePainPoints(competitorGeminiAnalysis?.painPoints || analyzePainPoints(competitorReviews || [])),
+      satisfaction: normalizeSatisfaction(competitorGeminiAnalysis?.positiveAspects || analyzeSatisfactionAreas(competitorReviews || [])),
       aiInsights: competitorGeminiAnalysis
     };
     
