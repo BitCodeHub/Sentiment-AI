@@ -276,7 +276,11 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
   const painPointsRadarData = useMemo(() => {
     if (!analysis || !analysis.user?.painPoints || !analysis.competitor?.painPoints) return [];
     
-    return Object.keys(analysis.user.painPoints).map(category => ({
+    // Ensure painPoints is an object before using Object.keys
+    const userPainPoints = analysis.user.painPoints;
+    if (!userPainPoints || typeof userPainPoints !== 'object') return [];
+    
+    return Object.keys(userPainPoints).map(category => ({
       category: category.charAt(0).toUpperCase() + category.slice(1),
       [userAppName]: analysis.user.totalReviews > 0 
         ? (analysis.user.painPoints[category]?.count || 0) / analysis.user.totalReviews * 100 
@@ -291,7 +295,11 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
   const satisfactionComparison = useMemo(() => {
     if (!analysis || !analysis.user?.satisfaction || !analysis.competitor?.satisfaction) return [];
     
-    return Object.keys(analysis.user.satisfaction).map(category => ({
+    // Ensure satisfaction is an object before using Object.keys
+    const userSatisfaction = analysis.user.satisfaction;
+    if (!userSatisfaction || typeof userSatisfaction !== 'object') return [];
+    
+    return Object.keys(userSatisfaction).map(category => ({
       category: category.charAt(0).toUpperCase() + category.slice(1),
       [userAppName]: analysis.user.totalReviews > 0 
         ? (analysis.user.satisfaction[category]?.count || 0) / analysis.user.totalReviews * 100 
@@ -631,7 +639,11 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
 
           {/* Detailed Technical Issues */}
           <div className="technical-details-grid">
-            {Object.entries(analysis.user?.painPoints || {}).map(([category, data]) => {
+            {(() => {
+              const painPoints = analysis.user?.painPoints;
+              if (!painPoints || typeof painPoints !== 'object') return null;
+              
+              return Object.entries(painPoints).map(([category, data]) => {
               if (data.count === 0) return null;
               const isExpanded = expandedSections[`tech-${category}`];
               
@@ -654,7 +666,10 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
                   {isExpanded && (
                     <CardContent>
                       <div className="subcategories">
-                        {Object.entries(data.subcategories || {}).map(([subcat, subcatData]) => {
+                        {(() => {
+                          const subcats = data.subcategories;
+                          if (!subcats || typeof subcats !== 'object') return null;
+                          return Object.entries(subcats).map(([subcat, subcatData]) => {
                           if (!subcatData || subcatData.count === 0) return null;
                           return (
                             <div key={subcat} className="subcategory">
@@ -680,13 +695,15 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
                               )}
                             </div>
                           );
-                        })}
+                        });
+                        })()}
                       </div>
                     </CardContent>
                   )}
                 </Card>
               );
-            })}
+            });
+            })()}
           </div>
         </div>
       )}
