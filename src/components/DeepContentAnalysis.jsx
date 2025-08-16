@@ -753,7 +753,12 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
                     No satisfaction data found. Check console for debugging information.
                   </p>
                   <p style={{ color: '#92400e', fontSize: '0.875rem', marginTop: '0.5rem' }}>
-                    Data points: {satisfactionComparison.length}
+                    Data points: {satisfactionComparison.length} | 
+                    User reviews: {analysis?.user?.totalReviews || 0} | 
+                    Competitor reviews: {analysis?.competitor?.totalReviews || 0}
+                  </p>
+                  <p style={{ color: '#92400e', fontSize: '0.875rem', marginTop: '0.5rem' }}>
+                    Analysis type: {analysis?.user?.aiInsights ? 'AI-powered' : 'Pattern-based'}
                   </p>
                 </div>
               )}
