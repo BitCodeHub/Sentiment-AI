@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Gemini API Test</title>
+    <script type="importmap">
+        {
+            "imports": {
+                "@google/generative-ai": "https://esm.run/@google/generative-ai"
+            }
+        }
+    </script>
+</head>
+<body>
+    <h1>Gemini API Test</h1>
+    <button id="testBtn">Test Gemini API</button>
+    <pre id="output"></pre>
+
+    <script type="module">
+        import { GoogleGenerativeAI } from '@google/generative-ai';
+        
+        const API_KEY = 'AIzaSyBkW1gEVJxFASbgCK43X6JyOZ0eiqnPSoc';
+        const output = document.getElementById('output');
+        
+        document.getElementById('testBtn').addEventListener('click', async () => {
+            output.textContent = 'Testing...\n';
+            
+            try {
+                const genAI = new GoogleGenerativeAI(API_KEY);
+                
+                const models = [
+                    'gemini-1.5-flash',
+                    'gemini-1.5-pro',
+                    'gemini-pro'
+                ];
+                
+                for (const modelName of models) {
+                    output.textContent += `\nTrying ${modelName}...\n`;
+                    
+                    try {
+                        const model = genAI.getGenerativeModel({ model: modelName });
+                        const result = await model.generateContent('Say "Hello World"');
+                        const response = await result.response;
+                        const text = response.text();
+                        
+                        output.textContent += `✅ ${modelName} works! Response: ${text}\n`;
+                        break;
+                    } catch (err) {
+                        output.textContent += `❌ ${modelName} failed: ${err.message}\n`;
+                    }
+                }
+            } catch (err) {
+                output.textContent += `\nError: ${err.message}\n`;
+            }
+        });
+    </script>
+</body>
+</html>

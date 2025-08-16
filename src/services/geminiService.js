@@ -5,6 +5,8 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || 'AIzaSyBkW1gEVJxFASbgCK43X6JyOZ0eiqnPSoc';
 
 console.log('Gemini API Key status:', API_KEY ? `Key found (length: ${API_KEY.length})` : 'No key found');
+console.log('Environment:', import.meta.env.MODE);
+console.log('All env vars:', Object.keys(import.meta.env).filter(k => k.startsWith('VITE_')));
 
 let genAI;
 let model;
@@ -13,6 +15,12 @@ let model;
 export async function initializeGeminiModel() {
   try {
     console.log('Initializing Gemini AI with API key:', API_KEY ? `${API_KEY.substring(0, 10)}...` : 'missing');
+    
+    // Check if API key is valid format
+    if (!API_KEY || API_KEY.length < 30) {
+      throw new Error(`Invalid API key format. Key length: ${API_KEY?.length || 0}`);
+    }
+    
     genAI = new GoogleGenerativeAI(API_KEY);
     
     // Try different models with better error handling
@@ -46,11 +54,15 @@ export async function initializeGeminiModel() {
     const modelsToTry = [
       'gemini-1.5-flash',
       'gemini-1.5-flash-latest',
+      'gemini-1.5-pro',
+      'gemini-1.5-pro-latest',
       'gemini-pro',
       'gemini-1.0-pro',
       'gemini-1.0-pro-latest'
     ];
 
+    const triedModels = [];
+    
     for (const modelName of modelsToTry) {
       try {
         console.log(`Trying model: ${modelName}`);
@@ -66,17 +78,26 @@ export async function initializeGeminiModel() {
         const testText = testResponse.text();
         
         console.log(`Model ${modelName} initialized and tested successfully`);
-        return { success: true, model: modelName };
+        return { success: true, model: modelName, triedModels };
       } catch (error) {
-        console.warn(`Model ${modelName} failed:`, error.message);
+        console.warn(`Model ${modelName} failed:`, error.message, error);
+        triedModels.push({ model: modelName, error: error.message });
+        
+        // Log more details for debugging
+        if (error.message?.includes('API key')) {
+          console.error('API key issue detected');
+        }
+        if (error.status) {
+          console.error(`HTTP status: ${error.status}`);
+        }
       }
     }
     
-    throw new Error('No Gemini models available');
+    throw new Error(`No Gemini models available. Tried: ${triedModels.map(t => t.model).join(', ')}`);
   } catch (error) {
     console.error('Failed to initialize any Gemini model:', error);
     model = null;
-    return { success: false, error: error.message };
+    return { success: false, error: error.message, triedModels: error.triedModels || [] };
   }
 }
 
@@ -89,11 +110,26 @@ const analysisCache = new Map();
 // Test function to verify Gemini is working
 export async function testGeminiConnection() {
   try {
+    // First check if we have an API key
+    if (!API_KEY) {
+      return { 
+        success: false, 
+        error: 'No API key found. Please set VITE_GEMINI_API_KEY in Render environment variables.',
+        apiKey: 'Missing',
+        envVars: Object.keys(import.meta.env).filter(k => k.startsWith('VITE_'))
+      };
+    }
+    
     if (!model) {
       console.log('Model not initialized, attempting to initialize...');
       const initResult = await initializeGeminiModel();
       if (!initResult.success) {
-        return { success: false, error: 'Failed to initialize model: ' + initResult.error };
+        return { 
+          success: false, 
+          error: 'Failed to initialize model: ' + initResult.error,
+          apiKey: `Present (${API_KEY.length} chars)`,
+          triedModels: initResult.triedModels || []
+        };
       }
     }
     
@@ -112,7 +148,8 @@ export async function testGeminiConnection() {
       success: false, 
       error: error.message || 'Unknown error',
       details: error,
-      apiKey: API_KEY ? 'Present' : 'Missing'
+      apiKey: API_KEY ? `Present (${API_KEY.length} chars)` : 'Missing',
+      apiKeyStart: API_KEY ? API_KEY.substring(0, 10) : 'N/A'
     };
   }
 }
