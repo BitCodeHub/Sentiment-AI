@@ -689,7 +689,7 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
               if (!painPoints || typeof painPoints !== 'object') return null;
               
               return Object.entries(painPoints).map(([category, data]) => {
-              if (data.count === 0) return null;
+              if (!data || !data.count || data.count === 0) return null;
               const isExpanded = expandedSections[`tech-${category}`];
               
               return (
@@ -702,7 +702,7 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
                       <div className="header-content">
                         <span>{category.charAt(0).toUpperCase() + category.slice(1)} Issues</span>
                         <div className="header-stats">
-                          <span className="issue-count">{data.count} reports</span>
+                          <span className="issue-count">{data?.count || 0} reports</span>
                           {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
                         </div>
                       </div>
@@ -715,14 +715,14 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
                           const subcats = data.subcategories;
                           if (!subcats || typeof subcats !== 'object') return null;
                           return Object.entries(subcats).map(([subcat, subcatData]) => {
-                          if (!subcatData || subcatData.count === 0) return null;
+                          if (!subcatData || !subcatData.count || subcatData.count === 0) return null;
                           return (
                             <div key={subcat} className="subcategory">
                               <div className="subcat-header">
                                 <span className="subcat-name">{subcat}</span>
-                                <span className="subcat-count">{subcatData.count} mentions</span>
+                                <span className="subcat-count">{subcatData?.count || 0} mentions</span>
                               </div>
-                              {subcatData.examples && subcatData.examples.length > 0 && (
+                              {subcatData?.examples && subcatData.examples.length > 0 && (
                                 <div className="examples">
                                   {subcatData.examples.map((example, idx) => (
                                     <div key={idx} className="example">
@@ -770,7 +770,7 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
                     <div key={idx} className="feature-item">
                       <span className="feature-number">{idx + 1}</span>
                       <span className="feature-text">{request.request}</span>
-                      <span className="feature-count">{request.count} requests</span>
+                      <span className="feature-count">{request?.count || 0} requests</span>
                     </div>
                   ))}
                 </div>
@@ -790,7 +790,7 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
                     <div key={idx} className="feature-item">
                       <span className="feature-number">{idx + 1}</span>
                       <span className="feature-text">{request.request}</span>
-                      <span className="feature-count">{request.count} requests</span>
+                      <span className="feature-count">{request?.count || 0} requests</span>
                     </div>
                   ))}
                 </div>
@@ -807,10 +807,10 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
               <div className="opportunities-list">
                 {(analysis.competitor?.featureRequests || []).slice(0, 5).map((request, idx) => {
                   const userHasRequest = (analysis.user?.featureRequests || []).find(r => 
-                    r.request.toLowerCase().includes(request.request.toLowerCase().split(' ')[0])
+                    r?.request && request?.request && r.request.toLowerCase().includes(request.request.toLowerCase().split(' ')[0])
                   );
                   
-                  if (!userHasRequest || userHasRequest.count < request.count * 0.5) {
+                  if (!userHasRequest || (userHasRequest?.count || 0) < (request?.count || 0) * 0.5) {
                     return (
                       <div key={idx} className="opportunity-item">
                         <div className="opportunity-icon">
@@ -818,8 +818,8 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
                         </div>
                         <div className="opportunity-content">
                           <h4>Implement: {request.request}</h4>
-                          <p>Competitor users requested this {request.count} times. 
-                             {userHasRequest ? ` Your users requested it ${userHasRequest.count} times.` : ' Not requested by your users yet.'}
+                          <p>Competitor users requested this {request?.count || 0} times. 
+                             {userHasRequest ? ` Your users requested it ${userHasRequest?.count || 0} times.` : ' Not requested by your users yet.'}
                           </p>
                         </div>
                       </div>
@@ -948,7 +948,7 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
                             {rec.features.map((feat, fidx) => (
                               <div key={fidx} className="feature-rec">
                                 <CheckCircle size={16} />
-                                <span>{feat.request} ({feat.count} requests)</span>
+                                <span>{feat?.request || 'Feature'} ({feat?.count || 0} requests)</span>
                               </div>
                             ))}
                           </div>
