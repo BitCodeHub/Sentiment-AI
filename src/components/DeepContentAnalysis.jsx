@@ -397,7 +397,7 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
               {analysis.geminiInsights || analysis.user?.aiInsights || analysis.competitor?.aiInsights ? (
                 <>
                   <Sparkles size={20} />
-                  AI-Powered Insights (Google Gemini)
+                  AI-Powered Insights (Google Gemini 2.5)
                 </>
               ) : (
                 <>
@@ -410,35 +410,107 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
           <CardContent>
             <p>
               {analysis.geminiInsights || analysis.user?.aiInsights || analysis.competitor?.aiInsights
-                ? "Deep analysis powered by Google Gemini AI provides intelligent insights and recommendations based on review content."
-                : "Analysis is based on pattern matching. Attempting to connect to Gemini AI..."}
+                ? "Deep analysis powered by Google Gemini 2.5 AI provides intelligent insights and recommendations based on review content."
+                : "Analysis is based on pattern matching. Click below to enable AI-powered analysis."}
             </p>
             {error && error !== 'No reviews data available for analysis' && (
               <p style={{fontSize: '0.875rem', color: '#f59e0b', marginTop: '0.5rem'}}>
-                Note: Gemini AI connection is being established. Results will improve once connected.
+                Note: {error}
               </p>
             )}
-            {(!analysis.geminiInsights && !analysis.user?.aiInsights && !analysis.competitor?.aiInsights) && (
+            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem', flexWrap: 'wrap' }}>
+              {(!analysis.geminiInsights && !analysis.user?.aiInsights && !analysis.competitor?.aiInsights) && (
+                <button
+                  onClick={async () => {
+                    setLoading(true);
+                    setError(null);
+                    try {
+                      // Test Gemini connection first
+                      console.log('Testing Gemini before re-analysis...');
+                      const testResult = await testGeminiConnection();
+                      if (testResult.success) {
+                        console.log('Gemini is working, re-running analysis...');
+                        // Clear the analysis to force complete re-run
+                        setAnalysis(null);
+                        // Force re-run the analysis by incrementing retry count
+                        setRetryCount(prev => prev + 1);
+                      } else {
+                        setError(`Gemini connection failed: ${testResult.error}`);
+                        setLoading(false);
+                      }
+                    } catch (error) {
+                      console.error('Failed to connect to Gemini:', error);
+                      setError('Failed to connect to Gemini AI');
+                      setLoading(false);
+                    }
+                  }}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    background: '#8b5cf6',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontSize: '0.875rem',
+                    fontWeight: '500',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
+                  }}
+                >
+                  <RefreshCw size={16} />
+                  Enable AI Analysis
+                </button>
+              )}
+              {(analysis.geminiInsights || analysis.user?.aiInsights || analysis.competitor?.aiInsights) && (
+                <button
+                  onClick={async () => {
+                    setLoading(true);
+                    setError(null);
+                    try {
+                      // Clear and re-run analysis
+                      console.log('Re-running AI analysis...');
+                      setAnalysis(null);
+                      setRetryCount(prev => prev + 1);
+                    } catch (error) {
+                      console.error('Failed to re-run analysis:', error);
+                      setError('Failed to re-run analysis');
+                      setLoading(false);
+                    }
+                  }}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    background: '#10b981',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontSize: '0.875rem',
+                    fontWeight: '500',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
+                  }}
+                >
+                  <RefreshCw size={16} />
+                  Refresh AI Analysis
+                </button>
+              )}
               <button
                 onClick={async () => {
-                  setLoading(true);
-                  try {
-                    // Reinitialize Gemini model
-                    console.log('Reinitializing Gemini model...');
-                    const initResult = await initializeGeminiModel();
-                    console.log('Gemini reinitialization result:', initResult);
-                    
-                    // Retry the analysis
-                    setRetryCount(prev => prev + 1);
-                  } catch (error) {
-                    console.error('Failed to reinitialize Gemini:', error);
+                  console.log('Testing Gemini connection...');
+                  const testResult = await testGeminiConnection();
+                  console.log('Test result:', testResult);
+                  
+                  if (testResult.success) {
+                    alert('Gemini Test Result: Success! Click "Enable AI Analysis" to use AI-powered insights.');
+                  } else {
+                    alert(`Gemini Test Result: Failed - ${testResult.error}`);
                   }
-                  setLoading(false);
                 }}
                 style={{
-                  marginTop: '1rem',
                   padding: '0.5rem 1rem',
-                  background: '#8b5cf6',
+                  background: '#64748b',
                   color: 'white',
                   border: 'none',
                   borderRadius: '6px',
@@ -450,36 +522,9 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
                   gap: '0.5rem'
                 }}
               >
-                <RefreshCw size={16} />
-                Retry AI Connection
+                Test Connection
               </button>
-            )}
-            {/* Temporary debug button */}
-            <button
-              onClick={async () => {
-                console.log('Testing Gemini connection...');
-                const testResult = await testGeminiConnection();
-                console.log('Test result:', testResult);
-                alert(`Gemini Test Result: ${testResult.success ? 'Success!' : 'Failed - ' + testResult.error}`);
-              }}
-              style={{
-                marginTop: '0.5rem',
-                marginLeft: (!analysis.geminiInsights && !analysis.user?.aiInsights && !analysis.competitor?.aiInsights) ? '0' : '1rem',
-                padding: '0.5rem 1rem',
-                background: '#3b82f6',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontSize: '0.875rem',
-                fontWeight: '500',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem'
-              }}
-            >
-              Test Gemini Connection
-            </button>
+            </div>
           </CardContent>
         </Card>
       )}
