@@ -957,6 +957,19 @@ export async function performDeepContentAnalysis(userReviews, competitorReviews)
       formatGeminiRecommendations(geminiComparison.strategicRecommendations) :
       generateRecommendations(userAnalysis, comparison);
     
+    // Final validation of data structure
+    console.log('=== FINAL ANALYSIS VALIDATION ===');
+    console.log('User pain points summary:', {
+      hasData: !!userAnalysis.painPoints,
+      categories: Object.keys(userAnalysis.painPoints || {}),
+      totalCount: Object.values(userAnalysis.painPoints || {}).reduce((sum, cat) => sum + (cat?.count || 0), 0)
+    });
+    console.log('User satisfaction summary:', {
+      hasData: !!userAnalysis.satisfaction,
+      categories: Object.keys(userAnalysis.satisfaction || {}),
+      totalCount: Object.values(userAnalysis.satisfaction || {}).reduce((sum, cat) => sum + (cat?.count || 0), 0)
+    });
+    
     const result = {
       user: userAnalysis,
       competitor: competitorAnalysis,
