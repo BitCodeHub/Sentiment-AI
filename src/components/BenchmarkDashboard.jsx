@@ -34,13 +34,19 @@ const BenchmarkDashboard = ({ benchmarkData }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedMetric, setSelectedMetric] = useState('overview');
   const [showAdvancedAnalytics, setShowAdvancedAnalytics] = useState(false);
-  const [showDeepAnalysis, setShowDeepAnalysis] = useState(true); // Show by default
+  const [showDeepAnalysis, setShowDeepAnalysis] = useState(false); // Start hidden until analysis completes
   const [deepAnalysisData, setDeepAnalysisData] = useState(null);
   const [timeFrame, setTimeFrame] = useState('30'); // 30, 60, 90, all days
-  const [analysisLoading, setAnalysisLoading] = useState(true);
+  const [analysisLoading, setAnalysisLoading] = useState(false);
   const [analysisProgress, setAnalysisProgress] = useState(0);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const { user, competitor } = benchmarkData;
+  
+  // Add a key to force re-render when data changes
+  const dataKey = useMemo(() => {
+    return `${user?.reviews?.length || 0}-${competitor?.reviews?.length || 0}-${Date.now()}`;
+  }, [user?.reviews?.length, competitor?.reviews?.length]);
 
   // Extract clean app names
   const userAppName = user.appName || 'Your App';
@@ -68,6 +74,20 @@ const BenchmarkDashboard = ({ benchmarkData }) => {
   useEffect(() => {
     const runAnalysis = async () => {
       if (user.reviews && competitor.reviews && user.reviews.length > 0 && competitor.reviews.length > 0) {
+        console.log('Starting automatic deep content analysis...', {
+          userReviews: user.reviews.length,
+          competitorReviews: competitor.reviews.length,
+          hasDeepAnalysisData: !!deepAnalysisData,
+          isAnalyzing
+        });
+        
+        // Only run if not already analyzing and no data yet
+        if (isAnalyzing || deepAnalysisData) {
+          console.log('Skipping analysis - already running or data exists');
+          return;
+        }
+        
+        setIsAnalyzing(true);
         setAnalysisLoading(true);
         setAnalysisProgress(0);
         
@@ -83,10 +103,17 @@ const BenchmarkDashboard = ({ benchmarkData }) => {
         }, 200);
         
         try {
+          console.log('Calling performDeepContentAnalysis with:', {
+            userReviews: user.reviews.length,
+            competitorReviews: competitor.reviews.length
+          });
+          
           const analysis = await performDeepContentAnalysis(
             user.reviews,
             competitor.reviews
           );
+          
+          console.log('Deep analysis completed:', analysis);
           setDeepAnalysisData(analysis);
           setAnalysisProgress(100);
           
@@ -94,10 +121,12 @@ const BenchmarkDashboard = ({ benchmarkData }) => {
           setTimeout(() => {
             setShowDeepAnalysis(true);
             setAnalysisLoading(false);
+            setIsAnalyzing(false);
           }, 500);
         } catch (error) {
           console.error('Deep analysis failed:', error);
           setAnalysisLoading(false);
+          setIsAnalyzing(false);
           clearInterval(progressInterval);
         }
       }
@@ -105,6 +134,14 @@ const BenchmarkDashboard = ({ benchmarkData }) => {
     
     runAnalysis();
   }, [user.reviews, competitor.reviews]);
+  
+  // Reset analysis when data changes significantly
+  useEffect(() => {
+    console.log('Data changed, resetting analysis state');
+    setDeepAnalysisData(null);
+    setShowDeepAnalysis(false);
+    setIsAnalyzing(false);
+  }, [dataKey]);
 
   // Calculate comparative metrics
   const comparativeMetrics = useMemo(() => {
@@ -455,21 +492,20 @@ const BenchmarkDashboard = ({ benchmarkData }) => {
                     <div className="progress-fill" style={{ width: `${analysisProgress}%` }} />
                   </div>
                 </div>
-              ) : (
-                <button 
-                  className="deep-analysis-toggle active"
-                  onClick={() => setShowDeepAnalysis(!showDeepAnalysis)}
-                >
-                  <FileText size={20} />
-                  {showDeepAnalysis ? 'Hide' : 'Show'} Deep Content Analysis
-                  {deepAnalysisData?.geminiInsights && (
-                    <span className="ai-badge">
-                      <Sparkles size={14} />
-                      AI-Powered
-                    </span>
-                  )}
-                </button>
-              )}
+              ) : deepAnalysisData ? (
+                <div className="analysis-status">
+                  <span className="analysis-ready">
+                    <CheckCircle size={20} className="success-icon" />
+                    Deep Analysis Complete
+                    {deepAnalysisData?.geminiInsights && (
+                      <span className="ai-badge">
+                        <Sparkles size={14} />
+                        AI-Powered
+                      </span>
+                    )}
+                  </span>
+                </div>
+              ) : null}
             </div>
           </div>
           
@@ -524,8 +560,8 @@ const BenchmarkDashboard = ({ benchmarkData }) => {
           </div>
         )}
 
-        {/* Deep Content Analysis Section */}
-        {showDeepAnalysis && !analysisLoading && (
+        {/* Deep Content Analysis Section - Always show when data is ready */}
+        {deepAnalysisData && showDeepAnalysis && !analysisLoading && (
           <div className="deep-analysis-container animated-entry">
             <DeepContentAnalysis 
               userReviews={user.reviews || []}
@@ -537,8 +573,8 @@ const BenchmarkDashboard = ({ benchmarkData }) => {
           </div>
         )}
 
-        {/* Key Metrics Comparison */}
-        {(!showDeepAnalysis || analysisLoading) && (
+        {/* Key Metrics Comparison - Show while analysis is loading */}
+        {!showDeepAnalysis && (
           <>
         <h2 className="section-title">
           <BarChart3 size={24} />
