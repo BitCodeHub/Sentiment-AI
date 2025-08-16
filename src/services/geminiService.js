@@ -2,7 +2,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 // Initialize Gemini with API key
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || 'AIzaSyBkW1gEVJxFASbgCK43X6JyOZ0eiqnPSoc';
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || 'AIzaSyCJP6OG7y82p0Eju_Qv-GsUeaWz-vjhvRg';
 
 console.log('Gemini API Key status:', API_KEY ? `Key found (length: ${API_KEY.length})` : 'No key found');
 console.log('Environment:', import.meta.env.MODE);
@@ -50,15 +50,15 @@ export async function initializeGeminiModel() {
       }
     ];
 
-    // Try gemini-1.5-flash first (most recent and available)
+    // Try models in order of availability (based on API key test)
     const modelsToTry = [
-      'gemini-1.5-flash',
+      'gemini-1.5-flash',  // Fast and available
       'gemini-1.5-flash-latest',
+      'gemini-2.0-flash',
+      'gemini-2.5-flash',
       'gemini-1.5-pro',
       'gemini-1.5-pro-latest',
-      'gemini-pro',
-      'gemini-1.0-pro',
-      'gemini-1.0-pro-latest'
+      'gemini-2.0-flash-lite'
     ];
 
     const triedModels = [];
@@ -81,19 +81,48 @@ export async function initializeGeminiModel() {
         return { success: true, model: modelName, triedModels };
       } catch (error) {
         console.warn(`Model ${modelName} failed:`, error.message, error);
-        triedModels.push({ model: modelName, error: error.message });
+        
+        const errorInfo = {
+          model: modelName,
+          error: error.message,
+          status: error.status,
+          statusText: error.statusText
+        };
+        
+        triedModels.push(errorInfo);
         
         // Log more details for debugging
-        if (error.message?.includes('API key')) {
-          console.error('API key issue detected');
+        if (error.message?.includes('API key') || error.message?.includes('API_KEY')) {
+          console.error('API key issue detected for model:', modelName);
+        }
+        if (error.message?.includes('404') || error.message?.includes('not found')) {
+          console.error('Model not found:', modelName);
         }
         if (error.status) {
-          console.error(`HTTP status: ${error.status}`);
+          console.error(`HTTP status ${error.status} for model ${modelName}`);
         }
       }
     }
     
-    throw new Error(`No Gemini models available. Tried: ${triedModels.map(t => t.model).join(', ')}`);
+    // Try one more time with gemini-1.5-flash as a last resort
+    try {
+      console.log('Final attempt with basic gemini-1.5-flash configuration...');
+      model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const testResult = await model.generateContent('Say OK');
+      const testResponse = await testResult.response;
+      console.log('Basic gemini-1.5-flash model worked!');
+      return { success: true, model: 'gemini-1.5-flash', triedModels };
+    } catch (finalError) {
+      console.error('Final attempt failed:', finalError.message);
+    }
+    
+    const errorDetails = {
+      message: `No Gemini models available`,
+      apiKey: `${API_KEY.substring(0, 10)}... (${API_KEY.length} chars)`,
+      triedModels: triedModels
+    };
+    
+    throw new Error(JSON.stringify(errorDetails));
   } catch (error) {
     console.error('Failed to initialize any Gemini model:', error);
     model = null;
