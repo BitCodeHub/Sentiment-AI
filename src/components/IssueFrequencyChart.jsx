@@ -58,7 +58,7 @@ const IssueFrequencyChart = ({ userAnalysis, competitorAnalysis, userAppName, co
         name: subcat,
         size: subcatData?.count || 0,
         category,
-        percentage: ((subcatData?.count || 0) / userAnalysis.totalReviews) * 100).toFixed(1)
+        percentage: (((subcatData?.count || 0) / userAnalysis.totalReviews) * 100).toFixed(1)
       })) : [];
       
       return {
