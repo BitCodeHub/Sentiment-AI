@@ -59,6 +59,19 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
           competitorSample: competitorReviews?.[0]
         });
         
+        // Log review structure to understand field names
+        if (userReviews?.length > 0) {
+          console.log('User review fields:', Object.keys(userReviews[0]));
+          console.log('Sample user review:', {
+            text: userReviews[0].text || userReviews[0].content || userReviews[0]['Review Text'] || userReviews[0].Body,
+            rating: userReviews[0].rating || userReviews[0].Rating,
+            fullReview: userReviews[0]
+          });
+        }
+        if (competitorReviews?.length > 0) {
+          console.log('Competitor review fields:', Object.keys(competitorReviews[0]));
+        }
+        
         const result = await performDeepContentAnalysis(userReviews, competitorReviews);
         console.log('Deep analysis result:', result);
         setAnalysis(result);
@@ -295,21 +308,64 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
   const satisfactionComparison = useMemo(() => {
     if (!analysis || !analysis.user?.satisfaction || !analysis.competitor?.satisfaction) return [];
     
+    // Debug logging
+    console.log('Satisfaction Comparison Debug:', {
+      hasAnalysis: !!analysis,
+      hasUserSatisfaction: !!analysis?.user?.satisfaction,
+      hasCompetitorSatisfaction: !!analysis?.competitor?.satisfaction,
+      userSatisfaction: analysis?.user?.satisfaction,
+      competitorSatisfaction: analysis?.competitor?.satisfaction,
+      userTotalReviews: analysis?.user?.totalReviews,
+      competitorTotalReviews: analysis?.competitor?.totalReviews
+    });
+    
     // Ensure satisfaction is an object before using Object.keys
     const userSatisfaction = analysis.user.satisfaction;
     if (!userSatisfaction || typeof userSatisfaction !== 'object') return [];
     
-    return Object.keys(userSatisfaction).map(category => ({
-      category: category.charAt(0).toUpperCase() + category.slice(1),
-      [userAppName]: analysis.user.totalReviews > 0 
-        ? (analysis.user.satisfaction[category]?.count || 0) / analysis.user.totalReviews * 100 
-        : 0,
-      [competitorAppName]: analysis.competitor.totalReviews > 0 
-        ? (analysis.competitor.satisfaction[category]?.count || 0) / analysis.competitor.totalReviews * 100 
-        : 0,
-      userCount: analysis.user.satisfaction[category]?.count || 0,
-      competitorCount: analysis.competitor.satisfaction[category]?.count || 0
-    })).sort((a, b) => (b.userCount + b.competitorCount) - (a.userCount + a.competitorCount));
+    const result = Object.keys(userSatisfaction).map(category => {
+      const userCount = analysis.user.satisfaction[category]?.count || 0;
+      const competitorCount = analysis.competitor.satisfaction[category]?.count || 0;
+      const userPercentage = analysis.user.totalReviews > 0 
+        ? (userCount / analysis.user.totalReviews) * 100 
+        : 0;
+      const competitorPercentage = analysis.competitor.totalReviews > 0 
+        ? (competitorCount / analysis.competitor.totalReviews) * 100 
+        : 0;
+      
+      console.log(`Satisfaction category ${category}:`, {
+        userCount,
+        competitorCount,
+        userPercentage,
+        competitorPercentage,
+        userTotalReviews: analysis.user.totalReviews,
+        competitorTotalReviews: analysis.competitor.totalReviews
+      });
+      
+      return {
+        category: category.charAt(0).toUpperCase() + category.slice(1),
+        [userAppName]: userPercentage,
+        [competitorAppName]: competitorPercentage,
+        userCount: userCount,
+        competitorCount: competitorCount
+      };
+    }).sort((a, b) => (b.userCount + b.competitorCount) - (a.userCount + a.competitorCount));
+    
+    console.log('Final satisfaction comparison data:', result);
+    
+    // If no data, provide sample data to show the chart structure
+    if (result.length === 0 && analysis) {
+      console.warn('No satisfaction data found, using default structure');
+      return [
+        { category: 'Performance', [userAppName]: 0, [competitorAppName]: 0, userCount: 0, competitorCount: 0 },
+        { category: 'Usability', [userAppName]: 0, [competitorAppName]: 0, userCount: 0, competitorCount: 0 },
+        { category: 'Features', [userAppName]: 0, [competitorAppName]: 0, userCount: 0, competitorCount: 0 },
+        { category: 'Value', [userAppName]: 0, [competitorAppName]: 0, userCount: 0, competitorCount: 0 },
+        { category: 'Overall', [userAppName]: 0, [competitorAppName]: 0, userCount: 0, competitorCount: 0 }
+      ];
+    }
+    
+    return result;
   }, [analysis, userAppName, competitorAppName]);
 
   const CustomTooltip = ({ active, payload, label }) => {
@@ -543,6 +599,29 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
               >
                 Test Connection
               </button>
+              <button
+                onClick={async () => {
+                  console.log('Testing satisfaction analysis...');
+                  const { testSatisfactionAnalysis } = await import('../utils/testSatisfactionAnalysis');
+                  const result = testSatisfactionAnalysis();
+                  console.log('Test completed, check console for results');
+                }}
+                style={{
+                  padding: '0.5rem 1rem',
+                  background: '#8b5cf6',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem',
+                  fontWeight: '500',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}
+              >
+                Test Satisfaction
+              </button>
             </div>
           </CardContent>
         </Card>
@@ -644,6 +723,17 @@ const DeepContentAnalysis = ({ userReviews, competitorReviews, userAppName, comp
               <CardTitle>User Satisfaction Areas</CardTitle>
             </CardHeader>
             <CardContent>
+              {/* Debug info */}
+              {satisfactionComparison.length === 0 && (
+                <div style={{ padding: '1rem', background: '#fef3c7', borderRadius: '0.5rem', marginBottom: '1rem' }}>
+                  <p style={{ color: '#92400e', fontWeight: '500' }}>
+                    No satisfaction data found. Check console for debugging information.
+                  </p>
+                  <p style={{ color: '#92400e', fontSize: '0.875rem', marginTop: '0.5rem' }}>
+                    Data points: {satisfactionComparison.length}
+                  </p>
+                </div>
+              )}
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={satisfactionComparison}>
                   <CartesianGrid strokeDasharray="3 3" />

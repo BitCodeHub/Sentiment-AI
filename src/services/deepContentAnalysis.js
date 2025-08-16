@@ -54,23 +54,31 @@ const COMPLAINT_PATTERNS = {
 
 const POSITIVE_PATTERNS = {
   performance: {
-    keywords: ['fast', 'quick', 'smooth', 'responsive', 'efficient', 'works well', 'great performance'],
+    keywords: ['fast', 'quick', 'smooth', 'responsive', 'efficient', 'works well', 'great performance', 
+               'no lag', 'speedy', 'runs great', 'works great', 'performs well', 'reliable', 'stable'],
     weight: 1.2
   },
   usability: {
-    keywords: ['easy', 'simple', 'intuitive', 'user-friendly', 'clean', 'beautiful', 'love the design'],
+    keywords: ['easy', 'simple', 'intuitive', 'user-friendly', 'clean', 'beautiful', 'love the design',
+               'easy to use', 'straightforward', 'convenient', 'nice design', 'great ui', 'great ux',
+               'well designed', 'looks great', 'nice interface'],
     weight: 1.1
   },
   features: {
-    keywords: ['useful', 'helpful', 'amazing features', 'love this feature', 'great functionality'],
+    keywords: ['useful', 'helpful', 'amazing features', 'love this feature', 'great functionality',
+               'great app', 'love the', 'awesome', 'fantastic', 'powerful', 'comprehensive',
+               'everything i need', 'all the features', 'feature-rich', 'works as expected'],
     weight: 1.0
   },
   value: {
-    keywords: ['worth it', 'great value', 'affordable', 'good price', 'free', 'reasonable'],
+    keywords: ['worth it', 'great value', 'affordable', 'good price', 'free', 'reasonable',
+               'worth the money', 'good deal', 'fair price', 'worth every penny', 'great for the price'],
     weight: 0.9
   },
   overall: {
-    keywords: ['perfect', 'excellent', 'amazing', 'best', 'love it', 'recommend', '5 stars'],
+    keywords: ['perfect', 'excellent', 'amazing', 'best', 'love it', 'recommend', '5 stars',
+               'highly recommend', 'must have', 'essential', 'fantastic app', 'wonderful',
+               'outstanding', 'superb', 'brilliant', 'great overall', 'very satisfied', 'happy with'],
     weight: 1.3
   }
 };
@@ -278,6 +286,11 @@ function analyzePainPoints(reviews) {
 function analyzeSatisfactionAreas(reviews) {
   const satisfaction = {};
   
+  console.log('analyzeSatisfactionAreas called with:', {
+    reviewCount: reviews?.length || 0,
+    firstReview: reviews?.[0]
+  });
+  
   if (!reviews || reviews.length === 0) {
     // Return empty structure
     Object.keys(POSITIVE_PATTERNS).forEach(category => {
@@ -297,9 +310,19 @@ function analyzeSatisfactionAreas(reviews) {
       examples: []
     };
     
-    reviews.forEach(review => {
+    let categoryMatches = 0;
+    reviews.forEach((review, index) => {
       const text = (review.text || review.content || review['Review Text'] || review.Body || '').toLowerCase();
-      if (POSITIVE_PATTERNS[category].keywords.some(keyword => text.includes(keyword))) {
+      const matchedKeywords = POSITIVE_PATTERNS[category].keywords.filter(keyword => text.includes(keyword));
+      
+      // Debug first few reviews for each category
+      if (index < 3 && category === 'performance') {
+        console.log(`Review ${index} text sample:`, text.substring(0, 100));
+        console.log(`Matched keywords for ${category}:`, matchedKeywords);
+      }
+      
+      if (matchedKeywords.length > 0) {
+        categoryMatches++;
         satisfaction[category].count++;
         if (satisfaction[category].examples.length < 5) {
           satisfaction[category].examples.push({
@@ -310,8 +333,11 @@ function analyzeSatisfactionAreas(reviews) {
         }
       }
     });
+    
+    console.log(`Satisfaction category ${category}: found ${categoryMatches} matches out of ${reviews.length} reviews`);
   });
   
+  console.log('Final satisfaction areas result:', satisfaction);
   return satisfaction;
 }
 
@@ -581,16 +607,20 @@ function normalizePainPoints(painPoints) {
 
 // Helper function to normalize satisfaction structure
 function normalizeSatisfaction(satisfaction) {
+  console.log('normalizeSatisfaction input:', satisfaction);
+  
   // If satisfaction is already in the correct format, return it
   if (satisfaction && typeof satisfaction === 'object' && !satisfaction.categories) {
     const firstKey = Object.keys(satisfaction)[0];
     if (firstKey && satisfaction[firstKey] && typeof satisfaction[firstKey].count === 'number') {
+      console.log('Satisfaction already normalized, returning as-is');
       return satisfaction;
     }
   }
   
   // If satisfaction has a categories property, use that
   if (satisfaction && satisfaction.categories) {
+    console.log('Satisfaction has categories property, normalizing...');
     const normalized = {};
     Object.keys(POSITIVE_PATTERNS).forEach(category => {
       if (satisfaction.categories[category]) {
@@ -607,10 +637,12 @@ function normalizeSatisfaction(satisfaction) {
         };
       }
     });
+    console.log('Normalized satisfaction from categories:', normalized);
     return normalized;
   }
   
   // If satisfaction is invalid, return empty structure
+  console.log('Invalid satisfaction structure, returning empty');
   const emptySatisfaction = {};
   Object.keys(POSITIVE_PATTERNS).forEach(category => {
     emptySatisfaction[category] = {
@@ -690,12 +722,21 @@ export async function performDeepContentAnalysis(userReviews, competitorReviews)
     });
 
     // Combine AI insights with pattern-based analysis
+    const userSatisfactionRaw = userGeminiAnalysis?.positiveAspects || analyzeSatisfactionAreas(userReviews || []);
+    const userSatisfactionNormalized = normalizeSatisfaction(userSatisfactionRaw);
+    
+    console.log('User satisfaction processing:', {
+      hasGeminiAnalysis: !!userGeminiAnalysis,
+      rawSatisfaction: userSatisfactionRaw,
+      normalizedSatisfaction: userSatisfactionNormalized
+    });
+    
     const userAnalysis = {
       totalReviews: userReviews?.length || 0,
       technicalIssues: userGeminiAnalysis?.technicalIssues || extractTechnicalIssues(userReviews || []),
       featureRequests: userGeminiAnalysis?.featureRequests || extractFeatureRequests(userReviews || []),
       painPoints: normalizePainPoints(userGeminiAnalysis?.painPoints || analyzePainPoints(userReviews || [])),
-      satisfaction: normalizeSatisfaction(userGeminiAnalysis?.positiveAspects || analyzeSatisfactionAreas(userReviews || [])),
+      satisfaction: userSatisfactionNormalized,
       aiInsights: userGeminiAnalysis
     };
     
@@ -712,12 +753,21 @@ export async function performDeepContentAnalysis(userReviews, competitorReviews)
       });
     }
     
+    const competitorSatisfactionRaw = competitorGeminiAnalysis?.positiveAspects || analyzeSatisfactionAreas(competitorReviews || []);
+    const competitorSatisfactionNormalized = normalizeSatisfaction(competitorSatisfactionRaw);
+    
+    console.log('Competitor satisfaction processing:', {
+      hasGeminiAnalysis: !!competitorGeminiAnalysis,
+      rawSatisfaction: competitorSatisfactionRaw,
+      normalizedSatisfaction: competitorSatisfactionNormalized
+    });
+    
     const competitorAnalysis = {
       totalReviews: competitorReviews?.length || 0,
       technicalIssues: competitorGeminiAnalysis?.technicalIssues || extractTechnicalIssues(competitorReviews || []),
       featureRequests: competitorGeminiAnalysis?.featureRequests || extractFeatureRequests(competitorReviews || []),
       painPoints: normalizePainPoints(competitorGeminiAnalysis?.painPoints || analyzePainPoints(competitorReviews || [])),
-      satisfaction: normalizeSatisfaction(competitorGeminiAnalysis?.positiveAspects || analyzeSatisfactionAreas(competitorReviews || [])),
+      satisfaction: competitorSatisfactionNormalized,
       aiInsights: competitorGeminiAnalysis
     };
     
