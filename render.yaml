@@ -2,8 +2,8 @@ services:
   - type: web
     name: sentiment-review-dashboard
     env: node
-    buildCommand: pwd && ls -la && npm install && npm run build && ls -la dist/
-    startCommand: npx serve -s dist -p $PORT
+    buildCommand: cd Documents/sentiment/review-dashboard && npm install && npm run build
+    startCommand: cd Documents/sentiment/review-dashboard && npx serve -s dist -p $PORT
     envVars:
       - key: NODE_VERSION
         value: 22.16.0
