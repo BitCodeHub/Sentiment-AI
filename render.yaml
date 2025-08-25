@@ -2,7 +2,7 @@ services:
   - type: web
     name: sentiment-review-dashboard
     env: node
-    buildCommand: cd /opt/render/project && npm install && npm run build
+    buildCommand: pwd && ls -la && find . -name "package.json" | head -10
     startCommand: npx serve -s dist -p $PORT
     envVars:
       - key: NODE_VERSION
