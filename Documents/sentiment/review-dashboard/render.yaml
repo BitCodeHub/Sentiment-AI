@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: review-dashboard
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npx serve -s dist -l 3000
+    publishDir: dist
+    envVars:
+      - key: NODE_VERSION
+        value: 22.16.0
