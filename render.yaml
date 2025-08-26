@@ -2,8 +2,10 @@ services:
   - type: web
     name: sentiment-review-dashboard
     env: node
-    buildCommand: cd Documents/sentiment/review-dashboard && npm install && npm run build && echo "Build complete. Checking dist:" && ls -la dist/ && echo "Dist contents:" && find dist -type f | head -20
-    startCommand: cd Documents/sentiment/review-dashboard && ls -la && npx serve -s dist -p $PORT
+    buildCommand: cd Documents/sentiment/review-dashboard && npm install && npm run build
+    startCommand: cd Documents/sentiment/review-dashboard && npx serve -s dist -p $PORT
     envVars:
       - key: NODE_VERSION
         value: 22.16.0
+      - key: VITE_OPENAI_API_KEY
+        sync: false
