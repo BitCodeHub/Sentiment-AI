@@ -9,6 +9,57 @@
   scroll-behavior: smooth;
 }
 
+/* Sidebar Layout */
+.modern-dashboard.with-sidebar {
+  display: flex;
+  position: relative;
+}
+
+.dashboard-sidebar {
+  width: 320px;
+  min-height: 100vh;
+  background: white;
+  border-right: 1px solid #e5e7eb;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.04);
+  transition: transform 0.3s ease;
+}
+
+.sidebar-content {
+  padding: 24px;
+}
+
+.dashboard-main-area {
+  flex: 1;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Responsive Sidebar */
+@media (max-width: 1024px) {
+  .dashboard-sidebar {
+    position: fixed;
+    z-index: 1000;
+    transform: translateX(-100%);
+  }
+  
+  .dashboard-sidebar.open {
+    transform: translateX(0);
+  }
+  
+  .dashboard-main-area {
+    margin-left: 0;
+  }
+}
+
+/* Smooth sidebar animations */
+.dashboard-sidebar {
+  transition: transform 0.3s ease-in-out;
+}
+
 /* Smooth scrolling for all elements */
 html {
   scroll-behavior: smooth;

@@ -324,34 +324,167 @@ body {
   margin-bottom: 1rem;
 }
 
-.keyword-cloud {
+/* Enhanced Word Cloud Styles */
+.enhanced-keyword-cloud {
+  width: 100%;
+  height: 100%;
   display: flex;
-  flex-wrap: wrap;
-  gap: 1rem 1.5rem;
+  flex-direction: column;
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.cloud-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 0 16px 0;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 20px;
+}
+
+.cloud-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+
+.randomize-btn {
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2rem;
-  min-height: 200px;
-  background: #f8fafc;
-  border-radius: 12px;
+  color: #6b7280;
+}
+
+.randomize-btn:hover {
+  background: #e5e7eb;
+  color: #374151;
+  transform: rotate(180deg);
+}
+
+.randomize-btn.spinning {
+  animation: spin 0.3s ease-in-out;
+}
+
+@keyframes spin {
+  100% { transform: rotate(360deg); }
+}
+
+.cloud-container {
   position: relative;
+  width: 100%;
+  height: 400px;
+  background: #fafafa;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
 }
 
-.keyword {
-  display: inline-block;
-  padding: 0.5rem 1rem;
-  font-weight: 600;
-  transition: all 0.3s ease;
+.cloud-word {
+  position: absolute;
   cursor: pointer;
-  line-height: 1;
-  opacity: 0.8;
+  transition: all 0.3s ease;
   transform-origin: center;
+  white-space: nowrap;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  user-select: none;
 }
 
-.keyword:hover {
-  transform: scale(1.15);
-  opacity: 1;
-  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
+.cloud-word:hover {
+  transform: scale(1.2) rotate(0deg) !important;
+  z-index: 10;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.cloud-word.hovered {
+  opacity: 1 !important;
+}
+
+/* Tooltip Styles */
+.word-cloud-tooltip {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  max-width: 400px;
+  pointer-events: none;
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tooltip-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f3f4f6;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f9fafb;
+  border-radius: 8px 8px 0 0;
+}
+
+.tooltip-header strong {
+  font-size: 16px;
+  color: #111827;
+}
+
+.tooltip-count {
+  font-size: 14px;
+  color: #6b7280;
+  font-weight: normal;
+}
+
+.tooltip-reviews {
+  padding: 12px 16px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.tooltip-review {
+  padding: 10px 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.tooltip-review:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.review-rating {
+  color: #fbbf24;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.review-text {
+  font-size: 13px;
+  color: #4b5563;
+  line-height: 1.5;
+}
+
+.tooltip-no-reviews {
+  padding: 16px;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 14px;
 }
 
 /* Reviews card */

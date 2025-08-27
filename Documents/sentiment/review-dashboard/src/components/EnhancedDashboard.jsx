@@ -427,8 +427,19 @@ const EnhancedDashboard = ({ data, isLoading }) => {
   const { summary, reviews = [] } = data;
 
   return (
-    <div className="modern-dashboard">
-      <div className="dashboard-content">
+    <div className="modern-dashboard with-sidebar">
+      {/* Left Sidebar */}
+      <div className="dashboard-sidebar">
+        <div className="sidebar-content">
+          {data?.topKeywords && data.topKeywords.length > 0 && (
+            <KeywordCloud keywords={data.topKeywords} reviews={filteredReviews} />
+          )}
+        </div>
+      </div>
+      
+      {/* Main Content Area */}
+      <div className="dashboard-main-area">
+        <div className="dashboard-content">
       {/* Enhanced Header with Search and Filters */}
       <div className="dashboard-header-section">
         <div className="dashboard-title-area">
@@ -1003,13 +1014,6 @@ const EnhancedDashboard = ({ data, isLoading }) => {
         )}
       </div>
 
-      {/* Word Cloud Section */}
-      {data?.topKeywords && data.topKeywords.length > 0 && (
-        <div className="analytics-card word-cloud-section" style={{ marginTop: '24px', marginBottom: '24px', padding: '24px' }}>
-          <h2 className="analytics-title">Word Cloud</h2>
-          <KeywordCloud keywords={data.topKeywords} />
-        </div>
-      )}
 
       {/* AI Analysis Results - Displayed inline below buttons */}
       {(aiInsights || deepInsights || executiveAnalysis) && (
@@ -1209,6 +1213,7 @@ const EnhancedDashboard = ({ data, isLoading }) => {
       )}
 
       {/* Removed modals - Analysis now shows inline */}
+        </div>
       </div>
     </div>
   );
