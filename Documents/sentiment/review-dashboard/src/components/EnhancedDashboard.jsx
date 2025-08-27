@@ -24,6 +24,7 @@ import ReviewDisplay from './ReviewDisplay';
 import SentimentTrends from './SentimentTrends';
 import DateRangeCalendar from './DateRangeCalendar';
 import ErrorDisplay from './ErrorDisplay';
+import KeywordCloud from './KeywordCloud';
 import './EnhancedDashboard.css';
 
 const COLORS = ['#10b981', '#f59e0b', '#ef4444', '#6366f1', '#8b5cf6'];
@@ -52,7 +53,8 @@ const EnhancedDashboard = ({ data, isLoading }) => {
     distribution: true,
     sentiment: true,
     trends: true,
-    ai: true
+    ai: true,
+    keywords: true
   });
   // Enhanced review display is always enabled
   const useEnhancedReviewDisplay = true;
@@ -1000,6 +1002,14 @@ const EnhancedDashboard = ({ data, isLoading }) => {
           </div>
         )}
       </div>
+
+      {/* Keywords Section */}
+      {data?.topKeywords && data.topKeywords.length > 0 && (
+        <div className="card keywords-card" style={{ marginTop: '24px', marginBottom: '24px' }}>
+          <h2 className="section-title">Top Keywords</h2>
+          <KeywordCloud keywords={data.topKeywords} />
+        </div>
+      )}
 
       {/* AI Analysis Results - Displayed inline below buttons */}
       {(aiInsights || deepInsights || executiveAnalysis) && (
