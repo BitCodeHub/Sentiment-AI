@@ -1003,11 +1003,10 @@ const EnhancedDashboard = ({ data, isLoading }) => {
         )}
       </div>
 
-      {/* Keywords Section */}
+      {/* Word Cloud Section */}
       {data?.topKeywords && data.topKeywords.length > 0 && (
-        <div className="analytics-card keywords-section" style={{ marginTop: '24px', marginBottom: '24px', padding: '24px' }}>
-          <h2 className="analytics-title">Top Keywords</h2>
-          {console.log('TopKeywords data:', data.topKeywords)}
+        <div className="analytics-card word-cloud-section" style={{ marginTop: '24px', marginBottom: '24px', padding: '24px' }}>
+          <h2 className="analytics-title">Word Cloud</h2>
           <KeywordCloud keywords={data.topKeywords} />
         </div>
       )}

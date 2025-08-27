@@ -9,14 +9,22 @@ const KeywordCloud = ({ keywords }) => {
   
   const getSize = (count) => {
     const normalized = (count - minCount) / (maxCount - minCount || 1);
-    return 14 + normalized * 24; // Size between 14px and 38px
+    return 16 + normalized * 32; // Size between 16px and 48px for better visibility
   };
 
   const getColor = (count) => {
     const normalized = (count - minCount) / (maxCount - minCount || 1);
-    const hue = 200 + normalized * 20; // Blue to purple range
-    const lightness = 50 - normalized * 15; // Darker for more frequent
-    return `hsl(${hue}, 70%, ${lightness}%)`;
+    // Create a gradient from light to dark based on frequency
+    const colors = [
+      '#94a3b8', // Light gray for low frequency
+      '#64748b', // Medium gray
+      '#475569', // Dark gray
+      '#334155', // Darker
+      '#1e293b', // Very dark
+      '#0f172a'  // Nearly black for highest frequency
+    ];
+    const index = Math.floor(normalized * (colors.length - 1));
+    return colors[index];
   };
 
   return (
