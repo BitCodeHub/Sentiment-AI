@@ -16,26 +16,382 @@
 }
 
 .dashboard-sidebar {
-  width: 320px;
+  width: 260px;
   min-height: 100vh;
-  background: white;
-  border-right: 1px solid #e5e7eb;
+  background: #1a1d23;
+  border-right: 1px solid #2a2d35;
   position: sticky;
   top: 0;
   height: 100vh;
   overflow-y: auto;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.04);
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
   transition: transform 0.3s ease;
 }
 
 .sidebar-content {
-  padding: 24px;
+  padding: 20px 0;
+}
+
+/* Sidebar Navigation */
+.sidebar-nav {
+  width: 100%;
+}
+
+.nav-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.nav-item {
+  margin-bottom: 4px;
+}
+
+.nav-button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 24px;
+  border: none;
+  background: transparent;
+  color: #8b92a9;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  position: relative;
+}
+
+.nav-button:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+}
+
+.nav-item.active .nav-button {
+  background: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
+}
+
+.nav-item.active .nav-button::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 24px;
+  background: #3b82f6;
+  border-radius: 0 2px 2px 0;
+}
+
+.nav-button svg {
+  flex-shrink: 0;
+}
+
+.nav-button span {
+  font-size: 14px;
 }
 
 .dashboard-main-area {
   flex: 1;
   min-height: 100vh;
   overflow-x: hidden;
+  background-color: #f8fafc;
+}
+
+/* View Headers */
+.view-header {
+  padding: 32px 32px 24px;
+  border-bottom: 1px solid #e5e7eb;
+  background: white;
+}
+
+.view-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 8px 0;
+}
+
+.view-subtitle {
+  font-size: 16px;
+  color: #6b7280;
+  margin: 0;
+}
+
+/* Word Cloud Main Container */
+.wordcloud-view {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.wordcloud-container-main {
+  flex: 1;
+  padding: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  margin: 24px;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.wordcloud-container-main .enhanced-keyword-cloud {
+  width: 100%;
+  max-width: 900px;
+  height: 600px;
+}
+
+.wordcloud-container-main .cloud-container {
+  height: 500px;
+}
+
+/* All Reviews View */
+.all-reviews-view {
+  min-height: 100%;
+}
+
+/* AI Insights View */
+.insights-view {
+  min-height: 100%;
+}
+
+.insights-actions {
+  padding: 24px 32px;
+  background: white;
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.analysis-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.analysis-button.primary {
+  background: #3b82f6;
+  color: white;
+}
+
+.analysis-button.primary:hover:not(:disabled) {
+  background: #2563eb;
+}
+
+.analysis-button.secondary {
+  background: #8b5cf6;
+  color: white;
+}
+
+.analysis-button.secondary:hover:not(:disabled) {
+  background: #7c3aed;
+}
+
+.analysis-button.executive {
+  background: #10b981;
+  color: white;
+}
+
+.analysis-button.executive:hover:not(:disabled) {
+  background: #059669;
+}
+
+.analysis-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.analysis-button .spin {
+  animation: spin 1s linear infinite;
+}
+
+.insights-results {
+  padding: 24px 32px;
+}
+
+/* Enhanced Word Cloud Styles */
+.enhanced-keyword-cloud {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.cloud-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+  border-radius: 12px 12px 0 0;
+}
+
+.cloud-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
+}
+
+.randomize-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid #e5e7eb;
+  background: white;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #6b7280;
+}
+
+.randomize-btn:hover {
+  background: #f3f4f6;
+  color: #1f2937;
+  border-color: #d1d5db;
+}
+
+.randomize-btn.spinning {
+  animation: spin 0.3s ease-in-out;
+}
+
+.cloud-container {
+  flex: 1;
+  position: relative;
+  background: white;
+  border-radius: 0 0 12px 12px;
+  overflow: hidden;
+  padding: 20px;
+}
+
+.cloud-word {
+  position: absolute;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  user-select: none;
+  transform-origin: center;
+}
+
+.cloud-word:hover {
+  transform: scale(1.1);
+  filter: brightness(1.2);
+  z-index: 100;
+}
+
+.cloud-word.hovered {
+  transform: scale(1.15);
+  filter: brightness(1.3) drop-shadow(0 0 8px rgba(0, 0, 0, 0.2));
+  z-index: 101;
+}
+
+/* Word Cloud Tooltip */
+.word-cloud-tooltip {
+  background: #1f2937;
+  color: white;
+  padding: 16px;
+  border-radius: 12px;
+  max-width: 400px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+.tooltip-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tooltip-header strong {
+  font-size: 16px;
+  color: #fbbf24;
+}
+
+.tooltip-count {
+  font-size: 13px;
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+.tooltip-reviews {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tooltip-review {
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  border-left: 3px solid rgba(251, 191, 36, 0.4);
+}
+
+.review-rating {
+  color: #fbbf24;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.review-text {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #e5e7eb;
+}
+
+.tooltip-no-reviews {
+  font-size: 14px;
+  color: #9ca3af;
+  font-style: italic;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* No Data Container */
+.no-data-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 80vh;
+  padding: 32px;
 }
 
 /* Responsive Sidebar */

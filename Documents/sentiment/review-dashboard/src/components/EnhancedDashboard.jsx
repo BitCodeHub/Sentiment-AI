@@ -61,6 +61,13 @@ const EnhancedDashboard = ({ data, isLoading }) => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDateRange, setSelectedDateRange] = useState({ start: null, end: null });
   const dateRangeRef = useRef(null);
+  // Add state for current view selection
+  const [currentView, setCurrentView] = useState('dashboard');
+  
+  // Debug logging
+  useEffect(() => {
+    console.log('Current View:', currentView);
+  }, [currentView]);
 
   // Count active filters
   const activeFilterCount = useMemo(() => {
@@ -413,33 +420,77 @@ const EnhancedDashboard = ({ data, isLoading }) => {
     );
   }
 
-  if (!data || !data.summary) {
-    return (
-      <Alert>
-        <AlertCircle className="h-4 w-4" />
-        <AlertDescription>
-          No data available. Please upload a CSV file to see analytics.
-        </AlertDescription>
-      </Alert>
-    );
-  }
-
-  const { summary, reviews = [] } = data;
+  const { summary, reviews = [] } = data || {};
 
   return (
     <div className="modern-dashboard with-sidebar">
-      {/* Left Sidebar */}
+      {/* Left Sidebar Navigation */}
       <div className="dashboard-sidebar">
         <div className="sidebar-content">
-          {data?.topKeywords && data.topKeywords.length > 0 && (
-            <KeywordCloud keywords={data.topKeywords} reviews={filteredReviews} />
-          )}
+          <nav className="sidebar-nav">
+            <ul className="nav-list">
+              <li className={`nav-item ${currentView === 'dashboard' ? 'active' : ''}`}>
+                <button 
+                  className="nav-button"
+                  onClick={() => setCurrentView('dashboard')}
+                  title="Dashboard"
+                >
+                  <BarChart size={20} />
+                  <span>Dashboard</span>
+                </button>
+              </li>
+              <li className={`nav-item ${currentView === 'wordcloud' ? 'active' : ''}`}>
+                <button 
+                  className="nav-button"
+                  onClick={() => setCurrentView('wordcloud')}
+                  title="Word Cloud"
+                >
+                  <Sparkles size={20} />
+                  <span>Word Cloud</span>
+                </button>
+              </li>
+              <li className={`nav-item ${currentView === 'reviews' ? 'active' : ''}`}>
+                <button 
+                  className="nav-button"
+                  onClick={() => setCurrentView('reviews')}
+                  title="All Reviews"
+                >
+                  <Target size={20} />
+                  <span>All Reviews</span>
+                </button>
+              </li>
+              <li className={`nav-item ${currentView === 'insights' ? 'active' : ''}`}>
+                <button 
+                  className="nav-button"
+                  onClick={() => setCurrentView('insights')}
+                  title="AI Insights"
+                >
+                  <Brain size={20} />
+                  <span>AI Insights</span>
+                </button>
+              </li>
+            </ul>
+          </nav>
         </div>
       </div>
       
       {/* Main Content Area */}
       <div className="dashboard-main-area">
         <div className="dashboard-content">
+      {/* Conditional rendering based on current view */}
+      {!data || !data.summary ? (
+        <div className="no-data-container">
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              No data available. Please upload a CSV file to see analytics.
+            </AlertDescription>
+          </Alert>
+        </div>
+      ) : (
+        <>
+      {currentView === 'dashboard' && (
+        <>
       {/* Enhanced Header with Search and Filters */}
       <div className="dashboard-header-section">
         <div className="dashboard-title-area">
@@ -1213,6 +1264,95 @@ const EnhancedDashboard = ({ data, isLoading }) => {
       )}
 
       {/* Removed modals - Analysis now shows inline */}
+        </>
+      )}
+      
+      {/* Word Cloud View */}
+      {currentView === 'wordcloud' && data?.topKeywords && data.topKeywords.length > 0 && (
+        <div className="wordcloud-view">
+          <div className="view-header">
+            <h1 className="view-title">Word Cloud Analysis</h1>
+            <p className="view-subtitle">Interactive visualization of most frequently mentioned terms in {filteredReviews.length} reviews</p>
+          </div>
+          <div className="wordcloud-container-main">
+            <KeywordCloud keywords={data.topKeywords} reviews={filteredReviews} />
+          </div>
+        </div>
+      )}
+      
+      {/* All Reviews View */}
+      {currentView === 'reviews' && filteredReviews && (
+        <div className="all-reviews-view">
+          <div className="view-header">
+            <h1 className="view-title">All Reviews</h1>
+            <p className="view-subtitle">Browse through all {filteredReviews.length} customer reviews</p>
+          </div>
+          <ReviewDisplay reviews={filteredReviews} searchTerm={searchTerm} />
+        </div>
+      )}
+      
+      {/* AI Insights View */}
+      {currentView === 'insights' && (
+        <div className="insights-view">
+          <div className="view-header">
+            <h1 className="view-title">AI Insights</h1>
+            <p className="view-subtitle">Advanced analysis powered by artificial intelligence</p>
+          </div>
+          <div className="insights-actions">
+            <button
+              onClick={triggerAIAnalysis}
+              disabled={isAnalyzing}
+              className="analysis-button primary"
+            >
+              {isAnalyzing ? (
+                <><RefreshCw className="spin" size={16} /> Analyzing...</>
+              ) : (
+                <><Brain size={16} /> Generate AI Insights</>
+              )}
+            </button>
+            <button
+              onClick={triggerDeepAnalysis}
+              disabled={isDeepAnalyzing}
+              className="analysis-button secondary"
+            >
+              {isDeepAnalyzing ? (
+                <><RefreshCw className="spin" size={16} /> Deep Analyzing...</>
+              ) : (
+                <><Zap size={16} /> Deep Analysis</>
+              )}
+            </button>
+            <button
+              onClick={triggerExecutiveAnalysis}
+              disabled={isExecutiveAnalyzing}
+              className="analysis-button executive"
+            >
+              {isExecutiveAnalyzing ? (
+                <><RefreshCw className="spin" size={16} /> Generating Report...</>
+              ) : (
+                <><Target size={16} /> Executive Summary</>
+              )}
+            </button>
+          </div>
+          {(aiInsights || deepInsights || executiveAnalysis) && (
+            <div className="insights-results">
+              {aiInsights && <AIInsights insights={aiInsights} />}
+              {deepInsights && (
+                <div className="deep-analysis-results">
+                  <h3>Deep Analysis Results</h3>
+                  <pre>{JSON.stringify(deepInsights, null, 2)}</pre>
+                </div>
+              )}
+              {executiveAnalysis && (
+                <div className="executive-analysis-results">
+                  <div dangerouslySetInnerHTML={{ __html: executiveAnalysis }} />
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+        </>
+      )}
         </div>
       </div>
     </div>

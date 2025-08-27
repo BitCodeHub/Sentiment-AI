@@ -29,7 +29,11 @@ const KeywordCloud = ({ keywords, reviews }) => {
     if (!reviews) return [];
     const lowerWord = word.toLowerCase();
     return reviews
-      .filter(review => review.review?.toLowerCase().includes(lowerWord))
+      .filter(review => {
+        // Check multiple possible content fields
+        const content = review.content || review.body || review.review || '';
+        return content.toLowerCase().includes(lowerWord);
+      })
       .slice(0, 3); // Show max 3 reviews in tooltip
   }, [reviews]);
 
@@ -145,9 +149,12 @@ const KeywordCloud = ({ keywords, reviews }) => {
                 <div key={idx} className="tooltip-review">
                   <div className="review-rating">{'★'.repeat(review.rating)}</div>
                   <div className="review-text">
-                    {review.review.length > 150 
-                      ? review.review.substring(0, 150) + '...' 
-                      : review.review}
+                    {(() => {
+                      const content = review.content || review.body || review.review || '';
+                      return content.length > 150 
+                        ? content.substring(0, 150) + '...' 
+                        : content;
+                    })()}
                   </div>
                 </div>
               ))}
