@@ -491,16 +491,6 @@ const EnhancedDashboard = ({ data, isLoading }) => {
                     <span>All Reviews</span>
                   </button>
                 </li>
-                <li className={`nav-item ${currentView === 'insights' ? 'active' : ''}`}>
-                  <button 
-                    className="nav-button"
-                    onClick={() => setCurrentView('insights')}
-                    title="AI Insights"
-                  >
-                    <Brain size={20} />
-                    <span>AI Insights</span>
-                  </button>
-                </li>
               </ul>
             </nav>
           </div>
@@ -533,6 +523,7 @@ const EnhancedDashboard = ({ data, isLoading }) => {
         {/* Search Section */}
         <div className="search-section">
           <div className="search-input-wrapper">
+            <Search className="search-icon" size={20} />
             <input
               type="text"
               placeholder="Search reviews..."
@@ -1340,67 +1331,6 @@ const EnhancedDashboard = ({ data, isLoading }) => {
             <p className="view-subtitle">Browse through all {filteredReviews.length} customer reviews</p>
           </div>
           <ReviewDisplay reviews={filteredReviews} searchTerm={searchTerm} />
-        </div>
-      )}
-      
-      {/* AI Insights View */}
-      {currentView === 'insights' && (
-        <div className="insights-view">
-          <div className="view-header">
-            <h1 className="view-title">AI Insights</h1>
-            <p className="view-subtitle">Advanced analysis powered by artificial intelligence</p>
-          </div>
-          <div className="insights-actions">
-            <button
-              onClick={triggerAIAnalysis}
-              disabled={isAnalyzing}
-              className="analysis-button primary"
-            >
-              {isAnalyzing ? (
-                <><RefreshCw className="spin" size={16} /> Analyzing...</>
-              ) : (
-                <><Brain size={16} /> Generate AI Insights</>
-              )}
-            </button>
-            <button
-              onClick={triggerDeepAnalysis}
-              disabled={isDeepAnalyzing}
-              className="analysis-button secondary"
-            >
-              {isDeepAnalyzing ? (
-                <><RefreshCw className="spin" size={16} /> Deep Analyzing...</>
-              ) : (
-                <><Zap size={16} /> Deep Analysis</>
-              )}
-            </button>
-            <button
-              onClick={triggerExecutiveAnalysis}
-              disabled={isExecutiveAnalyzing}
-              className="analysis-button executive"
-            >
-              {isExecutiveAnalyzing ? (
-                <><RefreshCw className="spin" size={16} /> Generating Report...</>
-              ) : (
-                <><Target size={16} /> Executive Summary</>
-              )}
-            </button>
-          </div>
-          {(aiInsights || deepInsights || executiveAnalysis) && (
-            <div className="insights-results">
-              {aiInsights && <AIInsights insights={aiInsights} />}
-              {deepInsights && (
-                <div className="deep-analysis-results">
-                  <h3>Deep Analysis Results</h3>
-                  <pre>{JSON.stringify(deepInsights, null, 2)}</pre>
-                </div>
-              )}
-              {executiveAnalysis && (
-                <div className="executive-analysis-results">
-                  <div dangerouslySetInnerHTML={{ __html: executiveAnalysis }} />
-                </div>
-              )}
-            </div>
-          )}
         </div>
       )}
         </>

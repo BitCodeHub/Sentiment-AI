@@ -647,45 +647,38 @@ html {
   max-width: 500px;
 }
 
-.search-input-wrapper::before {
-  content: '🔍';
+.search-icon {
   position: absolute;
-  left: 1rem;
+  left: 1.25rem;
   top: 50%;
   transform: translateY(-50%);
-  font-size: 1.125rem;
+  color: #737373;
   z-index: 1;
-  opacity: 0.5;
+  pointer-events: none;
 }
 
 .search-input {
   width: 100%;
-  padding: 1rem 3rem 1rem 3rem;
-  font-size: 1rem;
-  border: 2px solid transparent;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1),
-              inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  placeholder-color: #94a3b8;
+  padding: 0.75rem 3rem 0.75rem 3.5rem;
+  font-size: 15px;
+  border: 1px solid #d0d5dd;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #333333;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  font-family: 'Benton Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .search-input::placeholder {
-  color: #94a3b8;
+  color: #737373;
   font-weight: 400;
-  letter-spacing: 0.025em;
 }
 
 .search-input:focus {
   outline: none;
-  border-color: rgba(99, 102, 241, 0.5);
-  background: rgba(255, 255, 255, 0.15);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2),
-              0 8px 24px rgba(99, 102, 241, 0.2),
-              inset 0 1px 0 rgba(255, 255, 255, 0.15);
-  transform: translateY(-1px) scale(1.01);
+  border-color: #1f77b4;
+  box-shadow: 0 0 0 3px rgba(31, 119, 180, 0.1);
 }
 
 .clear-search {
@@ -693,22 +686,21 @@ html {
   right: 0.75rem;
   top: 50%;
   transform: translateY(-50%);
-  background: rgba(255, 255, 255, 0.1);
+  background: transparent;
   border: none;
-  color: #e0e7ff;
+  color: #737373;
   cursor: pointer;
   padding: 0.5rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
+  border-radius: 4px;
   transition: all 0.2s ease;
 }
 
 .clear-search:hover {
-  color: #ffffff;
-  background: rgba(239, 68, 68, 0.2);
-  transform: translateY(-50%) scale(1.1);
+  color: #333333;
+  background: rgba(0, 0, 0, 0.05);
 }
 
 /* Filters Container - New Clean Layout */
