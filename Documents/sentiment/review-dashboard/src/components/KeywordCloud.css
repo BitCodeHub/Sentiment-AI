@@ -7,10 +7,10 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  background: #ffffff;
-  border: 1px solid #e1e6ea;
-  border-radius: 6px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 /* Header section */
@@ -18,9 +18,9 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 20px;
-  border-bottom: 1px solid #e1e6ea;
-  background: #fafbfc;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e1e1e1;
+  background: transparent;
 }
 
 .cloud-title {
@@ -33,11 +33,11 @@
 
 /* Randomize button */
 .randomize-btn {
-  background: #ffffff;
-  color: #737373;
-  border: 1px solid #d0d5dd;
-  padding: 6px 10px;
-  border-radius: 4px;
+  background: transparent;
+  color: #999999;
+  border: none;
+  padding: 4px;
+  border-radius: 3px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -48,9 +48,8 @@
 }
 
 .randomize-btn:hover {
-  background: #f5f6f7;
-  color: #333333;
-  border-color: #a0a9b8;
+  background: rgba(0, 0, 0, 0.05);
+  color: #666666;
 }
 
 .randomize-btn.spinning svg {
@@ -68,7 +67,7 @@
   position: relative;
   background: #ffffff;
   overflow: visible;
-  padding: 40px;
+  padding: 20px;
   min-height: 400px;
   display: flex;
   align-items: center;
@@ -79,24 +78,24 @@
 .cloud-word {
   position: absolute;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: opacity 0.2s ease;
   font-weight: 400;
   letter-spacing: -0.01em;
   user-select: none;
   transform-origin: center;
   white-space: nowrap;
-  font-family: 'Benton Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  font-family: 'Tableau Book', 'Benton Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  opacity: 0.85;
 }
 
 .cloud-word:hover {
-  transform: translate(-50%, -50%) scale(1.1);
+  opacity: 1;
   z-index: 100;
 }
 
 .cloud-word.hovered {
-  transform: translate(-50%, -50%) scale(1.15);
+  opacity: 1;
   z-index: 101;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
 }
 
 /* Tooltip styles */

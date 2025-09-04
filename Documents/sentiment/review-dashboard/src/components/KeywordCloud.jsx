@@ -13,18 +13,17 @@ const KeywordCloud = ({ keywords, reviews }) => {
     // Sort by count to place most important words in center
     const sortedWords = [...words].sort((a, b) => b.count - a.count);
     
-    return sortedWords.slice(0, 80).map((keyword, index) => {
-      // Create a more center-focused distribution
-      const angle = Math.random() * Math.PI * 2;
-      const radiusMultiplier = index < 10 ? 0.3 : index < 30 ? 0.5 + Math.random() * 0.3 : 0.7 + Math.random() * 0.3;
-      const radius = radiusMultiplier * 40; // Max 40% from center
+    return sortedWords.slice(0, 100).map((keyword, index) => {
+      // More distributed layout across the entire container
+      const x = 10 + Math.random() * 80; // 10% to 90% of container width
+      const y = 10 + Math.random() * 80; // 10% to 90% of container height
       
       return {
         ...keyword,
         id: `${keyword.word}-${index}`,
         rotation: 0, // No rotation for cleaner look
-        x: 50 + radius * Math.cos(angle), // Center at 50%
-        y: 50 + radius * Math.sin(angle), // Center at 50%
+        x: x,
+        y: y,
       };
     });
   }, []);
@@ -61,43 +60,34 @@ const KeywordCloud = ({ keywords, reviews }) => {
   
   const getSize = useCallback((count) => {
     const normalized = (count - minCount) / (maxCount - minCount || 1);
-    // Professional size scaling for Tableau style
-    if (normalized > 0.8) return 36 + Math.random() * 4; // Large
-    if (normalized > 0.6) return 28 + Math.random() * 3; // Medium-large
-    if (normalized > 0.4) return 20 + Math.random() * 3; // Medium
-    if (normalized > 0.2) return 16 + Math.random() * 2; // Small-medium
-    return 12 + Math.random() * 2; // Small
+    // More dramatic size differences for better visual hierarchy
+    if (normalized > 0.9) return 48 + Math.random() * 8; // Extra large
+    if (normalized > 0.7) return 36 + Math.random() * 6; // Large
+    if (normalized > 0.5) return 24 + Math.random() * 4; // Medium-large
+    if (normalized > 0.3) return 18 + Math.random() * 3; // Medium
+    if (normalized > 0.15) return 14 + Math.random() * 2; // Small-medium
+    return 10 + Math.random() * 2; // Small
   }, [maxCount, minCount]);
 
   const getColor = useCallback((count, word, index) => {
     const normalized = (count - minCount) / (maxCount - minCount || 1);
     
-    // Tableau color palette
-    const tableauColors = [
-      '#1f77b4', // Blue
-      '#ff7f0e', // Orange
-      '#2ca02c', // Green
-      '#d62728', // Red
-      '#9467bd', // Purple
-      '#8c564b', // Brown
-      '#e377c2', // Pink
-      '#7f7f7f', // Gray
-      '#bcbd22', // Olive
-      '#17becf', // Cyan
+    // More varied color palette for word cloud
+    const colors = [
+      '#e15759', // Red
+      '#f28e2c', // Orange
+      '#4e79a7', // Blue
+      '#76b7b2', // Teal
+      '#59a14f', // Green
+      '#edc949', // Yellow
+      '#af7aa1', // Purple
+      '#ff9da7', // Pink
+      '#9c755f', // Brown
+      '#bab0ab', // Gray
     ];
     
-    // Distribute colors based on frequency and index for variety
-    if (normalized > 0.7) {
-      // Most frequent words get prominent colors
-      return tableauColors[index % 4]; // Blue, Orange, Green, Red
-    } else if (normalized > 0.4) {
-      // Medium frequency gets full palette
-      return tableauColors[index % tableauColors.length];
-    } else {
-      // Low frequency gets muted colors
-      const mutedColors = ['#7f7f7f', '#8c564b', '#9467bd', '#bcbd22'];
-      return mutedColors[index % mutedColors.length];
-    }
+    // Use a more varied distribution
+    return colors[index % colors.length];
   }, [maxCount, minCount]);
 
   const handleRandomize = () => {
@@ -144,7 +134,7 @@ const KeywordCloud = ({ keywords, reviews }) => {
                 position: 'absolute',
                 left: `${keyword.x}%`,
                 top: `${keyword.y}%`,
-                fontWeight: keyword.count > (maxCount * 0.5) ? '500' : '400',
+                fontWeight: '400', // Consistent weight for cleaner look
                 fontFamily: '"Benton Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
               }}
               onMouseEnter={(e) => {
