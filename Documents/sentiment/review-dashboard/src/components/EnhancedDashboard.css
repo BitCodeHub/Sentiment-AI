@@ -916,34 +916,34 @@ html {
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem 0.875rem;
-  background: rgba(59, 130, 246, 0.15);
-  border: 1px solid #3b82f6;
-  border-radius: 10px;
+  background: #ffffff;
+  border: 1px solid #d0d5dd;
+  border-radius: 6px;
   cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 0.875rem;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
-  color: #ffffff;
-  font-weight: 600;
-  min-width: 180px;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  color: #333333;
+  font-weight: 400;
+  min-width: 220px;
   justify-content: space-between;
 }
 
 .date-range-button:hover {
-  background: rgba(59, 130, 246, 0.25);
-  transform: translateY(-1px);
+  background: #f5f6f7;
+  border-color: #a0a9b8;
 }
 
 .date-range-value {
-  color: #ffffff;
-  font-weight: 500;
+  color: #333333;
+  font-weight: 400;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .chevron-icon {
-  color: #94a3b8;
+  color: #737373;
   transition: transform 0.2s ease;
   width: 14px;
   height: 14px;
@@ -955,11 +955,11 @@ html {
 }
 
 .clear-date-range {
-  background: rgba(239, 68, 68, 0.15);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  color: #fca5a5;
-  padding: 0.375rem;
-  border-radius: 6px;
+  background: transparent;
+  border: none;
+  color: #737373;
+  padding: 0.5rem;
+  border-radius: 4px;
   cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
@@ -968,10 +968,8 @@ html {
 }
 
 .clear-date-range:hover {
-  background: rgba(239, 68, 68, 0.25);
-  border-color: rgba(239, 68, 68, 0.5);
-  color: #ef4444;
-  transform: scale(1.05);
+  background: rgba(0, 0, 0, 0.05);
+  color: #333333;
 }
 
 /* Date Picker Overlay */
@@ -985,18 +983,18 @@ html {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
+  background-color: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(2px);
   animation: fadeIn 0.2s ease;
 }
 
 .date-range-popup {
   position: relative;
   z-index: 999999;
-  background: #1e293b;
-  border: 1px solid rgba(59, 130, 246, 0.3);
-  border-radius: 16px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+  background: #ffffff;
+  border: 1px solid #e1e6ea;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1), 0 6px 10px rgba(0, 0, 0, 0.08);
   min-width: 600px;
   max-width: 90vw;
   max-height: 80vh;
@@ -1009,12 +1007,12 @@ html {
   justify-content: space-between;
   align-items: center;
   padding: 1rem 1.5rem;
-  background: rgba(59, 130, 246, 0.1);
-  border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+  background: #fafbfc;
+  border-bottom: 1px solid #e1e6ea;
 }
 
 .date-picker-header h4 {
-  color: #ffffff;
+  color: #333333;
   font-size: 1rem;
   font-weight: 600;
   margin: 0;
@@ -1023,7 +1021,7 @@ html {
 .close-date-picker {
   background: none;
   border: none;
-  color: #94a3b8;
+  color: #737373;
   cursor: pointer;
   padding: 0.25rem;
   border-radius: 4px;
@@ -1034,8 +1032,8 @@ html {
 }
 
 .close-date-picker:hover {
-  color: #ef4444;
-  background: rgba(239, 68, 68, 0.1);
+  color: #333333;
+  background: rgba(0, 0, 0, 0.05);
 }
 
 @keyframes scaleIn {
