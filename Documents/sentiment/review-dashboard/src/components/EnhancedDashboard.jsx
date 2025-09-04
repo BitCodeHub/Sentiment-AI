@@ -523,7 +523,6 @@ const EnhancedDashboard = ({ data, isLoading }) => {
         {/* Search Section */}
         <div className="search-section">
           <div className="search-input-wrapper">
-            <Search className="search-icon" size={20} />
             <input
               type="text"
               placeholder="Search reviews..."

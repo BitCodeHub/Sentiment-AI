@@ -647,6 +647,7 @@ html {
   max-width: 500px;
 }
 
+/* Search icon removed
 .search-icon {
   position: absolute;
   left: 1.25rem;
@@ -656,10 +657,11 @@ html {
   z-index: 1;
   pointer-events: none;
 }
+*/
 
 .search-input {
   width: 100%;
-  padding: 0.75rem 3rem 0.75rem 3.5rem;
+  padding: 0.75rem 3rem 0.75rem 1.25rem;
   font-size: 15px;
   border: 1px solid #d0d5dd;
   border-radius: 6px;
