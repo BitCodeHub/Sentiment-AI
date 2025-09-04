@@ -62,14 +62,17 @@ const authors = [
 
 const versions = ["3.7.0", "3.7.1", "3.7.2", "3.8.0", "3.8.1", "5.3.2"];
 const devices = [
-  { model: "iPhone 14 Pro Max", os: "17.0" },
-  { model: "iPhone 13", os: "16.5" },
-  { model: "iPhone 14", os: "17.1" },
-  { model: "Samsung Galaxy S23", os: "13.0" },
-  { model: "Samsung Galaxy Z Fold4 SM-F9360", os: "15.0" },
-  { model: "Google Pixel 7", os: "14.0" },
-  { model: "iPad Pro", os: "16.0" },
-  { model: "Samsung Galaxy S22", os: "13.0" }
+  { model: "iPhone 14 Pro Max", os: "iOS 17.0" },
+  { model: "iPhone 13", os: "iOS 16.5" },
+  { model: "iPhone 14", os: "iOS 17.1" },
+  { model: "Samsung Galaxy S23", os: "Android 13" },
+  { model: "Samsung Galaxy Z Fold4", os: "Android 13" },
+  { model: "Google Pixel 7", os: "Android 14" },
+  { model: "iPad Pro", os: "iPadOS 16.0" },
+  { model: "Samsung Galaxy S22", os: "Android 13" },
+  { model: "iPhone 15 Pro", os: "iOS 17.2" },
+  { model: "OnePlus 11", os: "Android 13" },
+  { model: "Google Pixel 8", os: "Android 14" }
 ];
 
 // Language and country distribution matching the dashboard image

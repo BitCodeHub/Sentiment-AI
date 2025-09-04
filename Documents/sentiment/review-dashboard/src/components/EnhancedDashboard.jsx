@@ -116,12 +116,12 @@ const EnhancedDashboard = ({ data, isLoading }) => {
     };
     
     data.reviews.forEach(review => {
-      // Add values including empty strings to properly track all reviews
-      options.appName.add(review.appName || '(No App Name)');
-      options.device.add(review.device || '(No Device)');
-      options.version.add(review.version || '(No Version)');
-      options.os.add(review.os || '(No OS)');
-      options.platform.add(review.platform || '(Unknown Platform)');
+      // Only add non-empty values to filters
+      if (review.appName && review.appName.trim()) options.appName.add(review.appName);
+      if (review.device && review.device.trim()) options.device.add(review.device);
+      if (review.version && review.version.trim()) options.version.add(review.version);
+      if (review.os && review.os.trim()) options.os.add(review.os);
+      if (review.platform && review.platform.trim()) options.platform.add(review.platform);
     });
     
     // Convert sets to sorted arrays
@@ -206,15 +206,11 @@ const EnhancedDashboard = ({ data, isLoading }) => {
         const filterValue = metadataFilters[key];
         if (filterValue === 'all') return true;
         
-        // Get the actual value from the review, applying same transformation as in metadata options
-        let reviewValue = review[key];
+        // Get the actual value from the review
+        const reviewValue = review[key];
         
-        // Apply the same transformation as we do when building the options
-        if (key === 'appName') reviewValue = reviewValue || '(No App Name)';
-        else if (key === 'device') reviewValue = reviewValue || '(No Device)';
-        else if (key === 'version') reviewValue = reviewValue || '(No Version)';
-        else if (key === 'os') reviewValue = reviewValue || '(No OS)';
-        else if (key === 'platform') reviewValue = reviewValue || '(Unknown Platform)';
+        // If filter is 'all' or review has no value for this field, include it
+        if (!reviewValue || !reviewValue.trim()) return true;
         
         return reviewValue === filterValue;
       });

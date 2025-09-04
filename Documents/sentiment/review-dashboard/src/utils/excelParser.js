@@ -52,6 +52,23 @@ const processReviewData = (rawData) => {
     } else {
       console.log('ℹ️ No sentiment column found - will perform sentiment analysis');
     }
+    
+    // Log device and OS columns for debugging
+    const deviceColumns = columns.filter(col => 
+      col.toLowerCase().includes('device') || 
+      col.toLowerCase().includes('model') ||
+      col.toLowerCase().includes('hardware')
+    );
+    
+    const osColumns = columns.filter(col => 
+      col.toLowerCase().includes('os') || 
+      col.toLowerCase().includes('operating') ||
+      col.toLowerCase().includes('system') ||
+      col.toLowerCase() === 'os'
+    );
+    
+    console.log('Device-related columns found:', deviceColumns);
+    console.log('OS-related columns found:', osColumns);
   }
   
   return rawData.map((row, index) => {
@@ -111,22 +128,30 @@ const processReviewData = (rawData) => {
                row['Application Version'] ||
                row['App Store Version'] ||
                '',
-      // Device variations
-      device: row.Device || 
+      // Device variations - enhanced extraction
+      device: extractDevice(row) || 
+              row.Device || 
               row['Device Model'] || 
               row['Device Type'] ||
               row.Hardware ||
+              row['Device Name'] ||
+              row['User Device'] ||
+              row['Review Device'] ||
               '',
       // Platform detection enhanced
       platform: row.Platform || 
                  row.Store ||
                  row.Source ||
                  detectPlatform(row),
-      // OS variations
-      os: row.OS || 
+      // OS variations - enhanced extraction
+      os: extractOS(row) || 
+          row.OS || 
           row['Operating System'] || 
           row['OS Version'] ||
           row['System Version'] ||
+          row['iOS Version'] ||
+          row['Android Version'] ||
+          row['System'] ||
           '',
       // Developer response variations
       response: row.Response || 
@@ -220,6 +245,17 @@ const processReviewData = (rawData) => {
     review.keywords = extractKeywords(textContent);
     review.category = categorizeReview(textContent);
     
+    // Debug logging for first few reviews to check device/OS extraction
+    if (index < 3) {
+      console.log(`Review ${index + 1} device/OS info:`, {
+        device: review.device,
+        os: review.os,
+        platform: review.platform,
+        originalDevice: row.Device || row['Device Model'] || row['Device Type'],
+        originalOS: row.OS || row['Operating System'] || row['OS Version']
+      });
+    }
+    
     return review;
   });
 };
@@ -235,6 +271,131 @@ const parseDate = (dateValue) => {
   // Try to parse string date
   const parsed = new Date(dateValue);
   return isNaN(parsed.getTime()) ? new Date() : parsed;
+};
+
+// Extract device information from various fields
+const extractDevice = (row) => {
+  // Check direct device fields - include all variations
+  const directDevice = row.Device || 
+                      row['Device Model'] || 
+                      row['Device Type'] || 
+                      row['Device Name'] || 
+                      row.Model || 
+                      row.Hardware || 
+                      '';
+  if (directDevice && directDevice.trim()) return directDevice.trim();
+  
+  // Try to extract from user agent or other fields
+  const userAgent = row['User Agent'] || row.UserAgent || row['Browser Info'] || '';
+  if (userAgent) {
+    // Extract device from user agent
+    if (userAgent.includes('iPhone')) return 'iPhone';
+    if (userAgent.includes('iPad')) return 'iPad';
+    if (userAgent.includes('iPod')) return 'iPod';
+    
+    // Android devices
+    const androidMatch = userAgent.match(/\((.*?)\)/);
+    if (androidMatch && userAgent.includes('Android')) {
+      const deviceInfo = androidMatch[1];
+      const deviceParts = deviceInfo.split(';');
+      for (let part of deviceParts) {
+        const trimmed = part.trim();
+        if (trimmed && !trimmed.includes('Android') && !trimmed.includes('Build')) {
+          return trimmed;
+        }
+      }
+    }
+  }
+  
+  // Check metadata fields
+  const metadata = row.Metadata || row['Review Metadata'] || '';
+  if (metadata && typeof metadata === 'string') {
+    const deviceMatch = metadata.match(/device[:\s]+([^,;\n]+)/i);
+    if (deviceMatch) return deviceMatch[1].trim();
+  }
+  
+  // Platform-based inference
+  const platform = row.Platform || row.Store || '';
+  if (platform.toLowerCase().includes('ios') || platform.toLowerCase().includes('apple')) {
+    // Try to get specific iOS device from other fields
+    const content = (row.Body || row.Review || row['Review Text'] || '').toLowerCase();
+    if (content.includes('ipad')) return 'iPad';
+    if (content.includes('iphone')) return 'iPhone';
+    return 'iOS Device';
+  }
+  
+  if (platform.toLowerCase().includes('android') || platform.toLowerCase().includes('google')) {
+    return 'Android Device';
+  }
+  
+  return '';
+};
+
+// Extract OS information from various fields
+const extractOS = (row) => {
+  // Check direct OS fields - include all variations
+  const directOS = row.OS || 
+                  row['Operating System'] || 
+                  row['OS Version'] || 
+                  row['System Version'] || 
+                  row.Os || 
+                  row.os || 
+                  row.System || 
+                  '';
+  if (directOS && directOS.trim()) return directOS.trim();
+  
+  // Try to extract from user agent
+  const userAgent = row['User Agent'] || row.UserAgent || row['Browser Info'] || '';
+  if (userAgent) {
+    // iOS version extraction
+    const iosMatch = userAgent.match(/OS (\d+_\d+(?:_\d+)?)/);
+    if (iosMatch) {
+      return 'iOS ' + iosMatch[1].replace(/_/g, '.');
+    }
+    
+    // Android version extraction
+    const androidMatch = userAgent.match(/Android\s+(\d+\.?\d*)/);
+    if (androidMatch) {
+      return 'Android ' + androidMatch[1];
+    }
+  }
+  
+  // Check metadata fields
+  const metadata = row.Metadata || row['Review Metadata'] || '';
+  if (metadata && typeof metadata === 'string') {
+    const osMatch = metadata.match(/os[:\s]+([^,;\n]+)/i);
+    if (osMatch) return osMatch[1].trim();
+    
+    const versionMatch = metadata.match(/version[:\s]+([^,;\n]+)/i);
+    if (versionMatch && !versionMatch[1].includes('.')) {
+      return versionMatch[1].trim();
+    }
+  }
+  
+  // Platform-based inference
+  const platform = row.Platform || row.Store || detectPlatform(row);
+  const device = extractDevice(row);
+  
+  if (platform === 'iOS' || device.includes('iPhone') || device.includes('iPad')) {
+    // Try to extract iOS version from review content
+    const content = (row.Body || row.Review || row['Review Text'] || '').toLowerCase();
+    const iosVersionMatch = content.match(/ios\s*(\d+(?:\.\d+)?)/);
+    if (iosVersionMatch) {
+      return 'iOS ' + iosVersionMatch[1];
+    }
+    return 'iOS';
+  }
+  
+  if (platform === 'Android' || device.includes('Android')) {
+    const content = (row.Body || row.Review || row['Review Text'] || '').toLowerCase();
+    const androidVersionMatch = content.match(/android\s*(\d+(?:\.\d+)?)/);
+    if (androidVersionMatch) {
+      return 'Android ' + androidVersionMatch[1];
+    }
+    return 'Android';
+  }
+  
+  return '';
 };
 
 const detectPlatform = (row) => {
@@ -424,6 +585,17 @@ export const aggregateData = (reviews) => {
   const avgRating = validRatings.length > 0 
     ? validRatings.reduce((sum, r) => sum + r.rating, 0) / validRatings.length 
     : 0;
+  
+  // Debug device and OS data distribution
+  const deviceCount = reviews.filter(r => r.device && r.device.trim()).length;
+  const osCount = reviews.filter(r => r.os && r.os.trim()).length;
+  console.log('Device/OS data coverage:', {
+    totalReviews,
+    reviewsWithDevice: deviceCount,
+    devicePercentage: ((deviceCount / totalReviews) * 100).toFixed(1) + '%',
+    reviewsWithOS: osCount,
+    osPercentage: ((osCount / totalReviews) * 100).toFixed(1) + '%'
+  });
   
   // Rating distribution
   const ratingDist = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0};
