@@ -433,13 +433,6 @@ const EnhancedDashboard = ({ data, isLoading }) => {
       {/* Tableau-Style Top Toolbar */}
       <div className="tableau-toolbar">
         <div className="toolbar-section toolbar-left">
-          <button className="toolbar-btn" title="Undo">
-            <Undo size={18} />
-          </button>
-          <button className="toolbar-btn" title="Redo">
-            <Redo size={18} />
-          </button>
-          <div className="toolbar-separator" />
           <button className="toolbar-btn" title="Refresh Data" onClick={() => window.location.reload()}>
             <RefreshCw size={18} />
             <span>Refresh</span>
@@ -447,7 +440,6 @@ const EnhancedDashboard = ({ data, isLoading }) => {
         </div>
         
         <div className="toolbar-section toolbar-center">
-          <h1 className="toolbar-title">Review Analytics Dashboard</h1>
         </div>
         
         <div className="toolbar-section toolbar-right">
@@ -458,25 +450,6 @@ const EnhancedDashboard = ({ data, isLoading }) => {
           >
             <Brain size={18} />
             <span>Sentiment</span>
-          </button>
-          <div className="toolbar-separator" />
-          <button className="toolbar-btn" title="Download">
-            <Download size={18} />
-            <span>Download</span>
-          </button>
-          <button className="toolbar-btn" title="Share">
-            <Share2 size={18} />
-            <span>Share</span>
-          </button>
-          <button className="toolbar-btn" title="Print">
-            <Printer size={18} />
-          </button>
-          <div className="toolbar-separator" />
-          <button className="toolbar-btn" title="Settings">
-            <Settings size={18} />
-          </button>
-          <button className="toolbar-btn" title="Help">
-            <HelpCircle size={18} />
           </button>
         </div>
       </div>
