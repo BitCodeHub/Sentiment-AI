@@ -7,7 +7,10 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  background: transparent;
+  background: #ffffff;
+  border: 1px solid #e1e6ea;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 /* Header section */
@@ -15,44 +18,39 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 24px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 16px 20px;
+  border-bottom: 1px solid #e1e6ea;
+  background: #fafbfc;
 }
 
 .cloud-title {
-  font-size: 22px;
-  font-weight: 700;
-  background: linear-gradient(135deg, #ffffff 0%, #e0e7ff 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  letter-spacing: -0.02em;
+  font-size: 16px;
+  font-weight: 500;
+  color: #333333;
+  letter-spacing: -0.01em;
   margin: 0;
 }
 
 /* Randomize button */
 .randomize-btn {
-  background: rgba(59, 130, 246, 0.15);
-  color: #60a5fa;
-  border: 1px solid rgba(59, 130, 246, 0.3);
-  padding: 8px 14px;
-  border-radius: 10px;
+  background: #ffffff;
+  color: #737373;
+  border: 1px solid #d0d5dd;
+  padding: 6px 10px;
+  border-radius: 4px;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 14px;
-  font-weight: 600;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 400;
+  transition: all 0.2s ease;
 }
 
 .randomize-btn:hover {
-  background: rgba(59, 130, 246, 0.25);
-  color: #93bbfc;
-  transform: translateY(-1px);
-  box-shadow: 0 0 20px rgba(59, 130, 246, 0.3),
-              inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  border-color: rgba(59, 130, 246, 0.5);
+  background: #f5f6f7;
+  color: #333333;
+  border-color: #a0a9b8;
 }
 
 .randomize-btn.spinning svg {
@@ -68,10 +66,10 @@
 .cloud-container {
   flex: 1;
   position: relative;
-  background: rgba(255, 255, 255, 0.03);
+  background: #ffffff;
   overflow: visible;
-  padding: 60px 40px;
-  min-height: 500px;
+  padding: 40px;
+  min-height: 400px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -81,42 +79,37 @@
 .cloud-word {
   position: absolute;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  font-weight: 500;
+  transition: all 0.2s ease;
+  font-weight: 400;
   letter-spacing: -0.01em;
   user-select: none;
   transform-origin: center;
   white-space: nowrap;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  font-family: 'Benton Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
 }
 
 .cloud-word:hover {
-  transform: translate(-50%, -50%) scale(1.15);
-  filter: brightness(1.1) drop-shadow(0 3px 10px rgba(0, 0, 0, 0.2));
+  transform: translate(-50%, -50%) scale(1.1);
   z-index: 100;
 }
 
 .cloud-word.hovered {
-  transform: translate(-50%, -50%) scale(1.2);
-  filter: brightness(1.15) drop-shadow(0 5px 15px rgba(0, 0, 0, 0.3));
+  transform: translate(-50%, -50%) scale(1.15);
   z-index: 101;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
 }
 
 /* Tooltip styles */
 .word-cloud-tooltip {
-  background: rgba(17, 24, 39, 0.98);
-  backdrop-filter: blur(12px) saturate(180%);
-  color: white;
-  padding: 20px;
-  border-radius: 16px;
-  max-width: 480px;
-  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6),
-              0 0 0 1px rgba(255, 255, 255, 0.1),
-              inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  background: #ffffff;
+  color: #333333;
+  padding: 12px 16px;
+  border-radius: 4px;
+  max-width: 400px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border: 1px solid #e1e6ea;
   pointer-events: none;
-  animation: tooltipFadeIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: tooltipFadeIn 0.2s ease;
 }
 
 @keyframes tooltipFadeIn {
@@ -134,26 +127,24 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 14px;
-  padding-bottom: 14px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e1e6ea;
 }
 
 .tooltip-header strong {
-  font-size: 18px;
-  font-weight: 700;
-  color: #ffffff;
-  letter-spacing: -0.01em;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333333;
 }
 
 .tooltip-count {
-  font-size: 13px;
-  color: #60a5fa;
-  font-weight: 600;
-  background: rgba(59, 130, 246, 0.2);
-  padding: 4px 10px;
-  border-radius: 12px;
-  border: 1px solid rgba(59, 130, 246, 0.3);
+  font-size: 12px;
+  color: #737373;
+  font-weight: 400;
+  background: #f5f6f7;
+  padding: 2px 8px;
+  border-radius: 3px;
 }
 
 .tooltip-reviews {
@@ -163,50 +154,46 @@
 }
 
 .tooltip-review {
-  padding: 14px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 10px;
-  border-left: 3px solid #3b82f6;
+  padding: 10px;
+  background: #fafbfc;
+  border-radius: 4px;
+  border-left: 3px solid #1f77b4;
   transition: all 0.2s ease;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid #f0f0f0;
+  margin-bottom: 8px;
 }
 
 .tooltip-review:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.12);
+  background: #f5f6f7;
 }
 
 .review-rating {
-  color: #fbbf24;
-  font-size: 14px;
-  margin-bottom: 8px;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-  letter-spacing: 2px;
+  color: #ff7f0e;
+  font-size: 12px;
+  margin-bottom: 4px;
+  letter-spacing: 1px;
 }
 
 .review-text {
-  font-size: 13px;
-  line-height: 1.6;
-  color: #e5e7eb;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #666666;
 }
 
 .review-text .highlight {
-  background: linear-gradient(135deg, 
-    rgba(251, 191, 36, 0.3) 0%,
-    rgba(245, 158, 11, 0.25) 100%);
-  color: #fde047;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-weight: 600;
-  box-shadow: 0 0 0 1px rgba(251, 191, 36, 0.3);
+  background: #fff3cd;
+  color: #856404;
+  padding: 1px 4px;
+  border-radius: 2px;
+  font-weight: 500;
 }
 
 .tooltip-no-reviews {
-  font-size: 14px;
-  color: #9ca3af;
+  font-size: 12px;
+  color: #999999;
   font-style: italic;
   text-align: center;
-  padding: 20px;
+  padding: 12px;
 }
 
 /* Word cloud in main view */
@@ -214,62 +201,26 @@
   height: 100%;
   display: flex;
   flex-direction: column;
-  padding: 32px;
-  background: transparent;
+  padding: 24px;
+  background: #f5f6f7;
 }
 
 .wordcloud-container-main {
-  height: 700px;
+  height: 600px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, 
-    rgba(255, 255, 255, 0.08) 0%,
-    rgba(255, 255, 255, 0.03) 100%);
-  backdrop-filter: blur(20px) saturate(180%);
-  margin: 24px auto;
+  background: #ffffff;
+  margin: 0 auto;
   max-width: 1200px;
-  border-radius: 28px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.3),
-              inset 0 1px 0 rgba(255, 255, 255, 0.15),
-              0 0 80px rgba(99, 102, 241, 0.05);
+  border-radius: 6px;
+  border: 1px solid #e1e6ea;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   position: relative;
   overflow: hidden;
 }
 
-.wordcloud-container-main::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: radial-gradient(circle at center, 
-    transparent 30%,
-    rgba(99, 102, 241, 0.03) 70%);
-  pointer-events: none;
-}
-
-.wordcloud-container-main::after {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(circle at center,
-    transparent 0%,
-    rgba(255, 255, 255, 0.02) 50%,
-    transparent 100%);
-  animation: rotate360 30s linear infinite;
-  pointer-events: none;
-}
-
-@keyframes rotate360 {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
+/* Remove unnecessary effects for clean Tableau look */
 
 .wordcloud-container-main .enhanced-keyword-cloud {
   width: 100%;
@@ -277,7 +228,8 @@
   max-width: 1100px;
   background: transparent;
   position: relative;
-  z-index: 1;
+  border: none;
+  box-shadow: none;
 }
 
 /* Responsive adjustments */

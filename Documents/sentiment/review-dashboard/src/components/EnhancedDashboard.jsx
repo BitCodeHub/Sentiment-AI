@@ -13,7 +13,8 @@ import {
   TrendingUp, TrendingDown, AlertCircle, Brain, 
   Sparkles, Target, Shield, Zap, Search, Filter,
   ChevronDown, ChevronUp, X, Download, RefreshCw, Calendar,
-  Smartphone, Package, Layers, Globe, Monitor
+  Smartphone, Package, Layers, Globe, Monitor,
+  Share2, Printer, Save, Settings, HelpCircle, Undo, Redo
 } from 'lucide-react';
 import { analyzeReviews, generateInsights } from '../services/aiAnalysis';
 import { performDeepAnalysis } from '../services/deepAnalysis';
@@ -28,7 +29,8 @@ import ErrorDisplay from './ErrorDisplay';
 import KeywordCloud from './KeywordCloud';
 import './EnhancedDashboard.css';
 
-const COLORS = ['#10b981', '#f59e0b', '#ef4444', '#6366f1', '#8b5cf6'];
+const TABLEAU_COLORS = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'];
+const COLORS = TABLEAU_COLORS.slice(0, 5); // Use first 5 Tableau colors
 
 const EnhancedDashboard = ({ data, isLoading }) => {
   const [aiInsights, setAiInsights] = useState(null);
@@ -425,58 +427,102 @@ const EnhancedDashboard = ({ data, isLoading }) => {
 
   return (
     <div className="modern-dashboard with-sidebar">
-      {/* Left Sidebar Navigation */}
-      <div className="dashboard-sidebar">
-        <div className="sidebar-content">
-          <nav className="sidebar-nav">
-            <ul className="nav-list">
-              <li className={`nav-item ${currentView === 'dashboard' ? 'active' : ''}`}>
-                <button 
-                  className="nav-button"
-                  onClick={() => setCurrentView('dashboard')}
-                  title="Dashboard"
-                >
-                  <BarChart size={20} />
-                  <span>Dashboard</span>
-                </button>
-              </li>
-              <li className={`nav-item ${currentView === 'wordcloud' ? 'active' : ''}`}>
-                <button 
-                  className="nav-button"
-                  onClick={() => setCurrentView('wordcloud')}
-                  title="Word Cloud"
-                >
-                  <Sparkles size={20} />
-                  <span>Word Cloud</span>
-                </button>
-              </li>
-              <li className={`nav-item ${currentView === 'reviews' ? 'active' : ''}`}>
-                <button 
-                  className="nav-button"
-                  onClick={() => setCurrentView('reviews')}
-                  title="All Reviews"
-                >
-                  <Target size={20} />
-                  <span>All Reviews</span>
-                </button>
-              </li>
-              <li className={`nav-item ${currentView === 'insights' ? 'active' : ''}`}>
-                <button 
-                  className="nav-button"
-                  onClick={() => setCurrentView('insights')}
-                  title="AI Insights"
-                >
-                  <Brain size={20} />
-                  <span>AI Insights</span>
-                </button>
-              </li>
-            </ul>
-          </nav>
+      {/* Tableau-Style Top Toolbar */}
+      <div className="tableau-toolbar">
+        <div className="toolbar-section toolbar-left">
+          <button className="toolbar-btn" title="Undo">
+            <Undo size={18} />
+          </button>
+          <button className="toolbar-btn" title="Redo">
+            <Redo size={18} />
+          </button>
+          <div className="toolbar-separator" />
+          <button className="toolbar-btn" title="Refresh Data" onClick={() => window.location.reload()}>
+            <RefreshCw size={18} />
+            <span>Refresh</span>
+          </button>
+        </div>
+        
+        <div className="toolbar-section toolbar-center">
+          <h1 className="toolbar-title">Review Analytics Dashboard</h1>
+        </div>
+        
+        <div className="toolbar-section toolbar-right">
+          <button className="toolbar-btn" title="Download">
+            <Download size={18} />
+            <span>Download</span>
+          </button>
+          <button className="toolbar-btn" title="Share">
+            <Share2 size={18} />
+            <span>Share</span>
+          </button>
+          <button className="toolbar-btn" title="Print">
+            <Printer size={18} />
+          </button>
+          <div className="toolbar-separator" />
+          <button className="toolbar-btn" title="Settings">
+            <Settings size={18} />
+          </button>
+          <button className="toolbar-btn" title="Help">
+            <HelpCircle size={18} />
+          </button>
         </div>
       </div>
       
-      {/* Main Content Area */}
-      <div className="dashboard-main-area">
+      {/* Main Layout Wrapper */}
+      <div className="dashboard-layout">
+        {/* Left Sidebar Navigation */}
+        <div className="dashboard-sidebar">
+          <div className="sidebar-content">
+            <nav className="sidebar-nav">
+              <ul className="nav-list">
+                <li className={`nav-item ${currentView === 'dashboard' ? 'active' : ''}`}>
+                  <button 
+                    className="nav-button"
+                    onClick={() => setCurrentView('dashboard')}
+                    title="Dashboard"
+                  >
+                    <BarChart size={20} />
+                    <span>Dashboard</span>
+                  </button>
+                </li>
+                <li className={`nav-item ${currentView === 'wordcloud' ? 'active' : ''}`}>
+                  <button 
+                    className="nav-button"
+                    onClick={() => setCurrentView('wordcloud')}
+                    title="Word Cloud"
+                  >
+                    <Sparkles size={20} />
+                    <span>Word Cloud</span>
+                  </button>
+                </li>
+                <li className={`nav-item ${currentView === 'reviews' ? 'active' : ''}`}>
+                  <button 
+                    className="nav-button"
+                    onClick={() => setCurrentView('reviews')}
+                    title="All Reviews"
+                  >
+                    <Target size={20} />
+                    <span>All Reviews</span>
+                  </button>
+                </li>
+                <li className={`nav-item ${currentView === 'insights' ? 'active' : ''}`}>
+                  <button 
+                    className="nav-button"
+                    onClick={() => setCurrentView('insights')}
+                    title="AI Insights"
+                  >
+                    <Brain size={20} />
+                    <span>AI Insights</span>
+                  </button>
+                </li>
+              </ul>
+            </nav>
+          </div>
+        </div>
+        
+        {/* Main Content Area */}
+        <div className="dashboard-main-area">
         <div className="dashboard-content">
       {/* Conditional rendering based on current view */}
       {!data || !data.summary ? (
@@ -1375,6 +1421,7 @@ const EnhancedDashboard = ({ data, isLoading }) => {
         </>
       )}
         </div>
+      </div>
       </div>
     </div>
   );

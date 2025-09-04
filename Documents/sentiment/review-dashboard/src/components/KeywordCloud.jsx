@@ -61,45 +61,42 @@ const KeywordCloud = ({ keywords, reviews }) => {
   
   const getSize = useCallback((count) => {
     const normalized = (count - minCount) / (maxCount - minCount || 1);
-    // More dramatic size differences to match the image
-    if (normalized > 0.8) return 48 + Math.random() * 8; // Very large
-    if (normalized > 0.6) return 36 + Math.random() * 6; // Large
-    if (normalized > 0.4) return 26 + Math.random() * 4; // Medium
-    if (normalized > 0.2) return 18 + Math.random() * 4; // Small-medium
-    return 14 + Math.random() * 3; // Small
+    // Professional size scaling for Tableau style
+    if (normalized > 0.8) return 36 + Math.random() * 4; // Large
+    if (normalized > 0.6) return 28 + Math.random() * 3; // Medium-large
+    if (normalized > 0.4) return 20 + Math.random() * 3; // Medium
+    if (normalized > 0.2) return 16 + Math.random() * 2; // Small-medium
+    return 12 + Math.random() * 2; // Small
   }, [maxCount, minCount]);
 
   const getColor = useCallback((count, word, index) => {
     const normalized = (count - minCount) / (maxCount - minCount || 1);
     
-    // Color palette matching the image
-    const colorPalette = [
-      '#dc2626', // Red
-      '#ef4444', // Light red
-      '#f87171', // Lighter red
-      '#059669', // Green
-      '#10b981', // Light green
-      '#f59e0b', // Orange
-      '#f97316', // Dark orange
-      '#3b82f6', // Blue
-      '#6366f1', // Indigo
-      '#8b5cf6', // Purple
-      '#ec4899', // Pink
-      '#6b7280', // Gray
-      '#374151', // Dark gray
-      '#111827', // Almost black
+    // Tableau color palette
+    const tableauColors = [
+      '#1f77b4', // Blue
+      '#ff7f0e', // Orange
+      '#2ca02c', // Green
+      '#d62728', // Red
+      '#9467bd', // Purple
+      '#8c564b', // Brown
+      '#e377c2', // Pink
+      '#7f7f7f', // Gray
+      '#bcbd22', // Olive
+      '#17becf', // Cyan
     ];
     
-    // Use word index to distribute colors more evenly
+    // Distribute colors based on frequency and index for variety
     if (normalized > 0.7) {
-      // Most frequent words get red/orange colors
-      return ['#dc2626', '#ef4444', '#f97316'][index % 3];
+      // Most frequent words get prominent colors
+      return tableauColors[index % 4]; // Blue, Orange, Green, Red
     } else if (normalized > 0.4) {
-      // Medium frequency gets mixed colors
-      return colorPalette[index % colorPalette.length];
+      // Medium frequency gets full palette
+      return tableauColors[index % tableauColors.length];
     } else {
-      // Low frequency gets darker/muted colors
-      return ['#6b7280', '#374151', '#059669', '#3b82f6'][index % 4];
+      // Low frequency gets muted colors
+      const mutedColors = ['#7f7f7f', '#8c564b', '#9467bd', '#bcbd22'];
+      return mutedColors[index % mutedColors.length];
     }
   }, [maxCount, minCount]);
 
@@ -147,8 +144,8 @@ const KeywordCloud = ({ keywords, reviews }) => {
                 position: 'absolute',
                 left: `${keyword.x}%`,
                 top: `${keyword.y}%`,
-                fontWeight: keyword.count > (maxCount * 0.5) ? '700' : '500',
-                fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                fontWeight: keyword.count > (maxCount * 0.5) ? '500' : '400',
+                fontFamily: '"Benton Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
               }}
               onMouseEnter={(e) => {
                 setHoveredWord(keyword.word);
