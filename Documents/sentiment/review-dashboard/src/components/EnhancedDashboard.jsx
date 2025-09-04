@@ -27,6 +27,7 @@ import SentimentTrends from './SentimentTrends';
 import DateRangeCalendar from './DateRangeCalendar';
 import ErrorDisplay from './ErrorDisplay';
 import KeywordCloud from './KeywordCloud';
+import SentimentAnalysis from './SentimentAnalysis';
 import './EnhancedDashboard.css';
 
 const TABLEAU_COLORS = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'];
@@ -66,6 +67,8 @@ const EnhancedDashboard = ({ data, isLoading }) => {
   const dateRangeRef = useRef(null);
   // Add state for current view selection
   const [currentView, setCurrentView] = useState('dashboard');
+  // Add state for sentiment analysis modal
+  const [showSentimentAnalysis, setShowSentimentAnalysis] = useState(false);
   
   // Debug logging
   useEffect(() => {
@@ -448,6 +451,15 @@ const EnhancedDashboard = ({ data, isLoading }) => {
         </div>
         
         <div className="toolbar-section toolbar-right">
+          <button 
+            className="toolbar-btn" 
+            title="AI Sentiment Analysis"
+            onClick={() => setShowSentimentAnalysis(true)}
+          >
+            <Brain size={18} />
+            <span>Sentiment</span>
+          </button>
+          <div className="toolbar-separator" />
           <button className="toolbar-btn" title="Download">
             <Download size={18} />
             <span>Download</span>
@@ -1423,6 +1435,14 @@ const EnhancedDashboard = ({ data, isLoading }) => {
         </div>
       </div>
       </div>
+      
+      {/* Sentiment Analysis Modal */}
+      {showSentimentAnalysis && (
+        <SentimentAnalysis 
+          reviews={filteredReviews}
+          onClose={() => setShowSentimentAnalysis(false)}
+        />
+      )}
     </div>
   );
 };
