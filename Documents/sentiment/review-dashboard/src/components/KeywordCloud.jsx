@@ -13,17 +13,29 @@ const KeywordCloud = ({ keywords, reviews }) => {
     // Sort by count to place most important words in center
     const sortedWords = [...words].sort((a, b) => b.count - a.count);
     
-    return sortedWords.slice(0, 100).map((keyword, index) => {
-      // More distributed layout across the entire container
-      const x = 10 + Math.random() * 80; // 10% to 90% of container width
-      const y = 10 + Math.random() * 80; // 10% to 90% of container height
+    return sortedWords.slice(0, 200).map((keyword, index) => {
+      // Create a spiral pattern for better distribution of 200 words
+      const goldenAngle = Math.PI * (3 - Math.sqrt(5)); // Golden angle ~137.5°
+      const angle = index * goldenAngle;
+      
+      // Increase radius as we go outward, with some randomization
+      const radiusBase = Math.sqrt(index / 200) * 40; // 0-40% from center
+      const radius = radiusBase + (Math.random() - 0.5) * 10;
+      
+      // Convert polar to cartesian, centered at 50%
+      const x = 50 + radius * Math.cos(angle);
+      const y = 50 + radius * Math.sin(angle);
+      
+      // Ensure words stay within bounds
+      const boundedX = Math.max(5, Math.min(95, x));
+      const boundedY = Math.max(5, Math.min(95, y));
       
       return {
         ...keyword,
         id: `${keyword.word}-${index}`,
         rotation: 0, // No rotation for cleaner look
-        x: x,
-        y: y,
+        x: boundedX,
+        y: boundedY,
       };
     });
   }, []);
@@ -60,13 +72,14 @@ const KeywordCloud = ({ keywords, reviews }) => {
   
   const getSize = useCallback((count) => {
     const normalized = (count - minCount) / (maxCount - minCount || 1);
-    // More dramatic size differences for better visual hierarchy
-    if (normalized > 0.9) return 48 + Math.random() * 8; // Extra large
-    if (normalized > 0.7) return 36 + Math.random() * 6; // Large
-    if (normalized > 0.5) return 24 + Math.random() * 4; // Medium-large
-    if (normalized > 0.3) return 18 + Math.random() * 3; // Medium
-    if (normalized > 0.15) return 14 + Math.random() * 2; // Small-medium
-    return 10 + Math.random() * 2; // Small
+    // Adjusted size scaling for 200 words - smaller overall to fit more
+    if (normalized > 0.95) return 42 + Math.random() * 6; // Extra large (top 5%)
+    if (normalized > 0.85) return 32 + Math.random() * 4; // Large (top 15%)
+    if (normalized > 0.7) return 24 + Math.random() * 3; // Medium-large
+    if (normalized > 0.5) return 18 + Math.random() * 2; // Medium
+    if (normalized > 0.3) return 14 + Math.random() * 2; // Small-medium
+    if (normalized > 0.15) return 11 + Math.random() * 1; // Small
+    return 9 + Math.random() * 1; // Extra small
   }, [maxCount, minCount]);
 
   const getColor = useCallback((count, word, index) => {
@@ -136,6 +149,7 @@ const KeywordCloud = ({ keywords, reviews }) => {
                 top: `${keyword.y}%`,
                 fontWeight: '400', // Consistent weight for cleaner look
                 fontFamily: '"Benton Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                opacity: 0.6 + (0.4 * ((keyword.count - minCount) / (maxCount - minCount || 1))), // Variable opacity based on frequency
               }}
               onMouseEnter={(e) => {
                 setHoveredWord(keyword.word);
