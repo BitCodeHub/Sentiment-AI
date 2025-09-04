@@ -648,19 +648,16 @@ const EnhancedDashboard = ({ data, isLoading }) => {
           </div>
           
           {/* Secondary Filters - Compact Design */}
-          {(metadataOptions.appName?.length > 2 || metadataOptions.device?.length > 2 || 
-            metadataOptions.version?.length > 2 || metadataOptions.platform?.length > 2 || 
-            metadataOptions.os?.length > 2) && (
-            <div className="secondary-filters-section">
+          <div className="secondary-filters-section">
               <div className="secondary-filters-label">
                 <span>Advanced Filters</span>
               </div>
               <div className="secondary-filters-grid">
-                {metadataOptions.appName && metadataOptions.appName.length > 2 && (
+                {metadataOptions.appName && metadataOptions.appName.length > 1 && (
                   <div className="secondary-filter-item">
                     <label className="filter-label secondary">
                       <Package size={14} />
-                      Apps
+                      App Name
                     </label>
                     <select
                       value={metadataFilters.appName}
@@ -676,11 +673,11 @@ const EnhancedDashboard = ({ data, isLoading }) => {
                   </div>
                 )}
                 
-                {metadataOptions.device && metadataOptions.device.length > 2 && (
+                {metadataOptions.device && metadataOptions.device.length > 1 && (
                   <div className="secondary-filter-item">
                     <label className="filter-label secondary">
                       <Smartphone size={14} />
-                      Devices
+                      Device Type
                     </label>
                     <select
                       value={metadataFilters.device}
@@ -696,11 +693,11 @@ const EnhancedDashboard = ({ data, isLoading }) => {
                   </div>
                 )}
                 
-                {metadataOptions.version && metadataOptions.version.length > 2 && (
+                {metadataOptions.version && metadataOptions.version.length > 1 && (
                   <div className="secondary-filter-item">
                     <label className="filter-label secondary">
                       <Layers size={14} />
-                      Versions
+                      App Version
                     </label>
                     <select
                       value={metadataFilters.version}
@@ -716,7 +713,7 @@ const EnhancedDashboard = ({ data, isLoading }) => {
                   </div>
                 )}
                 
-                {metadataOptions.platform && metadataOptions.platform.length > 2 && (
+                {metadataOptions.platform && metadataOptions.platform.length > 1 && (
                   <div className="secondary-filter-item">
                     <label className="filter-label secondary">
                       <Globe size={14} />
@@ -736,11 +733,11 @@ const EnhancedDashboard = ({ data, isLoading }) => {
                   </div>
                 )}
                 
-                {metadataOptions.os && metadataOptions.os.length > 2 && (
+                {metadataOptions.os && metadataOptions.os.length > 1 && (
                   <div className="secondary-filter-item">
                     <label className="filter-label secondary">
                       <Monitor size={14} />
-                      OS
+                      OS Version
                     </label>
                     <select
                       value={metadataFilters.os}
@@ -757,7 +754,6 @@ const EnhancedDashboard = ({ data, isLoading }) => {
                 )}
               </div>
             </div>
-          )}
           
           {/* Active Filters Summary */}
           {activeFilterCount > 0 && (
