@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { RefreshCw } from 'lucide-react';
+import './KeywordCloud.css';
 
 const KeywordCloud = ({ keywords, reviews }) => {
   const [hoveredWord, setHoveredWord] = useState(null);
@@ -9,13 +10,23 @@ const KeywordCloud = ({ keywords, reviews }) => {
 
   // Initialize keywords with random properties
   const initializeKeywords = useCallback((words) => {
-    return words.slice(0, 50).map((keyword, index) => ({
-      ...keyword,
-      id: `${keyword.word}-${index}`,
-      rotation: Math.random() * 60 - 30, // -30 to 30 degrees
-      x: Math.random() * 80 + 10, // 10% to 90%
-      y: Math.random() * 80 + 10, // 10% to 90%
-    }));
+    // Sort by count to place most important words in center
+    const sortedWords = [...words].sort((a, b) => b.count - a.count);
+    
+    return sortedWords.slice(0, 80).map((keyword, index) => {
+      // Create a more center-focused distribution
+      const angle = Math.random() * Math.PI * 2;
+      const radiusMultiplier = index < 10 ? 0.3 : index < 30 ? 0.5 + Math.random() * 0.3 : 0.7 + Math.random() * 0.3;
+      const radius = radiusMultiplier * 40; // Max 40% from center
+      
+      return {
+        ...keyword,
+        id: `${keyword.word}-${index}`,
+        rotation: 0, // No rotation for cleaner look
+        x: 50 + radius * Math.cos(angle), // Center at 50%
+        y: 50 + radius * Math.sin(angle), // Center at 50%
+      };
+    });
   }, []);
 
   useEffect(() => {
@@ -31,7 +42,8 @@ const KeywordCloud = ({ keywords, reviews }) => {
     return reviews
       .filter(review => {
         // Check multiple possible content fields
-        const content = review.content || review.body || review.review || '';
+        const content = review.content || review.body || review.review || 
+                       review['Review Text'] || review.Body || '';
         return content.toLowerCase().includes(lowerWord);
       })
       .slice(0, 3); // Show max 3 reviews in tooltip
@@ -49,21 +61,46 @@ const KeywordCloud = ({ keywords, reviews }) => {
   
   const getSize = useCallback((count) => {
     const normalized = (count - minCount) / (maxCount - minCount || 1);
-    return 14 + normalized * 36; // Size between 14px and 50px
+    // More dramatic size differences to match the image
+    if (normalized > 0.8) return 48 + Math.random() * 8; // Very large
+    if (normalized > 0.6) return 36 + Math.random() * 6; // Large
+    if (normalized > 0.4) return 26 + Math.random() * 4; // Medium
+    if (normalized > 0.2) return 18 + Math.random() * 4; // Small-medium
+    return 14 + Math.random() * 3; // Small
   }, [maxCount, minCount]);
 
-  const getColor = useCallback((count) => {
+  const getColor = useCallback((count, word, index) => {
     const normalized = (count - minCount) / (maxCount - minCount || 1);
-    // Mix of colors like in the image - red, black, gray
-    const colors = [
-      '#6b7280', // Gray for low
+    
+    // Color palette matching the image
+    const colorPalette = [
+      '#dc2626', // Red
+      '#ef4444', // Light red
+      '#f87171', // Lighter red
+      '#059669', // Green
+      '#10b981', // Light green
+      '#f59e0b', // Orange
+      '#f97316', // Dark orange
+      '#3b82f6', // Blue
+      '#6366f1', // Indigo
+      '#8b5cf6', // Purple
+      '#ec4899', // Pink
+      '#6b7280', // Gray
       '#374151', // Dark gray
       '#111827', // Almost black
-      '#dc2626', // Red for medium-high
-      '#991b1b', // Dark red for high
     ];
-    const index = Math.floor(normalized * (colors.length - 1));
-    return colors[index];
+    
+    // Use word index to distribute colors more evenly
+    if (normalized > 0.7) {
+      // Most frequent words get red/orange colors
+      return ['#dc2626', '#ef4444', '#f97316'][index % 3];
+    } else if (normalized > 0.4) {
+      // Medium frequency gets mixed colors
+      return colorPalette[index % colorPalette.length];
+    } else {
+      // Low frequency gets darker/muted colors
+      return ['#6b7280', '#374151', '#059669', '#3b82f6'][index % 4];
+    }
   }, [maxCount, minCount]);
 
   const handleRandomize = () => {
@@ -105,12 +142,13 @@ const KeywordCloud = ({ keywords, reviews }) => {
               className={`cloud-word ${hoveredWord === keyword.word ? 'hovered' : ''}`}
               style={{
                 fontSize: `${getSize(keyword.count)}px`,
-                color: getColor(keyword.count),
-                transform: `rotate(${keyword.rotation}deg)`,
+                color: getColor(keyword.count, keyword.word, displayKeywords.indexOf(keyword)),
+                transform: `translate(-50%, -50%)`, // Center the word on its position
                 position: 'absolute',
                 left: `${keyword.x}%`,
                 top: `${keyword.y}%`,
-                fontWeight: keyword.count > (maxCount * 0.7) ? '700' : '600',
+                fontWeight: keyword.count > (maxCount * 0.5) ? '700' : '500',
+                fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
               }}
               onMouseEnter={(e) => {
                 setHoveredWord(keyword.word);
@@ -150,7 +188,32 @@ const KeywordCloud = ({ keywords, reviews }) => {
                   <div className="review-rating">{'★'.repeat(review.rating)}</div>
                   <div className="review-text">
                     {(() => {
-                      const content = review.content || review.body || review.review || '';
+                      const content = review.content || review.body || review.review || 
+                                    review['Review Text'] || review.Body || '';
+                      // Highlight the keyword in the review
+                      const lowerContent = content.toLowerCase();
+                      const lowerWord = hoveredWord.toLowerCase();
+                      const index = lowerContent.indexOf(lowerWord);
+                      
+                      if (index !== -1) {
+                        const start = Math.max(0, index - 60);
+                        const end = Math.min(content.length, index + lowerWord.length + 60);
+                        const excerpt = content.substring(start, end);
+                        const highlightIndex = excerpt.toLowerCase().indexOf(lowerWord);
+                        
+                        if (highlightIndex !== -1) {
+                          return (
+                            <>
+                              {start > 0 && '...'}
+                              {excerpt.substring(0, highlightIndex)}
+                              <span className="highlight">{excerpt.substring(highlightIndex, highlightIndex + lowerWord.length)}</span>
+                              {excerpt.substring(highlightIndex + lowerWord.length)}
+                              {end < content.length && '...'}
+                            </>
+                          );
+                        }
+                      }
+                      
                       return content.length > 150 
                         ? content.substring(0, 150) + '...' 
                         : content;

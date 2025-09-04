@@ -1,0 +1,302 @@
+/* KeywordCloud Component Styles */
+
+/* Main container */
+.enhanced-keyword-cloud {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: transparent;
+}
+
+/* Header section */
+.cloud-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.cloud-title {
+  font-size: 22px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #ffffff 0%, #e0e7ff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+/* Randomize button */
+.randomize-btn {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  padding: 8px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.randomize-btn:hover {
+  background: rgba(59, 130, 246, 0.25);
+  color: #93bbfc;
+  transform: translateY(-1px);
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.3),
+              inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  border-color: rgba(59, 130, 246, 0.5);
+}
+
+.randomize-btn.spinning svg {
+  animation: continuousSpin 1s linear infinite;
+}
+
+@keyframes continuousSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Word cloud container */
+.cloud-container {
+  flex: 1;
+  position: relative;
+  background: rgba(255, 255, 255, 0.03);
+  overflow: visible;
+  padding: 60px 40px;
+  min-height: 500px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Individual words */
+.cloud-word {
+  position: absolute;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  user-select: none;
+  transform-origin: center;
+  white-space: nowrap;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+}
+
+.cloud-word:hover {
+  transform: translate(-50%, -50%) scale(1.15);
+  filter: brightness(1.1) drop-shadow(0 3px 10px rgba(0, 0, 0, 0.2));
+  z-index: 100;
+}
+
+.cloud-word.hovered {
+  transform: translate(-50%, -50%) scale(1.2);
+  filter: brightness(1.15) drop-shadow(0 5px 15px rgba(0, 0, 0, 0.3));
+  z-index: 101;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+/* Tooltip styles */
+.word-cloud-tooltip {
+  background: rgba(17, 24, 39, 0.98);
+  backdrop-filter: blur(12px) saturate(180%);
+  color: white;
+  padding: 20px;
+  border-radius: 16px;
+  max-width: 480px;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6),
+              0 0 0 1px rgba(255, 255, 255, 0.1),
+              inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  pointer-events: none;
+  animation: tooltipFadeIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.tooltip-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tooltip-header strong {
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.01em;
+}
+
+.tooltip-count {
+  font-size: 13px;
+  color: #60a5fa;
+  font-weight: 600;
+  background: rgba(59, 130, 246, 0.2);
+  padding: 4px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.tooltip-reviews {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tooltip-review {
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  border-left: 3px solid #3b82f6;
+  transition: all 0.2s ease;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.tooltip-review:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.review-rating {
+  color: #fbbf24;
+  font-size: 14px;
+  margin-bottom: 8px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  letter-spacing: 2px;
+}
+
+.review-text {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #e5e7eb;
+}
+
+.review-text .highlight {
+  background: linear-gradient(135deg, 
+    rgba(251, 191, 36, 0.3) 0%,
+    rgba(245, 158, 11, 0.25) 100%);
+  color: #fde047;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+  box-shadow: 0 0 0 1px rgba(251, 191, 36, 0.3);
+}
+
+.tooltip-no-reviews {
+  font-size: 14px;
+  color: #9ca3af;
+  font-style: italic;
+  text-align: center;
+  padding: 20px;
+}
+
+/* Word cloud in main view */
+.wordcloud-view {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 32px;
+  background: transparent;
+}
+
+.wordcloud-container-main {
+  height: 700px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.08) 0%,
+    rgba(255, 255, 255, 0.03) 100%);
+  backdrop-filter: blur(20px) saturate(180%);
+  margin: 24px auto;
+  max-width: 1200px;
+  border-radius: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.3),
+              inset 0 1px 0 rgba(255, 255, 255, 0.15),
+              0 0 80px rgba(99, 102, 241, 0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+.wordcloud-container-main::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at center, 
+    transparent 30%,
+    rgba(99, 102, 241, 0.03) 70%);
+  pointer-events: none;
+}
+
+.wordcloud-container-main::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle at center,
+    transparent 0%,
+    rgba(255, 255, 255, 0.02) 50%,
+    transparent 100%);
+  animation: rotate360 30s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes rotate360 {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.wordcloud-container-main .enhanced-keyword-cloud {
+  width: 100%;
+  height: 100%;
+  max-width: 1100px;
+  background: transparent;
+  position: relative;
+  z-index: 1;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .cloud-container {
+    padding: 40px 20px;
+    min-height: 400px;
+  }
+  
+  .wordcloud-container-main {
+    height: 500px;
+    margin: 16px;
+  }
+  
+  .cloud-title {
+    font-size: 18px;
+  }
+  
+  .word-cloud-tooltip {
+    max-width: 90vw;
+  }
+}
