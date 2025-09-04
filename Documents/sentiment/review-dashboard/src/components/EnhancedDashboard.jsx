@@ -12,7 +12,8 @@ import { Alert, AlertDescription } from './ui/alert';
 import { 
   TrendingUp, TrendingDown, AlertCircle, Brain, 
   Sparkles, Target, Shield, Zap, Search, Filter,
-  ChevronDown, ChevronUp, X, Download, RefreshCw, Calendar
+  ChevronDown, ChevronUp, X, Download, RefreshCw, Calendar,
+  Smartphone, Package, Layers, Globe, Monitor
 } from 'lucide-react';
 import { analyzeReviews, generateInsights } from '../services/aiAnalysis';
 import { performDeepAnalysis } from '../services/deepAnalysis';
@@ -636,6 +637,10 @@ const EnhancedDashboard = ({ data, isLoading }) => {
               <div className="secondary-filters-grid">
                 {metadataOptions.appName && metadataOptions.appName.length > 2 && (
                   <div className="secondary-filter-item">
+                    <label className="filter-label secondary">
+                      <Package size={14} />
+                      Apps
+                    </label>
                     <select
                       value={metadataFilters.appName}
                       onChange={(e) => setMetadataFilters(prev => ({ ...prev, appName: e.target.value }))}
@@ -652,6 +657,10 @@ const EnhancedDashboard = ({ data, isLoading }) => {
                 
                 {metadataOptions.device && metadataOptions.device.length > 2 && (
                   <div className="secondary-filter-item">
+                    <label className="filter-label secondary">
+                      <Smartphone size={14} />
+                      Devices
+                    </label>
                     <select
                       value={metadataFilters.device}
                       onChange={(e) => setMetadataFilters(prev => ({ ...prev, device: e.target.value }))}
@@ -668,6 +677,10 @@ const EnhancedDashboard = ({ data, isLoading }) => {
                 
                 {metadataOptions.version && metadataOptions.version.length > 2 && (
                   <div className="secondary-filter-item">
+                    <label className="filter-label secondary">
+                      <Layers size={14} />
+                      Versions
+                    </label>
                     <select
                       value={metadataFilters.version}
                       onChange={(e) => setMetadataFilters(prev => ({ ...prev, version: e.target.value }))}
@@ -684,6 +697,10 @@ const EnhancedDashboard = ({ data, isLoading }) => {
                 
                 {metadataOptions.platform && metadataOptions.platform.length > 2 && (
                   <div className="secondary-filter-item">
+                    <label className="filter-label secondary">
+                      <Globe size={14} />
+                      Platforms
+                    </label>
                     <select
                       value={metadataFilters.platform}
                       onChange={(e) => setMetadataFilters(prev => ({ ...prev, platform: e.target.value }))}
@@ -700,6 +717,10 @@ const EnhancedDashboard = ({ data, isLoading }) => {
                 
                 {metadataOptions.os && metadataOptions.os.length > 2 && (
                   <div className="secondary-filter-item">
+                    <label className="filter-label secondary">
+                      <Monitor size={14} />
+                      OS
+                    </label>
                     <select
                       value={metadataFilters.os}
                       onChange={(e) => setMetadataFilters(prev => ({ ...prev, os: e.target.value }))}
