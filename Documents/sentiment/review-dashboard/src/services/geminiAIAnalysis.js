@@ -79,7 +79,7 @@ Please provide a detailed JSON response with exactly these fields:
 
 IMPORTANT: Return only valid JSON without any markdown formatting or additional text.`;
 
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     
     const response = await rateLimiter.addRequest(async () => {
       const result = await model.generateContent(prompt);
@@ -163,7 +163,7 @@ Return format: {"tags": ["tag1", "tag2", ...], "priority": "high|medium|low"}
 
 IMPORTANT: Return only valid JSON without any markdown formatting or additional text.`;
 
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     
     const response = await rateLimiter.addRequest(async () => {
       const result = await model.generateContent(prompt);
@@ -226,7 +226,7 @@ Please provide a comprehensive JSON response with exactly these fields:
 
 IMPORTANT: Return only valid JSON without any markdown formatting or additional text.`;
 
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     
     const response = await rateLimiter.addRequest(async () => {
       const result = await model.generateContent(prompt);

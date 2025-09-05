@@ -89,7 +89,7 @@ Please provide a comprehensive JSON response with:
 
 IMPORTANT: Return only valid JSON without any markdown formatting or additional text.`;
 
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     const response = await model.generateContent(prompt);
     
     const responseText = response.text();
@@ -181,7 +181,7 @@ Return a JSON response with this exact structure:
 
 IMPORTANT: Return ONLY valid JSON without any markdown formatting, backticks, or additional text.`;
 
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     console.log('Sending categorization request to Gemini for review:', reviewContent.substring(0, 50) + '...');
     
     const response = await model.generateContent(prompt);
