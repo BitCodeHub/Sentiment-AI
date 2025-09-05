@@ -122,35 +122,97 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
     
     try {
       // Skip API calls if no API key is configured
-      const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
-      if (!apiKey || apiKey === 'your-openai-api-key-here') {
-        console.warn('Skipping AI analysis - API key not configured');
+      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+      if (!apiKey || apiKey === 'your-gemini-api-key-here') {
+        console.warn('Skipping AI analysis - Gemini API key not configured');
         
-        // Use basic categorization without AI for ALL reviews
+        // Use intelligent fallback categorization based on content analysis
         const categorized = reviews.map(review => {
           const rating = review.rating || review.Rating || 3;
+          const reviewText = (review.content || review['Review Text'] || review.Body || '').toLowerCase();
+          
           let primaryCategory = 'General Feedback';
           let sentiment = 'neutral';
+          let severity = 'none';
+          let issueType = 'general';
+          let tags = [];
           
-          // Simple categorization based on rating
-          if (rating >= 4) {
+          // Analyze content for categorization
+          if (reviewText.includes('crash') || reviewText.includes('bug') || reviewText.includes('error') || 
+              reviewText.includes('broken') || reviewText.includes('fix') || reviewText.includes('problem')) {
+            primaryCategory = 'Technical Issues';
+            sentiment = 'negative';
+            severity = reviewText.includes('crash') ? 'high' : 'medium';
+            issueType = 'bug';
+            tags = ['technical', 'issue'];
+          } else if (reviewText.includes('login') || reviewText.includes('password') || reviewText.includes('sign in') ||
+                     reviewText.includes('authentication') || reviewText.includes('account')) {
+            primaryCategory = 'Login & Authentication';
+            sentiment = 'negative';
+            severity = 'high';
+            issueType = 'functional';
+            tags = ['login', 'auth'];
+          } else if (reviewText.includes('connect') || reviewText.includes('vehicle') || reviewText.includes('sync') ||
+                     reviewText.includes('network') || reviewText.includes('connection')) {
+            primaryCategory = 'Connectivity';
+            sentiment = 'negative';
+            severity = 'medium';
+            issueType = 'technical';
+            tags = ['connectivity', 'sync'];
+          } else if (reviewText.includes('pay') || reviewText.includes('charge') || reviewText.includes('subscription') ||
+                     reviewText.includes('billing') || reviewText.includes('price')) {
+            primaryCategory = 'Payment & Billing';
+            sentiment = 'negative';
+            severity = 'medium';
+            issueType = 'complaint';
+            tags = ['payment', 'billing'];
+          } else if (reviewText.includes('support') || reviewText.includes('help') || reviewText.includes('customer service') ||
+                     reviewText.includes('response') || reviewText.includes('contact')) {
+            primaryCategory = 'Customer Service';
+            sentiment = 'negative';
+            severity = 'medium';
+            issueType = 'complaint';
+            tags = ['support', 'service'];
+          } else if (reviewText.includes('ui') || reviewText.includes('design') || reviewText.includes('interface') ||
+                     reviewText.includes('layout') || reviewText.includes('button') || reviewText.includes('screen')) {
+            primaryCategory = 'UI/UX Issues';
+            sentiment = 'negative';
+            severity = 'low';
+            issueType = 'complaint';
+            tags = ['ui', 'design'];
+          } else if (reviewText.includes('feature') || reviewText.includes('add') || reviewText.includes('would be nice') ||
+                     reviewText.includes('should') || reviewText.includes('could') || reviewText.includes('wish')) {
+            primaryCategory = 'Feature Requests';
+            sentiment = 'neutral';
+            issueType = 'request';
+            tags = ['feature', 'request'];
+          } else if ((reviewText.includes('love') || reviewText.includes('great') || reviewText.includes('excellent') ||
+                      reviewText.includes('perfect') || reviewText.includes('amazing')) && rating >= 4) {
             primaryCategory = 'Positive Feedback';
             sentiment = 'positive';
+            issueType = 'praise';
+            tags = ['positive', 'satisfied'];
           } else if (rating <= 2) {
             primaryCategory = 'Technical Issues';
             sentiment = 'negative';
+            severity = 'medium';
+            issueType = 'complaint';
+          } else if (rating >= 4) {
+            primaryCategory = 'Positive Feedback';
+            sentiment = 'positive';
+            issueType = 'praise';
           }
           
           return {
             ...review,
             primaryCategory,
             categories: [primaryCategory],
-            issueType: sentiment === 'positive' ? 'praise' : sentiment === 'negative' ? 'technical' : 'neutral',
-            severity: sentiment === 'negative' ? 'medium' : 'none',
+            issueType,
+            severity,
             sentiment,
-            isActionable: sentiment === 'negative',
+            isActionable: sentiment === 'negative' && severity !== 'none',
             suggestedAction: null,
-            tags: [],
+            tags,
             keyPhrases: [],
             emotion: sentiment === 'positive' ? 'satisfied' : sentiment === 'negative' ? 'frustrated' : 'neutral'
           };
@@ -195,29 +257,76 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
             const rating = review.rating || review.Rating || 3;
             
             let primaryCategory = 'General Feedback';
-            let issueType = 'neutral';
+            let issueType = 'general';
             let severity = 'none';
             let sentiment = 'neutral';
+            let tags = [];
             
-            if (reviewText.includes('crash') || reviewText.includes('bug') || reviewText.includes('error')) {
+            // Enhanced content analysis for categorization
+            if (reviewText.includes('crash') || reviewText.includes('bug') || reviewText.includes('error') || 
+                reviewText.includes('broken') || reviewText.includes('fix') || reviewText.includes('problem') ||
+                reviewText.includes('issue') || reviewText.includes('not work') || reviewText.includes('problematic')) {
               primaryCategory = 'Technical Issues';
-              issueType = 'technical';
-              severity = 'high';
               sentiment = 'negative';
-            } else if (reviewText.includes('login') || reviewText.includes('password') || reviewText.includes('sign in')) {
+              severity = reviewText.includes('crash') ? 'high' : 'medium';
+              issueType = 'bug';
+              tags = ['technical', 'issue'];
+            } else if (reviewText.includes('login') || reviewText.includes('password') || reviewText.includes('sign in') ||
+                       reviewText.includes('authentication') || reviewText.includes('account') || reviewText.includes('access')) {
               primaryCategory = 'Login & Authentication';
-              issueType = 'functional';
-              severity = 'medium';
               sentiment = 'negative';
-            } else if (reviewText.includes('love') || reviewText.includes('great') || reviewText.includes('excellent') || rating >= 4) {
+              severity = 'high';
+              issueType = 'functional';
+              tags = ['login', 'auth'];
+            } else if (reviewText.includes('connect') || reviewText.includes('vehicle') || reviewText.includes('sync') ||
+                       reviewText.includes('network') || reviewText.includes('connection') || reviewText.includes('bluetooth')) {
+              primaryCategory = 'Connectivity';
+              sentiment = 'negative';
+              severity = 'medium';
+              issueType = 'technical';
+              tags = ['connectivity', 'sync'];
+            } else if (reviewText.includes('pay') || reviewText.includes('charge') || reviewText.includes('subscription') ||
+                       reviewText.includes('billing') || reviewText.includes('price') || reviewText.includes('money')) {
+              primaryCategory = 'Payment & Billing';
+              sentiment = 'negative';
+              severity = 'medium';
+              issueType = 'complaint';
+              tags = ['payment', 'billing'];
+            } else if (reviewText.includes('support') || reviewText.includes('help') || reviewText.includes('customer service') ||
+                       reviewText.includes('response') || reviewText.includes('contact') || reviewText.includes('ticket')) {
+              primaryCategory = 'Customer Service';
+              sentiment = 'negative';
+              severity = 'medium';
+              issueType = 'complaint';
+              tags = ['support', 'service'];
+            } else if (reviewText.includes('ui') || reviewText.includes('design') || reviewText.includes('interface') ||
+                       reviewText.includes('layout') || reviewText.includes('button') || reviewText.includes('screen')) {
+              primaryCategory = 'UI/UX Issues';
+              sentiment = 'negative';
+              severity = 'low';
+              issueType = 'complaint';
+              tags = ['ui', 'design'];
+            } else if (reviewText.includes('feature') || reviewText.includes('add') || reviewText.includes('would be nice') ||
+                       reviewText.includes('should') || reviewText.includes('could') || reviewText.includes('wish')) {
+              primaryCategory = 'Feature Requests';
+              sentiment = 'neutral';
+              issueType = 'request';
+              tags = ['feature', 'request'];
+            } else if ((reviewText.includes('love') || reviewText.includes('great') || reviewText.includes('excellent') ||
+                        reviewText.includes('perfect') || reviewText.includes('amazing') || reviewText.includes('awesome')) && rating >= 4) {
               primaryCategory = 'Positive Feedback';
-              issueType = 'praise';
               sentiment = 'positive';
+              issueType = 'praise';
+              tags = ['positive', 'satisfied'];
             } else if (rating <= 2) {
               primaryCategory = 'Technical Issues';
-              issueType = 'technical';
-              severity = 'medium';
               sentiment = 'negative';
+              severity = 'medium';
+              issueType = 'complaint';
+            } else if (rating >= 4) {
+              primaryCategory = 'Positive Feedback';
+              sentiment = 'positive';
+              issueType = 'praise';
             }
             
             return {
@@ -227,8 +336,8 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
               issueType,
               severity,
               sentiment,
-              isActionable: sentiment === 'negative',
-              tags: [],
+              isActionable: sentiment === 'negative' && severity !== 'none',
+              tags,
               emotion: sentiment === 'positive' ? 'satisfied' : sentiment === 'negative' ? 'frustrated' : 'neutral'
             };
           }
@@ -254,20 +363,82 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
       setIsCategorizingComplete(true);
     } catch (error) {
       console.error('Analysis error:', error);
-      // Fallback to basic categorization for ALL reviews
+      // Fallback to intelligent categorization for ALL reviews
       const categorized = reviews.map(review => {
         const rating = review.rating || review.Rating || 3;
+        const reviewText = (review.content || review['Review Text'] || review.Body || '').toLowerCase();
+        
         let primaryCategory = 'General Feedback';
         let sentiment = 'neutral';
         let severity = 'none';
+        let issueType = 'general';
+        let tags = [];
         
-        if (rating >= 4) {
+        // Enhanced content analysis for categorization
+        if (reviewText.includes('crash') || reviewText.includes('bug') || reviewText.includes('error') || 
+            reviewText.includes('broken') || reviewText.includes('fix') || reviewText.includes('problem') ||
+            reviewText.includes('issue') || reviewText.includes('not work') || reviewText.includes('problematic')) {
+          primaryCategory = 'Technical Issues';
+          sentiment = 'negative';
+          severity = reviewText.includes('crash') ? 'high' : 'medium';
+          issueType = 'bug';
+          tags = ['technical', 'issue'];
+        } else if (reviewText.includes('login') || reviewText.includes('password') || reviewText.includes('sign in') ||
+                   reviewText.includes('authentication') || reviewText.includes('account') || reviewText.includes('access')) {
+          primaryCategory = 'Login & Authentication';
+          sentiment = 'negative';
+          severity = 'high';
+          issueType = 'functional';
+          tags = ['login', 'auth'];
+        } else if (reviewText.includes('connect') || reviewText.includes('vehicle') || reviewText.includes('sync') ||
+                   reviewText.includes('network') || reviewText.includes('connection') || reviewText.includes('bluetooth')) {
+          primaryCategory = 'Connectivity';
+          sentiment = 'negative';
+          severity = 'medium';
+          issueType = 'technical';
+          tags = ['connectivity', 'sync'];
+        } else if (reviewText.includes('pay') || reviewText.includes('charge') || reviewText.includes('subscription') ||
+                   reviewText.includes('billing') || reviewText.includes('price') || reviewText.includes('money')) {
+          primaryCategory = 'Payment & Billing';
+          sentiment = 'negative';
+          severity = 'medium';
+          issueType = 'complaint';
+          tags = ['payment', 'billing'];
+        } else if (reviewText.includes('support') || reviewText.includes('help') || reviewText.includes('customer service') ||
+                   reviewText.includes('response') || reviewText.includes('contact') || reviewText.includes('ticket')) {
+          primaryCategory = 'Customer Service';
+          sentiment = 'negative';
+          severity = 'medium';
+          issueType = 'complaint';
+          tags = ['support', 'service'];
+        } else if (reviewText.includes('ui') || reviewText.includes('design') || reviewText.includes('interface') ||
+                   reviewText.includes('layout') || reviewText.includes('button') || reviewText.includes('screen')) {
+          primaryCategory = 'UI/UX Issues';
+          sentiment = 'negative';
+          severity = 'low';
+          issueType = 'complaint';
+          tags = ['ui', 'design'];
+        } else if (reviewText.includes('feature') || reviewText.includes('add') || reviewText.includes('would be nice') ||
+                   reviewText.includes('should') || reviewText.includes('could') || reviewText.includes('wish')) {
+          primaryCategory = 'Feature Requests';
+          sentiment = 'neutral';
+          issueType = 'request';
+          tags = ['feature', 'request'];
+        } else if ((reviewText.includes('love') || reviewText.includes('great') || reviewText.includes('excellent') ||
+                    reviewText.includes('perfect') || reviewText.includes('amazing') || reviewText.includes('awesome')) && rating >= 4) {
           primaryCategory = 'Positive Feedback';
           sentiment = 'positive';
+          issueType = 'praise';
+          tags = ['positive', 'satisfied'];
         } else if (rating <= 2) {
           primaryCategory = 'Technical Issues';
           sentiment = 'negative';
           severity = 'medium';
+          issueType = 'complaint';
+        } else if (rating >= 4) {
+          primaryCategory = 'Positive Feedback';
+          sentiment = 'positive';
+          issueType = 'praise';
         }
         
         return {
@@ -275,7 +446,11 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
           primaryCategory,
           categories: [primaryCategory],
           severity,
-          sentiment
+          sentiment,
+          issueType,
+          isActionable: sentiment === 'negative' && severity !== 'none',
+          tags,
+          emotion: sentiment === 'positive' ? 'satisfied' : sentiment === 'negative' ? 'frustrated' : 'neutral'
         };
       });
       setCategorizedReviews(categorized);

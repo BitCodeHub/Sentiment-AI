@@ -120,40 +120,54 @@ export const categorizeReviewEnhanced = async (review) => {
       return cachedResult.enhanced;
     }
 
-    const prompt = `Analyze this app review in detail and provide comprehensive categorization:
+    const reviewContent = review.content || review['Review Text'] || review.Body || '';
+    const reviewRating = review.rating || review.Rating || 3;
+    
+    const prompt = `Analyze this app review and categorize it intelligently:
 
-Review: "${review.content}"
-Rating: ${review.rating}/5
-Author: ${review.author || 'Anonymous'}
-Date: ${review.date}
+Review: "${reviewContent}"
+Rating: ${reviewRating}/5
+Author: ${review.author || review.Author || 'Anonymous'}
+Date: ${review.date || review.Date || 'Unknown'}
 
-Please provide a JSON response with:
+Categorize this review into ONE of these primary categories based on its content:
+1. "Technical Issues" - for crashes, bugs, errors, app not working, performance problems
+2. "Login & Authentication" - for login problems, password issues, account access issues
+3. "Feature Requests" - for suggestions, new features, improvements, enhancements
+4. "UI/UX Issues" - for design complaints, usability issues, navigation problems, layout issues
+5. "Payment & Billing" - for payment errors, subscription issues, pricing complaints
+6. "Customer Service" - for support complaints, response time, help requests
+7. "Connectivity" - for network issues, sync problems, connection failures, vehicle connection
+8. "Positive Feedback" - for praise, compliments, satisfaction, positive experiences
+9. "General Feedback" - ONLY if it doesn't fit any above category
+
+Return a JSON response with this exact structure:
 {
   "categories": {
-    "primary": "Technical Issues|Login & Authentication|Feature Requests|UI/UX Issues|Payment & Billing|Customer Service|Connectivity|Positive Feedback|General Feedback",
-    "secondary": ["list of secondary categories"],
-    "tags": ["specific tags like 'crash', 'slow', 'login-failed', etc"]
+    "primary": "[Choose exactly ONE category from the list above]",
+    "secondary": ["any additional relevant categories"],
+    "tags": ["specific keywords like 'crash', 'slow', 'login-failed', 'vehicle-connection', etc"]
   },
   "sentiment": {
-    "overall": "positive|negative|neutral|mixed",
-    "score": -1 to 1,
-    "emotion": "frustrated|satisfied|angry|happy|neutral|disappointed"
+    "overall": "positive" or "negative" or "neutral" or "mixed",
+    "score": number between -1 and 1,
+    "emotion": "frustrated" or "satisfied" or "angry" or "happy" or "neutral" or "disappointed"
   },
   "severity": {
-    "level": "critical|high|medium|low",
-    "urgency": "immediate|high|medium|low",
-    "userImpact": "blocking|major|minor|none"
+    "level": "critical" or "high" or "medium" or "low" or "none",
+    "urgency": "immediate" or "high" or "medium" or "low",
+    "userImpact": "blocking" or "major" or "minor" or "none"
   },
   "issue": {
-    "type": "bug|request|complaint|praise|question",
-    "specific": "describe the specific issue or feedback",
-    "suggestion": "any suggested action or response"
+    "type": "bug" or "request" or "complaint" or "praise" or "question",
+    "specific": "brief description of the specific issue",
+    "suggestion": "suggested action or response"
   },
-  "actionable": true|false,
-  "requiresResponse": true|false
+  "actionable": true or false,
+  "requiresResponse": true or false
 }
 
-IMPORTANT: Return only valid JSON without any markdown formatting or additional text.`;
+IMPORTANT: Return ONLY valid JSON without any markdown formatting, backticks, or additional text.`;
 
     const model = genAI.getGenerativeModel({ model: "gemini-pro" });
     const response = await model.generateContent(prompt);
