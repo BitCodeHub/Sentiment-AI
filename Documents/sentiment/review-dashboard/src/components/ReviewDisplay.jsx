@@ -621,11 +621,17 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
       {showFilters && (
         <div className="category-filters-section">
           <div className="issue-summary">
-            {categorizedReviews.slice(0, reviews.length).filter(r => r.severity === 'critical').length > 0 && (
+            {categorizedReviews.slice(0, reviews.length).filter(r => 
+              r.severity === 'critical' || 
+              (r.enhanced?.severity?.level === 'critical')
+            ).length > 0 && (
               <div className="urgent-issues-banner">
                 <AlertTriangle size={16} />
                 <span>
-                  {categorizedReviews.slice(0, reviews.length).filter(r => r.severity === 'critical').length} Urgent Issues Detected
+                  {categorizedReviews.slice(0, reviews.length).filter(r => 
+                    r.severity === 'critical' || 
+                    (r.enhanced?.severity?.level === 'critical')
+                  ).length} Urgent Issues Detected
                 </span>
               </div>
             )}
@@ -718,7 +724,10 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
                   <div className="stat-info">
                     <span className="stat-label">Critical Issues</span>
                     <span className="stat-value critical">
-                      {categorizedReviews.slice(0, reviews.length).filter(r => r.severity === 'critical').length || 0}
+                      {categorizedReviews.slice(0, reviews.length).filter(r => 
+                        r.severity === 'critical' || 
+                        (r.enhanced?.severity?.level === 'critical')
+                      ).length || 0}
                     </span>
                   </div>
                 </div>
@@ -735,7 +744,10 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
                   <div className="stat-info">
                     <span className="stat-label">High Priority</span>
                     <span className="stat-value high">
-                      {categorizedReviews.slice(0, reviews.length).filter(r => r.severity === 'high').length || 0}
+                      {categorizedReviews.slice(0, reviews.length).filter(r => 
+                        r.severity === 'high' || 
+                        (r.enhanced?.severity?.level === 'high')
+                      ).length || 0}
                     </span>
                   </div>
                 </div>
@@ -752,7 +764,10 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
                   <div className="stat-info">
                     <span className="stat-label">Negative Reviews</span>
                     <span className="stat-value negative">
-                      {categorizedReviews.slice(0, reviews.length).filter(r => r.sentiment === 'negative').length || 0}
+                      {categorizedReviews.slice(0, reviews.length).filter(r => 
+                        r.sentiment === 'negative' || 
+                        (r.enhanced?.sentiment?.overall === 'negative')
+                      ).length || 0}
                     </span>
                   </div>
                 </div>
@@ -769,7 +784,10 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
                   <div className="stat-info">
                     <span className="stat-label">Actionable</span>
                     <span className="stat-value actionable">
-                      {categorizedReviews.slice(0, reviews.length).filter(r => r.isActionable).length || 0}
+                      {categorizedReviews.slice(0, reviews.length).filter(r => 
+                        r.isActionable || 
+                        (r.enhanced?.actionable === true)
+                      ).length || 0}
                     </span>
                   </div>
                 </div>
