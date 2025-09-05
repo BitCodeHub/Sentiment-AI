@@ -16,9 +16,9 @@ import {
   Smartphone, Package, Layers, Globe, Monitor,
   Share2, Printer, Save, Settings, HelpCircle, Undo, Redo
 } from 'lucide-react';
-import { analyzeReviews, generateInsights } from '../services/aiAnalysis';
-import { performDeepAnalysis } from '../services/deepAnalysis';
-import { performExecutiveAnalysis } from '../services/executiveAnalysis';
+import { analyzeReviews, generateInsights } from '../services/geminiAIAnalysis';
+import { performDeepAnalysis } from '../services/geminiDeepAnalysis';
+import { performExecutiveAnalysis } from '../services/geminiExecutiveAnalysis';
 import { getErrorMessage } from '../utils/errorHandler';
 import AIInsights from './AIInsights';
 import CategorizedReviews from './CategorizedReviews';

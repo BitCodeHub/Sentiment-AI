@@ -12,7 +12,7 @@ import {
   ThumbsUp, ThumbsDown, MessageSquare, BarChart2, Sparkles,
   Target, Shield, Zap, Brain, ChevronRight, Loader2
 } from 'lucide-react';
-import { performSentimentAnalysis, analyzeSentimentTrends } from '../services/sentimentAnalysis';
+import { performSentimentAnalysis, analyzeSentimentTrends } from '../services/geminiSentimentAnalysis';
 import './SentimentAnalysis.css';
 
 const SentimentAnalysis = ({ reviews, onClose }) => {

@@ -12,7 +12,7 @@ A powerful, AI-enhanced dashboard for analyzing app store reviews with sentiment
 - 📱 **Responsive Design** - Works seamlessly on desktop and mobile devices
 - 📈 **Trend Analysis** - Track rating and sentiment changes over time
 - 🎨 **Modern UI** - Clean, intuitive interface with smooth animations
-- 🤖 **AI-Powered Insights** - OpenAI integration for automatic review analysis and recommendations
+- 🤖 **AI-Powered Insights** - Google Gemini AI integration for automatic review analysis and recommendations
 - 🍎 **Apple App Store Import** - Direct import of iOS app reviews (mock data for demo)
 
 ## Tech Stack
@@ -22,7 +22,7 @@ A powerful, AI-enhanced dashboard for analyzing app store reviews with sentiment
 - **Charts**: Chart.js with React-chartjs-2
 - **Routing**: React Router v6
 - **File Processing**: XLSX for Excel parsing
-- **AI Integration**: OpenAI GPT-3.5-turbo
+- **AI Integration**: Google Gemini Pro
 - **Icons**: Lucide React
 
 ## Getting Started
@@ -30,7 +30,7 @@ A powerful, AI-enhanced dashboard for analyzing app store reviews with sentiment
 ### Prerequisites
 
 - Node.js 16+ and npm
-- OpenAI API key (for AI features)
+- Google Gemini API key (for AI features)
 
 ### Installation
 
@@ -48,7 +48,7 @@ npm install
 3. Set up environment variables:
 ```bash
 cp .env.example .env
-# Edit .env and add your OpenAI API key
+# Edit .env and add your Google Gemini API key
 ```
 
 4. Start the development server:

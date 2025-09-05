@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { categorizeReview } from '../services/aiAnalysis';
+import { categorizeReview } from '../services/geminiAIAnalysis';
 import { 
   Zap, AlertCircle, Lightbulb, Palette, 
   Key, Wifi, Battery, Bug, CreditCard, 

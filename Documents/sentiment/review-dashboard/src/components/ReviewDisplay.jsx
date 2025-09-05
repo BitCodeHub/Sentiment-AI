@@ -3,7 +3,7 @@ import {
   analyzeReviewsWithIssues, 
   categorizeReviewEnhanced,
   getIssueDistribution 
-} from '../services/enhancedCategorization';
+} from '../services/geminiEnhancedCategorization';
 import { 
   RefreshCw, Filter, ChevronDown, AlertCircle, 
   Bug, Zap, Wifi, Shield, CreditCard, Users,
