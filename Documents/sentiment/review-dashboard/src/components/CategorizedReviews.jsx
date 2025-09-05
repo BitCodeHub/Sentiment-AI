@@ -88,9 +88,11 @@ const CategorizedReviews = ({ reviews, limit = 10, searchTerm = '' }) => {
           categorized.push(categorizedReview);
           
           // Update stats
-          result.tags.forEach(tag => {
-            stats[tag] = (stats[tag] || 0) + 1;
-          });
+          if (Array.isArray(result.tags)) {
+            result.tags.forEach(tag => {
+              stats[tag] = (stats[tag] || 0) + 1;
+            });
+          }
         } catch (error) {
           console.error('Error categorizing review:', error);
           categorized.push({
@@ -111,7 +113,7 @@ const CategorizedReviews = ({ reviews, limit = 10, searchTerm = '' }) => {
   };
 
   const filteredReviews = selectedCategory
-    ? categorizedReviews.filter(r => r.categories.includes(selectedCategory))
+    ? categorizedReviews.filter(r => Array.isArray(r.categories) && r.categories.includes(selectedCategory))
     : categorizedReviews;
 
   const getSentimentIcon = (sentiment) => {
@@ -209,7 +211,7 @@ const CategorizedReviews = ({ reviews, limit = 10, searchTerm = '' }) => {
             </p>
 
             <div className="flex flex-wrap gap-1">
-              {review.categories.map((cat, idx) => {
+              {(Array.isArray(review.categories) ? review.categories : ['General']).map((cat, idx) => {
                 const Icon = categoryIcons[cat] || AlertCircle;
                 return (
                   <span

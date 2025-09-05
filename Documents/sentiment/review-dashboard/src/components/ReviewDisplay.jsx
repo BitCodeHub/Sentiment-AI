@@ -342,7 +342,7 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
     : reviewsToShow.filter(review => 
         selectedCategories.some(cat => 
           review.primaryCategory === cat || 
-          review.categories?.includes(cat)
+          (Array.isArray(review.categories) && review.categories.includes(cat))
         )
       );
 
@@ -351,7 +351,7 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
     return categorizedReviews
       .slice(0, reviews.length) // Ensure we don't count more than the filtered reviews
       .filter(r => 
-        r.primaryCategory === category || r.categories?.includes(category)
+        r.primaryCategory === category || (Array.isArray(r.categories) && r.categories.includes(category))
       ).length;
   };
 
@@ -613,8 +613,8 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
                 <span className={`primary-category ${review.issueType}`}>
                   {review.primaryCategory}
                 </span>
-                {review.categories
-                  ?.filter(cat => cat !== review.primaryCategory) // Remove duplicate primary category
+                {Array.isArray(review.categories) && review.categories
+                  .filter(cat => cat !== review.primaryCategory) // Remove duplicate primary category
                   .slice(0, 2)
                   .map((cat, idx) => (
                     <span key={idx} className="secondary-category">{cat}</span>
