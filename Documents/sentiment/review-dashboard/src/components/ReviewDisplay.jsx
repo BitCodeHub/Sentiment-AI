@@ -121,10 +121,12 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
     setCategorizedReviews([]);
     
     try {
-      // Skip API calls if no API key is configured
+      // Check if API is configured - but don't skip if we have a hardcoded key
       const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-      if (!apiKey || apiKey === 'your-gemini-api-key-here') {
-        console.warn('Skipping AI analysis - Gemini API key not configured');
+      const hasHardcodedKey = true; // We have a fallback key in the service
+      
+      if (!apiKey && !hasHardcodedKey) {
+        console.warn('No Gemini API key configured - using content-based categorization');
         
         // Use intelligent fallback categorization based on content analysis
         const categorized = reviews.map(review => {
@@ -225,8 +227,10 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
       }
 
       // First, get overall issue analysis with all reviews
+      console.log('Starting AI categorization with', reviews.length, 'reviews');
       const analysis = await analyzeReviewsWithIssues(reviews);
       setIssueAnalysis(analysis);
+      console.log('Issue analysis complete:', analysis);
 
       // Process reviews in batches for better performance
       const batchSize = 10;
@@ -237,18 +241,32 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
         const batch = reviews.slice(i, Math.min(i + batchSize, totalReviews));
         const batchPromises = batch.map(async (review) => {
           try {
+            // Log review content to debug
+            const reviewContent = review.content || review['Review Text'] || review.Body || '';
+            console.log('Processing review:', {
+              content: reviewContent.substring(0, 100) + '...',
+              rating: review.rating || review.Rating,
+              hasContent: !!reviewContent
+            });
+            
             const enhanced = await categorizeReviewEnhanced(review);
+            console.log('Enhanced categorization result:', enhanced);
+            
+            // Check if we have the expected structure
+            const primaryCategory = enhanced.categories?.primary || enhanced.primaryCategory || 'General Feedback';
+            console.log('Primary category extracted:', primaryCategory);
+            
             return {
               ...review,
-              primaryCategory: enhanced.categories?.primary || 'General Feedback',
-              categories: enhanced.categories?.secondary || [],
-              issueType: enhanced.issue?.type || 'general',
-              severity: enhanced.severity?.level || 'none',
-              sentiment: enhanced.sentiment?.overall || 'neutral',
+              primaryCategory: primaryCategory,
+              categories: enhanced.categories?.secondary || enhanced.categories || [primaryCategory],
+              issueType: enhanced.issue?.type || enhanced.issueType || 'general',
+              severity: enhanced.severity?.level || enhanced.severity || 'none',
+              sentiment: enhanced.sentiment?.overall || enhanced.sentiment || 'neutral',
               isActionable: enhanced.actionable || false,
-              suggestedAction: enhanced.issue?.suggestion,
-              tags: enhanced.categories?.tags || [],
-              emotion: enhanced.sentiment?.emotion || 'neutral'
+              suggestedAction: enhanced.issue?.suggestion || enhanced.suggestedAction,
+              tags: enhanced.categories?.tags || enhanced.tags || [],
+              emotion: enhanced.sentiment?.emotion || enhanced.emotion || 'neutral'
             };
           } catch (error) {
             console.error('Error categorizing review:', error);

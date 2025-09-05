@@ -113,15 +113,27 @@ IMPORTANT: Return only valid JSON without any markdown formatting or additional 
 
 // Enhanced categorization for individual reviews
 export const categorizeReviewEnhanced = async (review) => {
+  // TEMPORARY: Force content-based categorization to debug
+  const USE_API = false; // Change to true to enable API calls
+  
   try {
-    // Check cache first
-    const cachedResult = aiAnalysisCache.getCategorizedReview(review.content);
-    if (cachedResult && cachedResult.enhanced) {
-      return cachedResult.enhanced;
-    }
-
+    // Extract review content properly
     const reviewContent = review.content || review['Review Text'] || review.Body || '';
     const reviewRating = review.rating || review.Rating || 3;
+    
+    console.log('Categorizing review with content:', reviewContent.substring(0, 100), 'Rating:', reviewRating);
+    
+    // Check cache first
+    const cachedResult = aiAnalysisCache.getCategorizedReview(reviewContent);
+    if (cachedResult && cachedResult.enhanced) {
+      console.log('Using cached categorization for:', reviewContent.substring(0, 50) + '...');
+      return cachedResult.enhanced;
+    }
+    
+    // If API is disabled, throw to trigger content-based categorization
+    if (!USE_API) {
+      throw new Error('API disabled for debugging - using content-based categorization');
+    }
     
     const prompt = `Analyze this app review and categorize it intelligently:
 
@@ -170,43 +182,135 @@ Return a JSON response with this exact structure:
 IMPORTANT: Return ONLY valid JSON without any markdown formatting, backticks, or additional text.`;
 
     const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    console.log('Sending categorization request to Gemini for review:', reviewContent.substring(0, 50) + '...');
+    
     const response = await model.generateContent(prompt);
     
     const responseText = response.text();
+    console.log('Raw Gemini response:', responseText);
+    
     const cleanedResponse = cleanJsonResponse(responseText);
+    console.log('Cleaned response:', cleanedResponse);
+    
     const categorization = JSON.parse(cleanedResponse);
+    console.log('Parsed categorization:', categorization);
     
     // Cache the result
     const cacheData = cachedResult || {};
     cacheData.enhanced = categorization;
-    aiAnalysisCache.setCategorizedReview(review.content, cacheData);
+    aiAnalysisCache.setCategorizedReview(review.content || reviewContent, cacheData);
     
     return categorization;
   } catch (error) {
     console.error('Enhanced categorization error:', error);
+    console.error('Error details:', error.message);
+    
+    // Intelligent fallback based on content
+    const reviewContent = review.content || review['Review Text'] || review.Body || '';
+    const reviewText = reviewContent.toLowerCase();
+    const rating = review.rating || review.Rating || 3;
+    
+    let primary = 'General Feedback';
+    let sentiment = 'neutral';
+    let severity = 'medium';
+    let issueType = 'general';
+    let tags = [];
+    
+    // Content-based categorization
+    if (reviewText.includes('crash') || reviewText.includes('bug') || reviewText.includes('error') || 
+        reviewText.includes('broken') || reviewText.includes('fix') || reviewText.includes('problem') ||
+        reviewText.includes('issue') || reviewText.includes('not work') || reviewText.includes('problematic')) {
+      primary = 'Technical Issues';
+      sentiment = 'negative';
+      severity = reviewText.includes('crash') ? 'critical' : 'high';
+      issueType = 'bug';
+      tags = ['technical', 'bug'];
+    } else if (reviewText.includes('login') || reviewText.includes('password') || reviewText.includes('sign in') ||
+               reviewText.includes('authentication') || reviewText.includes('account') || reviewText.includes('access')) {
+      primary = 'Login & Authentication';
+      sentiment = 'negative';
+      severity = 'high';
+      issueType = 'bug';
+      tags = ['login', 'auth'];
+    } else if (reviewText.includes('connect') || reviewText.includes('vehicle') || reviewText.includes('sync') ||
+               reviewText.includes('network') || reviewText.includes('connection') || reviewText.includes('bluetooth')) {
+      primary = 'Connectivity';
+      sentiment = 'negative';
+      severity = 'high';
+      issueType = 'bug';
+      tags = ['connectivity', 'sync'];
+    } else if (reviewText.includes('pay') || reviewText.includes('charge') || reviewText.includes('subscription') ||
+               reviewText.includes('billing') || reviewText.includes('price') || reviewText.includes('money')) {
+      primary = 'Payment & Billing';
+      sentiment = 'negative';
+      severity = 'high';
+      issueType = 'complaint';
+      tags = ['payment', 'billing'];
+    } else if (reviewText.includes('support') || reviewText.includes('help') || reviewText.includes('customer service') ||
+               reviewText.includes('response') || reviewText.includes('contact') || reviewText.includes('ticket')) {
+      primary = 'Customer Service';
+      sentiment = 'negative';
+      severity = 'medium';
+      issueType = 'complaint';
+      tags = ['support', 'service'];
+    } else if (reviewText.includes('ui') || reviewText.includes('design') || reviewText.includes('interface') ||
+               reviewText.includes('layout') || reviewText.includes('button') || reviewText.includes('screen')) {
+      primary = 'UI/UX Issues';
+      sentiment = 'negative';
+      severity = 'low';
+      issueType = 'complaint';
+      tags = ['ui', 'design'];
+    } else if (reviewText.includes('feature') || reviewText.includes('add') || reviewText.includes('would be nice') ||
+               reviewText.includes('should') || reviewText.includes('could') || reviewText.includes('wish')) {
+      primary = 'Feature Requests';
+      sentiment = 'neutral';
+      severity = 'low';
+      issueType = 'request';
+      tags = ['feature', 'request'];
+    } else if ((reviewText.includes('love') || reviewText.includes('great') || reviewText.includes('excellent') ||
+                reviewText.includes('perfect') || reviewText.includes('amazing')) && rating >= 4) {
+      primary = 'Positive Feedback';
+      sentiment = 'positive';
+      severity = 'none';
+      issueType = 'praise';
+      tags = ['positive'];
+    } else if (rating <= 2) {
+      primary = 'Technical Issues';
+      sentiment = 'negative';
+      severity = 'medium';
+      issueType = 'complaint';
+    } else if (rating >= 4) {
+      primary = 'Positive Feedback';
+      sentiment = 'positive';
+      severity = 'none';
+      issueType = 'praise';
+    }
+    
+    console.log('Fallback categorization:', primary);
+    
     return {
       categories: {
-        primary: 'General Feedback',
+        primary: primary,
         secondary: [],
-        tags: []
+        tags: tags
       },
       sentiment: {
-        overall: 'neutral',
-        score: 0,
-        emotion: 'neutral'
+        overall: sentiment,
+        score: sentiment === 'positive' ? 0.8 : sentiment === 'negative' ? -0.8 : 0,
+        emotion: sentiment === 'positive' ? 'satisfied' : sentiment === 'negative' ? 'frustrated' : 'neutral'
       },
       severity: {
-        level: 'medium',
-        urgency: 'medium',
-        userImpact: 'minor'
+        level: severity,
+        urgency: severity === 'critical' ? 'immediate' : severity === 'high' ? 'high' : 'medium',
+        userImpact: severity === 'critical' ? 'blocking' : severity === 'high' ? 'major' : 'minor'
       },
       issue: {
-        type: 'complaint',
-        specific: 'Unable to categorize',
-        suggestion: 'Manual review required'
+        type: issueType,
+        specific: 'Categorized using content analysis',
+        suggestion: sentiment === 'negative' ? 'Investigate and respond' : null
       },
-      actionable: false,
-      requiresResponse: false
+      actionable: sentiment === 'negative',
+      requiresResponse: sentiment === 'negative'
     };
   }
 };
@@ -223,38 +327,47 @@ export const getIssueDistribution = (categorizedReviews) => {
   };
 
   categorizedReviews.forEach(review => {
-    if (!review.enhanced) return;
-
-    const cat = review.enhanced;
+    // Handle both structures - enhanced property or direct properties
+    const cat = review.enhanced || review;
+    
+    // Skip if no primary category
+    if (!review.primaryCategory && !cat.categories?.primary) return;
     
     // Count by primary category
-    distribution.byCategory[cat.categories.primary] = 
-      (distribution.byCategory[cat.categories.primary] || 0) + 1;
+    const primaryCat = review.primaryCategory || cat.categories?.primary || 'General Feedback';
+    distribution.byCategory[primaryCat] = 
+      (distribution.byCategory[primaryCat] || 0) + 1;
     
-    // Count by severity
-    if (cat.severity && distribution.bySeverity[cat.severity.level] !== undefined) {
-      distribution.bySeverity[cat.severity.level]++;
+    // Count by severity - handle both structures
+    const severity = review.severity || cat.severity?.level || 'none';
+    if (severity && distribution.bySeverity[severity] !== undefined) {
+      distribution.bySeverity[severity]++;
     }
     
-    // Count by sentiment
-    if (cat.sentiment && distribution.bySentiment[cat.sentiment.overall] !== undefined) {
-      distribution.bySentiment[cat.sentiment.overall]++;
+    // Count by sentiment - handle both structures
+    const sentiment = review.sentiment || cat.sentiment?.overall || 'neutral';
+    if (sentiment && distribution.bySentiment[sentiment] !== undefined) {
+      distribution.bySentiment[sentiment]++;
     }
     
-    // Count by type
-    if (cat.issue && distribution.byType[cat.issue.type] !== undefined) {
-      distribution.byType[cat.issue.type]++;
+    // Count by type - handle both structures
+    const issueType = review.issueType || cat.issue?.type || 'general';
+    if (issueType && distribution.byType[issueType] !== undefined) {
+      distribution.byType[issueType]++;
     }
     
     // Collect urgent issues
-    if (cat.severity?.urgency === 'immediate' || cat.severity?.level === 'critical') {
+    const isUrgent = severity === 'critical' || 
+                    cat.severity?.urgency === 'immediate' || 
+                    cat.severity?.level === 'critical';
+    if (isUrgent) {
       distribution.urgentIssues.push({
-        content: review.content,
-        category: cat.categories.primary,
-        severity: cat.severity.level,
-        issue: cat.issue.specific,
-        author: review.author,
-        date: review.date
+        content: review.content || review['Review Text'] || review.Body || '',
+        category: primaryCat,
+        severity: severity,
+        issue: review.suggestedAction || cat.issue?.specific || 'Critical issue',
+        author: review.author || review.Author || 'Unknown',
+        date: review.date || review.Date
       });
     }
   });
