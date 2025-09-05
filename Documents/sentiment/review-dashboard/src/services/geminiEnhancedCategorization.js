@@ -113,8 +113,8 @@ IMPORTANT: Return only valid JSON without any markdown formatting or additional 
 
 // Enhanced categorization for individual reviews
 export const categorizeReviewEnhanced = async (review) => {
-  // TEMPORARY: Force content-based categorization to debug
-  const USE_API = false; // Change to true to enable API calls
+  // Control API usage - set to false to use content-based categorization only
+  const USE_API = true; // Enable API calls with intelligent fallback
   
   try {
     // Extract review content properly
