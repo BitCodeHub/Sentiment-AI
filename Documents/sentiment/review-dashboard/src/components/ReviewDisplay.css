@@ -298,14 +298,25 @@
   font-weight: 800;
   padding: 8px 16px;
   border-radius: 10px;
-  color: white;
+  color: white !important;
   min-width: 50px;
+  min-height: 44px;
   text-align: center;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   line-height: 1;
   letter-spacing: -0.5px;
   position: relative;
+  z-index: 1;
   animation: numberPop 0.3s ease-out;
+  transition: all 0.2s ease;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Ensure empty stat values show "0" */
+.stat-value:empty::before {
+  content: "0";
 }
 
 @keyframes numberPop {
@@ -333,8 +344,10 @@
 }
 
 .stat-value.critical {
+  background-color: #dc2626;
   background: linear-gradient(135deg, #dc2626, #b91c1c);
   box-shadow: 0 4px 8px rgba(220, 38, 38, 0.3);
+  color: white;
 }
 
 /* Pulse animation for critical issues when count > 0 */
@@ -362,8 +375,10 @@
 }
 
 .stat-value.high {
+  background-color: #ea580c;
   background: linear-gradient(135deg, #ea580c, #dc2626);
   box-shadow: 0 4px 8px rgba(234, 88, 12, 0.3);
+  color: white;
 }
 
 /* Negative Reviews */
@@ -377,8 +392,10 @@
 }
 
 .stat-value.negative {
+  background-color: #ef4444;
   background: linear-gradient(135deg, #ef4444, #dc2626);
   box-shadow: 0 4px 8px rgba(239, 68, 68, 0.3);
+  color: white;
 }
 
 /* Actionable */
@@ -392,8 +409,10 @@
 }
 
 .stat-value.actionable {
+  background-color: #2563eb;
   background: linear-gradient(135deg, #2563eb, #1d4ed8);
   box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
+  color: white;
 }
 
 /* Reviews List */

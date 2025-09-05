@@ -718,7 +718,7 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
                   <div className="stat-info">
                     <span className="stat-label">Critical Issues</span>
                     <span className="stat-value critical">
-                      {categorizedReviews.slice(0, reviews.length).filter(r => r.severity === 'critical').length}
+                      {categorizedReviews.slice(0, reviews.length).filter(r => r.severity === 'critical').length || 0}
                     </span>
                   </div>
                 </div>
@@ -735,7 +735,7 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
                   <div className="stat-info">
                     <span className="stat-label">High Priority</span>
                     <span className="stat-value high">
-                      {categorizedReviews.slice(0, reviews.length).filter(r => r.severity === 'high').length}
+                      {categorizedReviews.slice(0, reviews.length).filter(r => r.severity === 'high').length || 0}
                     </span>
                   </div>
                 </div>
@@ -752,7 +752,7 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
                   <div className="stat-info">
                     <span className="stat-label">Negative Reviews</span>
                     <span className="stat-value negative">
-                      {categorizedReviews.slice(0, reviews.length).filter(r => r.sentiment === 'negative').length}
+                      {categorizedReviews.slice(0, reviews.length).filter(r => r.sentiment === 'negative').length || 0}
                     </span>
                   </div>
                 </div>
@@ -769,7 +769,7 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
                   <div className="stat-info">
                     <span className="stat-label">Actionable</span>
                     <span className="stat-value actionable">
-                      {categorizedReviews.slice(0, reviews.length).filter(r => r.isActionable).length}
+                      {categorizedReviews.slice(0, reviews.length).filter(r => r.isActionable).length || 0}
                     </span>
                   </div>
                 </div>
