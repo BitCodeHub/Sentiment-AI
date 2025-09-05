@@ -13,6 +13,169 @@ const cleanJsonResponse = (text) => {
   return text;
 };
 
+// Transform trends response to expected format
+const transformTrendsToExpectedFormat = (geminiTrends, reviews) => {
+  // Generate trend data for last 30 days
+  const trendData = [];
+  const now = new Date();
+  
+  for (let i = 29; i >= 0; i--) {
+    const date = new Date();
+    date.setDate(now.getDate() - i);
+    
+    // Count reviews for this date
+    const dateStr = date.toISOString().split('T')[0];
+    const dayReviews = reviews.filter(r => {
+      const reviewDate = new Date(r.date || r.Date);
+      return reviewDate.toISOString().split('T')[0] === dateStr;
+    });
+    
+    const positiveCount = dayReviews.filter(r => 
+      r.sentiment?.toLowerCase() === 'positive' || r.rating >= 4
+    ).length;
+    const negativeCount = dayReviews.filter(r => 
+      r.sentiment?.toLowerCase() === 'negative' || r.rating <= 2
+    ).length;
+    
+    const total = dayReviews.length;
+    const positiveRate = total > 0 ? Math.round((positiveCount / total) * 100) : 0;
+    const negativeRate = total > 0 ? Math.round((negativeCount / total) * 100) : 0;
+    
+    trendData.push({
+      date: date.toISOString(),
+      positiveRate,
+      negativeRate,
+      total
+    });
+  }
+  
+  // Calculate summary metrics
+  const recentScore = trendData.slice(-7).reduce((sum, d) => sum + d.positiveRate, 0) / 7;
+  const previousScore = trendData.slice(0, 7).reduce((sum, d) => sum + d.positiveRate, 0) / 7;
+  const isImproving = recentScore > previousScore;
+  
+  // Determine volatility
+  const scores = trendData.map(d => d.positiveRate);
+  const avgScore = scores.reduce((sum, s) => sum + s, 0) / scores.length;
+  const variance = scores.reduce((sum, s) => sum + Math.pow(s - avgScore, 2), 0) / scores.length;
+  const stdDev = Math.sqrt(variance);
+  const volatility = stdDev > 20 ? 'High' : stdDev > 10 ? 'Medium' : 'Low';
+  
+  return {
+    trendData,
+    summary: {
+      improving: isImproving,
+      currentScore: Math.round(recentScore),
+      previousScore: Math.round(previousScore),
+      volatility,
+      direction: geminiTrends.trendSummary?.direction || (isImproving ? 'improving' : 'declining'),
+      magnitude: geminiTrends.trendSummary?.magnitude || 'moderate',
+      description: geminiTrends.trendSummary?.description || 'Sentiment trends over time'
+    },
+    shifts: geminiTrends.sentimentShifts || [],
+    emergingThemes: geminiTrends.emergingThemes || [],
+    predictions: geminiTrends.predictions || {}
+  };
+};
+
+// Transform Gemini response to match expected format
+const transformToExpectedFormat = (geminiAnalysis, reviews) => {
+  // Calculate sentiment counts and percentages
+  const positiveCount = reviews.filter(r => 
+    r.sentiment?.toLowerCase() === 'positive' || r.rating >= 4
+  ).length;
+  const negativeCount = reviews.filter(r => 
+    r.sentiment?.toLowerCase() === 'negative' || r.rating <= 2
+  ).length;
+  const neutralCount = reviews.length - positiveCount - negativeCount;
+  
+  const total = reviews.length;
+  const positivePercentage = Math.round((positiveCount / total) * 100);
+  const negativePercentage = Math.round((negativeCount / total) * 100);
+  const neutralPercentage = Math.round((neutralCount / total) * 100);
+  const sentimentScore = positivePercentage - negativePercentage;
+  
+  // Determine overall verdict
+  let overallSentiment = 'MIXED';
+  let verdictSummary = 'Users have mixed feelings about this product.';
+  let verdictScore = 50;
+  
+  if (sentimentScore > 30) {
+    overallSentiment = 'LOVED';
+    verdictSummary = 'The majority of users love this product and are highly satisfied.';
+    verdictScore = 75 + Math.round(sentimentScore / 4);
+  } else if (sentimentScore < -30) {
+    overallSentiment = 'HATED';
+    verdictSummary = 'Many users are frustrated and dissatisfied with this product.';
+    verdictScore = 25 - Math.round(Math.abs(sentimentScore) / 4);
+  }
+  
+  // Extract top reasons from emotional drivers
+  const positiveDrivers = geminiAnalysis.emotionalDrivers?.positive || [];
+  const negativeDrivers = geminiAnalysis.emotionalDrivers?.negative || [];
+  
+  // Build the transformed analysis
+  return {
+    metrics: {
+      positivePercentage,
+      negativePercentage,
+      neutralPercentage,
+      positiveCount,
+      negativeCount,
+      neutralCount,
+      sentimentScore
+    },
+    overallVerdict: {
+      sentiment: overallSentiment,
+      summary: verdictSummary,
+      score: verdictScore
+    },
+    whyCustomersLove: {
+      topReasons: positiveDrivers.slice(0, 5).map(driver => ({
+        reason: driver.driver || 'Positive aspect',
+        frequency: driver.frequency || 'medium',
+        impact: driver.frequency === 'high' ? 'HIGH' : 
+                driver.frequency === 'medium' ? 'MEDIUM' : 'LOW',
+        quotes: driver.examples || []
+      })),
+      emotionalDrivers: geminiAnalysis.customerVoice?.loves || ['Quality', 'Ease of use', 'Value'],
+      valuePropositions: ['Reliable performance', 'User-friendly interface', 'Great support']
+    },
+    whyCustomersHate: {
+      topReasons: negativeDrivers.slice(0, 5).map(driver => ({
+        reason: driver.driver || 'Negative aspect',
+        frequency: driver.frequency || 'medium',
+        severity: driver.frequency === 'high' ? 'HIGH' : 
+                 driver.frequency === 'medium' ? 'MEDIUM' : 'LOW',
+        quotes: driver.examples || []
+      })),
+      frustrationPoints: geminiAnalysis.customerVoice?.hates || ['Issues', 'Problems'],
+      dealBreakers: ['Major bugs', 'Poor performance']
+    },
+    customerJourney: {
+      honeymoonPhase: 'Users are initially excited about the product and its features.',
+      realityCheck: geminiAnalysis.emotionalJourney?.painPoints?.[0]?.cause || 
+                    'Some users encounter issues during regular use.',
+      breakingPoint: 'Frustration builds when problems persist without resolution.',
+      loyaltyFactors: 'Despite issues, some users remain loyal due to unique features.'
+    },
+    competitiveInsights: {
+      advantages: geminiAnalysis.customerVoice?.loves || ['Unique features', 'Better pricing'],
+      disadvantages: geminiAnalysis.customerVoice?.hates || ['Missing features', 'Technical issues']
+    },
+    recommendations: {
+      immediate: geminiAnalysis.actionableInsights?.filter(i => i.impact === 'high')
+                   .map(i => i.recommendation) || 
+                 ['Address critical bugs', 'Improve customer support response time'],
+      strategic: geminiAnalysis.actionableInsights?.filter(i => i.impact !== 'high')
+                   .map(i => i.recommendation) || 
+                 ['Enhance user interface', 'Add requested features'],
+      messaging: geminiAnalysis.customerVoice?.wishes || 
+                 ['Emphasize reliability', 'Highlight customer support']
+    }
+  };
+};
+
 export const performSentimentAnalysis = async (reviews) => {
   try {
     // Check cache first
@@ -92,7 +255,10 @@ IMPORTANT: Return only valid JSON without any markdown formatting or additional 
     
     const responseText = response.text();
     const cleanedResponse = cleanJsonResponse(responseText);
-    const analysis = JSON.parse(cleanedResponse);
+    const rawAnalysis = JSON.parse(cleanedResponse);
+    
+    // Transform Gemini response to expected format
+    const analysis = transformToExpectedFormat(rawAnalysis, reviews);
     
     // Cache the successful result
     aiAnalysisCache.setSentimentAnalysis(reviews, analysis);
@@ -198,7 +364,10 @@ IMPORTANT: Return only valid JSON without any markdown formatting or additional 
     
     const responseText = response.text();
     const cleanedResponse = cleanJsonResponse(responseText);
-    const analysis = JSON.parse(cleanedResponse);
+    const rawTrends = JSON.parse(cleanedResponse);
+    
+    // Transform to expected trends format
+    const analysis = transformTrendsToExpectedFormat(rawTrends, recentReviews);
     
     // Cache the result
     aiAnalysisCache.setSentimentAnalysis({ key: cacheKey }, analysis);

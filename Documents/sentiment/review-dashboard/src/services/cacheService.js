@@ -145,6 +145,23 @@ export const aiAnalysisCache = {
     return cacheService.get(key);
   },
 
+  // Cache for sentiment analysis
+  setSentimentAnalysis(reviews, analysis) {
+    // Handle both review array and custom key object
+    const key = reviews.key 
+      ? reviews.key  // Custom key provided
+      : cacheService.generateKey('sentimentAnalysis', reviews.length, reviews[0]?.content);
+    cacheService.set(key, analysis, 1800000); // 30 minutes
+  },
+
+  getSentimentAnalysis(reviews) {
+    // Handle both review array and custom key object
+    const key = reviews.key 
+      ? reviews.key  // Custom key provided
+      : cacheService.generateKey('sentimentAnalysis', reviews.length, reviews[0]?.content);
+    return cacheService.get(key);
+  },
+
   // Clear all AI-related cache
   clearAll() {
     // In a real implementation, we might want to clear only AI-related keys
