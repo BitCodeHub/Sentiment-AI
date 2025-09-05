@@ -108,7 +108,7 @@ export const generateSampleExcelData = () => {
       const actualType = (type === 'featureRequest' || type === 'bugReport') ? 
         (Math.random() < 0.5 ? 'positive' : 'negative') : type;
       
-      const templateArray = templates[type] || templates[actualType];
+      const templateArray = templates || reviewTemplates[actualType];
       const template = templateArray[Math.floor(Math.random() * templateArray.length)];
       
       // Distribute ratings to match the breakdown: 5:159, 4:28, 3:31, 2:42, 1:144

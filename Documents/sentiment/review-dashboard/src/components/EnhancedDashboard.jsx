@@ -115,7 +115,21 @@ const EnhancedDashboard = ({ data, isLoading }) => {
       platform: new Set(['all'])
     };
     
-    data.reviews.forEach(review => {
+    // Debug logging
+    console.log('Building metadata options from reviews:', data.reviews.length);
+    
+    data.reviews.forEach((review, index) => {
+      // Debug first few reviews
+      if (index < 3) {
+        console.log(`Review ${index + 1} metadata:`, {
+          device: review.device,
+          os: review.os,
+          version: review.version,
+          platform: review.platform,
+          appName: review.appName
+        });
+      }
+      
       // Only add non-empty values to filters
       if (review.appName && review.appName.trim()) options.appName.add(review.appName);
       if (review.device && review.device.trim()) options.device.add(review.device);
@@ -134,6 +148,17 @@ const EnhancedDashboard = ({ data, isLoading }) => {
         return a.localeCompare(b);
       });
     });
+    
+    // Debug final options
+    console.log('Final metadata options:', {
+      device: options.device.length,
+      os: options.os.length,
+      version: options.version.length,
+      platform: options.platform.length,
+      appName: options.appName.length
+    });
+    console.log('Device options:', options.device);
+    console.log('OS options:', options.os);
     
     return options;
   }, [data?.reviews]);
