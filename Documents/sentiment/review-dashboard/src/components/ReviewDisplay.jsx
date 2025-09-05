@@ -178,7 +178,15 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
             const enhanced = await categorizeReviewEnhanced(review);
             return {
               ...review,
-              ...enhanced
+              primaryCategory: enhanced.categories?.primary || 'General Feedback',
+              categories: enhanced.categories?.secondary || [],
+              issueType: enhanced.issue?.type || 'general',
+              severity: enhanced.severity?.level || 'none',
+              sentiment: enhanced.sentiment?.overall || 'neutral',
+              isActionable: enhanced.actionable || false,
+              suggestedAction: enhanced.issue?.suggestion,
+              tags: enhanced.categories?.tags || [],
+              emotion: enhanced.sentiment?.emotion || 'neutral'
             };
           } catch (error) {
             console.error('Error categorizing review:', error);
