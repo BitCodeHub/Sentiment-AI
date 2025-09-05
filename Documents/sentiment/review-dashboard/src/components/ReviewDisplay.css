@@ -211,31 +211,191 @@
 /* Quick Stats */
 .quick-stats {
   display: flex;
-  gap: 24px;
-  padding-top: 20px;
+  gap: 16px;
+  padding: 20px 0;
+  margin-top: 20px;
   border-top: 1px solid #e5e7eb;
+  flex-wrap: wrap;
 }
 
 .stat-item {
+  padding: 12px 20px;
+  background: white;
+  border-radius: 12px;
+  border: 2px solid #e5e7eb;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-content {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 16px;
+}
+
+.stat-icon {
+  flex-shrink: 0;
+}
+
+.stat-icon.critical {
+  color: #dc2626;
+}
+
+.stat-icon.high {
+  color: #ea580c;
+}
+
+.stat-icon.negative {
+  color: #ef4444;
+}
+
+.stat-icon.actionable {
+  color: #2563eb;
+}
+
+.stat-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+}
+
+.stat-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: currentColor;
+  opacity: 0.8;
+}
+
+.stat-item:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+}
+
+.stat-item:hover .stat-value {
+  transform: scale(1.1);
+}
+
+.stat-item:active {
+  transform: translateY(-1px);
 }
 
 .stat-label {
-  font-size: 13px;
-  color: #6b7280;
+  font-size: 14px;
+  font-weight: 500;
+  color: #4b5563;
+  text-transform: capitalize;
 }
 
 .stat-value {
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 28px;
+  font-weight: 800;
+  padding: 8px 16px;
+  border-radius: 10px;
+  background: currentColor;
+  color: white;
+  min-width: 50px;
+  text-align: center;
+  display: inline-block;
+  line-height: 1;
+  letter-spacing: -0.5px;
+  position: relative;
+  animation: numberPop 0.3s ease-out;
 }
 
-.stat-value.critical { color: #dc2626; }
-.stat-value.high { color: #ea580c; }
-.stat-value.negative { color: #ef4444; }
-.stat-value.actionable { color: #2563eb; }
+@keyframes numberPop {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Critical Issues */
+.stat-item:has(.stat-value.critical) {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.stat-item:has(.stat-value.critical)::before {
+  background: #dc2626;
+}
+
+.stat-value.critical {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  box-shadow: 0 4px 8px rgba(220, 38, 38, 0.3);
+}
+
+/* Pulse animation for critical issues when count > 0 */
+.stat-item:has(.stat-value.critical) .stat-value:not(:empty):not([data-count="0"]) {
+  animation: numberPop 0.3s ease-out, criticalPulse 2s ease-in-out infinite;
+}
+
+@keyframes criticalPulse {
+  0%, 100% {
+    box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(220, 38, 38, 0.6);
+  }
+}
+
+/* High Priority */
+.stat-item:has(.stat-value.high) {
+  background: #fff7ed;
+  border-color: #fed7aa;
+}
+
+.stat-item:has(.stat-value.high)::before {
+  background: #ea580c;
+}
+
+.stat-value.high {
+  background: linear-gradient(135deg, #ea580c, #dc2626);
+  box-shadow: 0 4px 8px rgba(234, 88, 12, 0.3);
+}
+
+/* Negative Reviews */
+.stat-item:has(.stat-value.negative) {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.stat-item:has(.stat-value.negative)::before {
+  background: #ef4444;
+}
+
+.stat-value.negative {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  box-shadow: 0 4px 8px rgba(239, 68, 68, 0.3);
+}
+
+/* Actionable */
+.stat-item:has(.stat-value.actionable) {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.stat-item:has(.stat-value.actionable)::before {
+  background: #2563eb;
+}
+
+.stat-value.actionable {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
+}
 
 /* Reviews List */
 .reviews-list {
@@ -565,6 +725,17 @@
 
   .quick-stats {
     flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .stat-item {
+    flex: 1 1 calc(50% - 12px);
+    min-width: 140px;
+  }
+
+  .stat-value {
+    font-size: 22px;
+    padding: 6px 12px;
   }
 
   .review-header {

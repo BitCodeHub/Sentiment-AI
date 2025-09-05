@@ -7,7 +7,8 @@ import {
 import { 
   RefreshCw, Filter, ChevronDown, AlertCircle, 
   Bug, Zap, Wifi, Shield, CreditCard, Users,
-  Palette, Heart, AlertTriangle, TrendingUp
+  Palette, Heart, AlertTriangle, TrendingUp,
+  Siren, Flag, ThumbsDown, CheckCircle
 } from 'lucide-react';
 import './ReviewDisplay.css';
 
@@ -701,29 +702,77 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
           {/* Quick Stats */}
           {issueDistribution && (
             <div className="quick-stats">
-              <div className="stat-item">
-                <span className="stat-label">Critical Issues</span>
-                <span className="stat-value critical">
-                  {categorizedReviews.slice(0, reviews.length).filter(r => r.severity === 'critical').length}
-                </span>
+              <div className="stat-item" 
+                   onClick={() => {
+                     setSelectedCategories([]);
+                     // Filter for critical issues
+                     const criticalFilter = categorizedReviews.filter(r => r.severity === 'critical');
+                     if (criticalFilter.length > 0) {
+                       // This would need a new state for severity filtering
+                       console.log('Critical issues filter clicked');
+                     }
+                   }}
+                   title="Click to filter critical issues">
+                <div className="stat-content">
+                  <AlertTriangle size={20} className="stat-icon critical" />
+                  <div className="stat-info">
+                    <span className="stat-label">Critical Issues</span>
+                    <span className="stat-value critical">
+                      {categorizedReviews.slice(0, reviews.length).filter(r => r.severity === 'critical').length}
+                    </span>
+                  </div>
+                </div>
               </div>
-              <div className="stat-item">
-                <span className="stat-label">High Priority</span>
-                <span className="stat-value high">
-                  {categorizedReviews.slice(0, reviews.length).filter(r => r.severity === 'high').length}
-                </span>
+              <div className="stat-item"
+                   onClick={() => {
+                     setSelectedCategories([]);
+                     // Filter for high priority
+                     console.log('High priority filter clicked');
+                   }}
+                   title="Click to filter high priority issues">
+                <div className="stat-content">
+                  <Flag size={20} className="stat-icon high" />
+                  <div className="stat-info">
+                    <span className="stat-label">High Priority</span>
+                    <span className="stat-value high">
+                      {categorizedReviews.slice(0, reviews.length).filter(r => r.severity === 'high').length}
+                    </span>
+                  </div>
+                </div>
               </div>
-              <div className="stat-item">
-                <span className="stat-label">Negative Reviews</span>
-                <span className="stat-value negative">
-                  {categorizedReviews.slice(0, reviews.length).filter(r => r.sentiment === 'negative').length}
-                </span>
+              <div className="stat-item"
+                   onClick={() => {
+                     setSelectedCategories([]);
+                     // Filter for negative reviews
+                     console.log('Negative reviews filter clicked');
+                   }}
+                   title="Click to filter negative reviews">
+                <div className="stat-content">
+                  <ThumbsDown size={20} className="stat-icon negative" />
+                  <div className="stat-info">
+                    <span className="stat-label">Negative Reviews</span>
+                    <span className="stat-value negative">
+                      {categorizedReviews.slice(0, reviews.length).filter(r => r.sentiment === 'negative').length}
+                    </span>
+                  </div>
+                </div>
               </div>
-              <div className="stat-item">
-                <span className="stat-label">Actionable</span>
-                <span className="stat-value actionable">
-                  {categorizedReviews.slice(0, reviews.length).filter(r => r.isActionable).length}
-                </span>
+              <div className="stat-item"
+                   onClick={() => {
+                     setSelectedCategories([]);
+                     // Filter for actionable items
+                     console.log('Actionable items filter clicked');
+                   }}
+                   title="Click to filter actionable items">
+                <div className="stat-content">
+                  <CheckCircle size={20} className="stat-icon actionable" />
+                  <div className="stat-info">
+                    <span className="stat-label">Actionable</span>
+                    <span className="stat-value actionable">
+                      {categorizedReviews.slice(0, reviews.length).filter(r => r.isActionable).length}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
           )}

@@ -251,9 +251,9 @@ Provide a comprehensive JSON sentiment analysis:
 IMPORTANT: Return only valid JSON without any markdown formatting or additional text.`;
 
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-    const response = await model.generateContent(prompt);
+    const result = await model.generateContent(prompt);
     
-    const responseText = response.text();
+    const responseText = result.response.text();
     const cleanedResponse = cleanJsonResponse(responseText);
     const rawAnalysis = JSON.parse(cleanedResponse);
     
@@ -360,9 +360,9 @@ Provide a comprehensive JSON analysis of sentiment trends:
 IMPORTANT: Return only valid JSON without any markdown formatting or additional text.`;
 
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-    const response = await model.generateContent(prompt);
+    const result = await model.generateContent(prompt);
     
-    const responseText = response.text();
+    const responseText = result.response.text();
     const cleanedResponse = cleanJsonResponse(responseText);
     const rawTrends = JSON.parse(cleanedResponse);
     
