@@ -219,7 +219,7 @@
 }
 
 .stat-item {
-  padding: 12px 20px;
+  padding: 16px 24px;
   background: white;
   border-radius: 12px;
   border: 2px solid #e5e7eb;
@@ -227,6 +227,7 @@
   cursor: pointer;
   position: relative;
   overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .stat-content {
@@ -294,11 +295,10 @@
 }
 
 .stat-value {
-  font-size: 28px;
-  font-weight: 800;
-  padding: 8px 16px;
-  border-radius: 10px;
-  color: white !important;
+  font-size: 36px;
+  font-weight: 900;
+  padding: 4px 8px;
+  border-radius: 8px;
   min-width: 50px;
   min-height: 44px;
   text-align: center;
@@ -306,18 +306,25 @@
   align-items: center;
   justify-content: center;
   line-height: 1;
-  letter-spacing: -0.5px;
+  letter-spacing: -1px;
   position: relative;
   z-index: 1;
   animation: numberPop 0.3s ease-out;
   transition: all 0.2s ease;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  opacity: 1 !important;
+  visibility: visible !important;
+  background: transparent !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* Ensure empty stat values show "0" */
 .stat-value:empty::before {
   content: "0";
 }
+
+/* Remove all the white color forcing - we want colored text now */
 
 @keyframes numberPop {
   0% {
@@ -344,23 +351,23 @@
 }
 
 .stat-value.critical {
-  background-color: #dc2626;
-  background: linear-gradient(135deg, #dc2626, #b91c1c);
-  box-shadow: 0 4px 8px rgba(220, 38, 38, 0.3);
-  color: white;
+  color: #dc2626 !important;
+  font-weight: 900;
+  text-shadow: 0 0 1px rgba(220, 38, 38, 0.5);
 }
 
 /* Pulse animation for critical issues when count > 0 */
 .stat-item:has(.stat-value.critical) .stat-value:not(:empty):not([data-count="0"]) {
-  animation: numberPop 0.3s ease-out, criticalPulse 2s ease-in-out infinite;
+  animation: numberPop 0.3s ease-out, criticalTextPulse 2s ease-in-out infinite;
 }
 
-@keyframes criticalPulse {
+@keyframes criticalTextPulse {
   0%, 100% {
-    box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2);
+    transform: scale(1);
   }
   50% {
-    box-shadow: 0 0 20px rgba(220, 38, 38, 0.6);
+    transform: scale(1.05);
+    text-shadow: 0 0 8px rgba(220, 38, 38, 0.8);
   }
 }
 
@@ -375,10 +382,9 @@
 }
 
 .stat-value.high {
-  background-color: #ea580c;
-  background: linear-gradient(135deg, #ea580c, #dc2626);
-  box-shadow: 0 4px 8px rgba(234, 88, 12, 0.3);
-  color: white;
+  color: #ea580c !important;
+  font-weight: 900;
+  text-shadow: 0 0 1px rgba(234, 88, 12, 0.5);
 }
 
 /* Negative Reviews */
@@ -392,10 +398,9 @@
 }
 
 .stat-value.negative {
-  background-color: #ef4444;
-  background: linear-gradient(135deg, #ef4444, #dc2626);
-  box-shadow: 0 4px 8px rgba(239, 68, 68, 0.3);
-  color: white;
+  color: #ef4444 !important;
+  font-weight: 900;
+  text-shadow: 0 0 1px rgba(239, 68, 68, 0.5);
 }
 
 /* Actionable */
@@ -409,10 +414,9 @@
 }
 
 .stat-value.actionable {
-  background-color: #2563eb;
-  background: linear-gradient(135deg, #2563eb, #1d4ed8);
-  box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
-  color: white;
+  color: #2563eb !important;
+  font-weight: 900;
+  text-shadow: 0 0 1px rgba(37, 99, 235, 0.5);
 }
 
 /* Reviews List */
@@ -752,8 +756,8 @@
   }
 
   .stat-value {
-    font-size: 22px;
-    padding: 6px 12px;
+    font-size: 28px;
+    padding: 4px 8px;
   }
 
   .review-header {
