@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   analyzeReviewsWithIssues, 
   categorizeReviewEnhanced,
@@ -8,7 +8,7 @@ import {
   RefreshCw, Filter, ChevronDown, AlertCircle, 
   Bug, Zap, Wifi, Shield, CreditCard, Users,
   Palette, Heart, AlertTriangle, TrendingUp,
-  Siren, Flag, ThumbsDown, CheckCircle
+  Siren, Flag, ThumbsDown, CheckCircle, X
 } from 'lucide-react';
 import './ReviewDisplay.css';
 
@@ -71,6 +71,7 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
   const [displayedReviews, setDisplayedReviews] = useState(20);
   const [categorizeProgress, setCategorizeProgress] = useState(0);
   const [isCategorizingComplete, setIsCategorizingComplete] = useState(false);
+  const [activeQuickFilter, setActiveQuickFilter] = useState(null); // 'critical', 'high', 'negative', 'actionable', or null
 
   // Helper function to detect OS from device info
   const getOperatingSystem = (review) => {
@@ -539,14 +540,33 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
   // Ensure we only show reviews that are in the current filtered set
   const reviewsToShow = categorizedReviews.slice(0, reviews.length);
   
-  const filteredReviews = selectedCategories.length === 0 
-    ? reviewsToShow 
-    : reviewsToShow.filter(review => 
-        selectedCategories.some(cat => 
-          review.primaryCategory === cat || 
-          (Array.isArray(review.categories) && review.categories.includes(cat))
-        )
+  // Apply both category and quick filters
+  const filteredReviews = reviewsToShow.filter(review => {
+    // First check category filters
+    const passesCategory = selectedCategories.length === 0 || 
+      selectedCategories.some(cat => 
+        review.primaryCategory === cat || 
+        (Array.isArray(review.categories) && review.categories.includes(cat))
       );
+    
+    // Then check quick filters
+    const passesQuickFilter = !activeQuickFilter || (() => {
+      switch (activeQuickFilter) {
+        case 'critical':
+          return review.severity === 'critical';
+        case 'high':
+          return review.severity === 'high';
+        case 'negative':
+          return review.sentiment === 'negative';
+        case 'actionable':
+          return review.isActionable === true;
+        default:
+          return true;
+      }
+    })();
+    
+    return passesCategory && passesQuickFilter;
+  });
 
   const getCategoryCount = (category) => {
     // Only count from the categorized reviews that are actually in the current filtered set
@@ -582,14 +602,44 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
   // Reset displayed reviews when filters change or reviews prop changes
   useEffect(() => {
     setDisplayedReviews(20);
-  }, [selectedCategories, reviews]);
+  }, [selectedCategories, reviews, activeQuickFilter]);
+
+  // Handle quick filter clicks
+  const handleQuickFilterClick = useCallback((filterType) => {
+    if (activeQuickFilter === filterType) {
+      setActiveQuickFilter(null);
+    } else {
+      setActiveQuickFilter(filterType);
+      setSelectedCategories([]); // Clear category filters to avoid confusion
+    }
+  }, [activeQuickFilter]);
 
   return (
     <div className="review-display-container">
       {/* Header Section */}
       <div className="review-display-header">
-        <h2 className="header-title">LATEST REVIEWS ({reviews.length} Total)</h2>
+        <h2 className="header-title">
+          LATEST REVIEWS ({reviews.length} Total)
+          {activeQuickFilter && (
+            <span className="active-quick-filter-badge">
+              {activeQuickFilter === 'critical' && ' - Critical Issues'}
+              {activeQuickFilter === 'high' && ' - High Priority'}
+              {activeQuickFilter === 'negative' && ' - Negative Reviews'}
+              {activeQuickFilter === 'actionable' && ' - Actionable Items'}
+            </span>
+          )}
+        </h2>
         <div className="header-actions">
+          {activeQuickFilter && (
+            <button 
+              className="clear-quick-filter-btn"
+              onClick={() => setActiveQuickFilter(null)}
+              title="Clear quick filter"
+            >
+              <X size={16} />
+              <span>Clear Filter</span>
+            </button>
+          )}
           <button 
             className="filter-toggle-btn"
             onClick={() => setShowFilters(!showFilters)}
@@ -708,16 +758,8 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
           {/* Quick Stats */}
           {issueDistribution && (
             <div className="quick-stats">
-              <div className="stat-item" 
-                   onClick={() => {
-                     setSelectedCategories([]);
-                     // Filter for critical issues
-                     const criticalFilter = categorizedReviews.filter(r => r.severity === 'critical');
-                     if (criticalFilter.length > 0) {
-                       // This would need a new state for severity filtering
-                       console.log('Critical issues filter clicked');
-                     }
-                   }}
+              <div className={`stat-item ${activeQuickFilter === 'critical' ? 'active' : ''}`}
+                   onClick={() => handleQuickFilterClick('critical')}
                    title="Click to filter critical issues">
                 <div className="stat-content">
                   <AlertTriangle size={20} className="stat-icon critical" />
@@ -732,12 +774,8 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
                   </div>
                 </div>
               </div>
-              <div className="stat-item"
-                   onClick={() => {
-                     setSelectedCategories([]);
-                     // Filter for high priority
-                     console.log('High priority filter clicked');
-                   }}
+              <div className={`stat-item ${activeQuickFilter === 'high' ? 'active' : ''}`}
+                   onClick={() => handleQuickFilterClick('high')}
                    title="Click to filter high priority issues">
                 <div className="stat-content">
                   <Flag size={20} className="stat-icon high" />
@@ -752,12 +790,8 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
                   </div>
                 </div>
               </div>
-              <div className="stat-item"
-                   onClick={() => {
-                     setSelectedCategories([]);
-                     // Filter for negative reviews
-                     console.log('Negative reviews filter clicked');
-                   }}
+              <div className={`stat-item ${activeQuickFilter === 'negative' ? 'active' : ''}`}
+                   onClick={() => handleQuickFilterClick('negative')}
                    title="Click to filter negative reviews">
                 <div className="stat-content">
                   <ThumbsDown size={20} className="stat-icon negative" />
@@ -772,12 +806,8 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
                   </div>
                 </div>
               </div>
-              <div className="stat-item"
-                   onClick={() => {
-                     setSelectedCategories([]);
-                     // Filter for actionable items
-                     console.log('Actionable items filter clicked');
-                   }}
+              <div className={`stat-item ${activeQuickFilter === 'actionable' ? 'active' : ''}`}
+                   onClick={() => handleQuickFilterClick('actionable')}
                    title="Click to filter actionable items">
                 <div className="stat-content">
                   <CheckCircle size={20} className="stat-icon actionable" />

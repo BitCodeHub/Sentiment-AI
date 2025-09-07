@@ -24,6 +24,21 @@
   color: #6b7280;
   letter-spacing: 1.5px;
   text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.active-quick-filter-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  background: #2563eb;
+  color: white;
+  font-size: 12px;
+  border-radius: 16px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
 }
 
 .header-actions {
@@ -50,6 +65,26 @@
 .filter-toggle-btn:hover {
   background: #f9fafb;
   border-color: #d1d5db;
+}
+
+.clear-quick-filter-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #ef4444;
+  border: 1px solid #ef4444;
+  border-radius: 6px;
+  color: white;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.clear-quick-filter-btn:hover {
+  background: #dc2626;
+  border-color: #dc2626;
 }
 
 .loading-indicator {
@@ -228,6 +263,27 @@
   position: relative;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* Active quick filter state */
+.stat-item.active {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  border-width: 3px;
+}
+
+.stat-item.active::after {
+  content: 'Active';
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 2px 8px;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  font-size: 11px;
+  border-radius: 4px;
+  font-weight: 500;
+  text-transform: uppercase;
 }
 
 .stat-content {
