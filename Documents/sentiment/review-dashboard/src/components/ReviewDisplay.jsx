@@ -72,7 +72,7 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
   const [displayedReviews, setDisplayedReviews] = useState(20);
   const [categorizeProgress, setCategorizeProgress] = useState(0);
   const [isCategorizingComplete, setIsCategorizingComplete] = useState(false);
-  const [activeQuickFilter, setActiveQuickFilter] = useState(null); // 'critical', 'high', 'negative', 'actionable', or null
+  // const [activeQuickFilter, setActiveQuickFilter] = useState(null); // 'critical', 'high', 'negative', 'actionable', or null - REMOVED
   
   // Advanced filter states
   const [categoryFilter, setCategoryFilter] = useState('');
@@ -581,22 +581,8 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
         (Array.isArray(review.categories) && review.categories.includes(cat))
       );
     
-    // Then check quick filters
-    const passesQuickFilter = !activeQuickFilter || (() => {
-      const rating = review.rating || review.Rating || 0;
-      switch (activeQuickFilter) {
-        case 'critical':
-          return rating <= 2;
-        case 'high':
-          return rating >= 4;
-        case 'negative':
-          return review.sentiment === 'negative';
-        case 'actionable':
-          return review.isActionable === true;
-        default:
-          return true;
-      }
-    })();
+    // Then check quick filters - REMOVED
+    const passesQuickFilter = true; // Always pass since quick filters were removed
     
     // Check advanced filters
     // Category filter
@@ -664,22 +650,22 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
   // Reset displayed reviews when filters change or reviews prop changes
   useEffect(() => {
     setDisplayedReviews(20);
-  }, [selectedCategories, reviews, activeQuickFilter, categoryFilter, severityFilter, sentimentFilter, platformFilter, dateRangeFilter]);
+  }, [selectedCategories, reviews, categoryFilter, severityFilter, sentimentFilter, platformFilter, dateRangeFilter]);
 
-  // Handle quick filter clicks
-  const handleQuickFilterClick = useCallback((filterType) => {
-    if (activeQuickFilter === filterType) {
-      setActiveQuickFilter(null);
-    } else {
-      setActiveQuickFilter(filterType);
-      setSelectedCategories([]); // Clear category filters to avoid confusion
-    }
-  }, [activeQuickFilter]);
+  // Handle quick filter clicks - REMOVED
+  // const handleQuickFilterClick = useCallback((filterType) => {
+  //   if (activeQuickFilter === filterType) {
+  //     setActiveQuickFilter(null);
+  //   } else {
+  //     setActiveQuickFilter(filterType);
+  //     setSelectedCategories([]); // Clear category filters to avoid confusion
+  //   }
+  // }, [activeQuickFilter]);
   
   // Reset all filters
   const resetAllFilters = () => {
     setSelectedCategories([]);
-    setActiveQuickFilter(null);
+    // setActiveQuickFilter(null); - REMOVED
     setCategoryFilter('');
     setSeverityFilter('');
     setSentimentFilter('');
@@ -693,14 +679,6 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
       <div className="review-display-header">
         <h2 className="header-title">
           LATEST REVIEWS ({reviews.length} Total)
-          {activeQuickFilter && (
-            <span className="active-quick-filter-badge">
-              {activeQuickFilter === 'critical' && ' - Critical Issues (1-2★)'}
-              {activeQuickFilter === 'high' && ' - High Priority (4-5★)'}
-              {activeQuickFilter === 'negative' && ' - Negative Reviews'}
-              {activeQuickFilter === 'actionable' && ' - Actionable Items'}
-            </span>
-          )}
           {/* Show active advanced filters count */}
           {(categoryFilter || severityFilter || sentimentFilter || platformFilter || dateRangeFilter) && (
             <span style={{ marginLeft: '12px', fontSize: '12px', color: '#60a5fa' }}>
@@ -710,20 +688,10 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
         </h2>
         <div className="header-actions">
           {/* Reset All Filters button */}
-          {(selectedCategories.length > 0 || activeQuickFilter || categoryFilter || severityFilter || sentimentFilter || platformFilter || dateRangeFilter) && (
+          {(selectedCategories.length > 0 || categoryFilter || severityFilter || sentimentFilter || platformFilter || dateRangeFilter) && (
             <button className="reset-all-filters-btn" onClick={resetAllFilters}>
               <X size={14} />
               Reset All Filters
-            </button>
-          )}
-          {activeQuickFilter && (
-            <button 
-              className="clear-quick-filter-btn"
-              onClick={() => setActiveQuickFilter(null)}
-              title="Clear quick filter"
-            >
-              <X size={16} />
-              <span>Clear Filter</span>
             </button>
           )}
           <button 
@@ -905,8 +873,8 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
             })}
           </div>
 
-          {/* Quick Stats - Simplified Dark Cards */}
-          {issueDistribution && (
+          {/* Quick Stats - Simplified Dark Cards - REMOVED PER USER REQUEST
+          {issueDistribution && ( 
             <div className="quick-stats-dark">
               <div className={`simple-dark-card ${activeQuickFilter === 'high' ? 'active' : ''}`}
                    onClick={() => handleQuickFilterClick('high')}
@@ -990,7 +958,7 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
                 </div>
               </div>
             </div>
-          )}
+          )} */}
           
           {/* Category Count Validation */}
           {isCategorizingComplete && (
