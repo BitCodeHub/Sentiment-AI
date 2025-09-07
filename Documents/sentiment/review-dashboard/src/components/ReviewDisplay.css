@@ -339,6 +339,14 @@
   background: linear-gradient(135deg, #1e293b 0%, #1a2332 100%);
 }
 
+.dark-stat-card:hover .dark-stat-value {
+  transform: scale(1.05);
+}
+
+.dark-stat-card:hover .dark-stat-content h4 {
+  color: #f1f5f9;
+}
+
 .dark-stat-card.active {
   background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
   border-color: #3b82f6;
@@ -350,10 +358,21 @@
   color: #fff;
 }
 
-.dark-stat-card.active .dark-stat-content h4,
-.dark-stat-card.active .dark-stat-content p,
+.dark-stat-card.active .dark-stat-content h4 {
+  color: #ffffff !important;
+}
+
+.dark-stat-card.active .dark-stat-content p {
+  color: #e0e7ff !important;
+}
+
 .dark-stat-card.active .dark-stat-value {
-  color: #fff !important;
+  color: #ffffff !important;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.dark-stat-card.active .percentage-text {
+  color: #fbbf24 !important;
 }
 
 .dark-stat-icon {
@@ -391,31 +410,36 @@
 .dark-stat-content h4 {
   font-size: 13px;
   font-weight: 700;
-  color: #94a3b8;
+  color: #cbd5e1;
   letter-spacing: 1px;
   margin: 0;
+  text-transform: uppercase;
 }
 
 .dark-stat-content p {
-  font-size: 12px;
-  color: #64748b;
+  font-size: 13px;
+  color: #94a3b8;
   margin: 0;
   line-height: 1.4;
+  margin-top: 4px;
 }
 
 .dark-stat-content .percentage-text {
-  color: #94a3b8;
-  font-weight: 500;
+  color: #f87171;
+  font-weight: 600;
+  font-size: 14px;
 }
 
 .dark-stat-value {
-  font-size: 36px;
+  font-size: 48px;
   font-weight: 900;
-  color: #e2e8f0;
+  color: #ffffff;
   line-height: 1;
-  margin-top: 8px;
+  margin-top: 12px;
   letter-spacing: -1px;
   transition: all 0.3s ease;
+  display: block;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 /* Animation for numbers */
@@ -432,6 +456,9 @@
 
 .dark-stat-value {
   animation: numberSlide 0.5s ease-out;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Responsive adjustments for dark stat cards */
@@ -452,7 +479,7 @@
   }
   
   .dark-stat-value {
-    font-size: 28px;
+    font-size: 36px;
   }
   
   .advanced-filters-grid {
