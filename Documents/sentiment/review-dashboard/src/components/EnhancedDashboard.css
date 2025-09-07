@@ -1036,6 +1036,17 @@ html {
   }
 }
 
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Filter Summary */
 .filter-summary {
   display: flex;
@@ -1673,6 +1684,30 @@ html {
               inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
+/* Quick filter card styles */
+.stat-card.quick-filter-card {
+  cursor: pointer;
+  user-select: none;
+}
+
+.stat-card.quick-filter-card:active {
+  transform: scale(0.98);
+}
+
+.stat-card.quick-filter-card.active {
+  background: linear-gradient(135deg, 
+    rgba(59, 130, 246, 0.2) 0%,
+    rgba(59, 130, 246, 0.1) 100%);
+  border-color: rgba(59, 130, 246, 0.4);
+  box-shadow: 0 8px 32px rgba(59, 130, 246, 0.15),
+              0 0 0 3px rgba(59, 130, 246, 0.2),
+              inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+.stat-card.quick-filter-card.active::before {
+  opacity: 1 !important;
+}
+
 .stat-card::before {
   content: '';
   position: absolute;
@@ -1692,6 +1727,20 @@ html {
   background: linear-gradient(135deg, 
     rgba(255, 255, 255, 0.15) 0%,
     rgba(255, 255, 255, 0.08) 100%);
+}
+
+.stat-card.quick-filter-card:hover:not(.active) {
+  border-color: rgba(59, 130, 246, 0.3);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15),
+              0 0 20px rgba(59, 130, 246, 0.15),
+              inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+.stat-card.quick-filter-card.active:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 20px 40px rgba(59, 130, 246, 0.2),
+              0 0 0 4px rgba(59, 130, 246, 0.3),
+              inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .stat-card:hover::before {
@@ -1779,6 +1828,34 @@ html {
 
 .stat-change.negative {
   color: #ef4444;
+}
+
+/* Quick filter indicator */
+.quick-filter-indicator {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: rgba(59, 130, 246, 0.9);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.025em;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+  animation: fadeIn 0.3s ease;
+}
+
+/* Quick filter badge in header */
+.quick-filter-badge {
+  display: inline-block;
+  background: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
+  padding: 0.25rem 0.75rem;
+  border-radius: 8px;
+  font-weight: 600;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  margin: 0 0.25rem;
 }
 
 .stat-chart {

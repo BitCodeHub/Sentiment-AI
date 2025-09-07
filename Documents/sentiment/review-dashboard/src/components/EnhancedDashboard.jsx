@@ -14,7 +14,8 @@ import {
   Sparkles, Target, Shield, Zap, Search, Filter,
   ChevronDown, ChevronUp, X, Download, RefreshCw, Calendar,
   Smartphone, Package, Layers, Globe, Monitor,
-  Share2, Printer, Save, Settings, HelpCircle, Undo, Redo
+  Share2, Printer, Save, Settings, HelpCircle, Undo, Redo,
+  CheckCircle
 } from 'lucide-react';
 import { analyzeReviews, generateInsights } from '../services/geminiAIAnalysis';
 import { performDeepAnalysis } from '../services/geminiDeepAnalysis';
@@ -69,6 +70,8 @@ const EnhancedDashboard = ({ data, isLoading }) => {
   const [currentView, setCurrentView] = useState('dashboard');
   // Add state for sentiment analysis modal
   const [showSentimentAnalysis, setShowSentimentAnalysis] = useState(false);
+  // Add state for quick filters
+  const [activeQuickFilter, setActiveQuickFilter] = useState(null); // 'critical', 'high', 'negative', 'actionable', or null
   
   // Debug logging
   useEffect(() => {
@@ -87,7 +90,7 @@ const EnhancedDashboard = ({ data, isLoading }) => {
     });
     
     return count;
-  }, [selectedFilter, searchTerm, selectedDateRange, metadataFilters]);
+  }, [selectedFilter, searchTerm, selectedDateRange, metadataFilters, activeQuickFilter]);
 
   // Reset all filters
   const resetAllFilters = useCallback(() => {
@@ -101,7 +104,20 @@ const EnhancedDashboard = ({ data, isLoading }) => {
       os: 'all',
       platform: 'all'
     });
+    setActiveQuickFilter(null);
   }, []);
+
+  // Handle quick filter clicks
+  const handleQuickFilterClick = useCallback((filterType) => {
+    // If clicking the same filter, deselect it
+    if (activeQuickFilter === filterType) {
+      setActiveQuickFilter(null);
+    } else {
+      // Set the new filter and clear category filters
+      setActiveQuickFilter(filterType);
+      setSelectedFilter('all'); // Clear category filters to avoid confusion
+    }
+  }, [activeQuickFilter]);
 
   // Extract unique metadata values from all reviews
   const metadataOptions = useMemo(() => {
@@ -236,9 +252,34 @@ const EnhancedDashboard = ({ data, isLoading }) => {
         return true;
       })();
       
-      return matchesSearch && matchesFilter && matchesMetadata && matchesDateRange;
+      // Check quick filter
+      const matchesQuickFilter = (() => {
+        if (!activeQuickFilter) return true;
+        
+        const rating = review.rating || review.Rating || 0;
+        const sentiment = (review.sentiment || review.Sentiment || 'neutral').toLowerCase();
+        
+        switch (activeQuickFilter) {
+          case 'critical':
+            // Critical issues: 1-2 star ratings
+            return rating >= 1 && rating <= 2;
+          case 'high':
+            // High priority: 4-5 star ratings
+            return rating >= 4 && rating <= 5;
+          case 'negative':
+            // Negative sentiment reviews
+            return sentiment === 'negative';
+          case 'actionable':
+            // Actionable reviews: negative sentiment or low ratings (1-3 stars)
+            return sentiment === 'negative' || (rating >= 1 && rating <= 3);
+          default:
+            return true;
+        }
+      })();
+      
+      return matchesSearch && matchesFilter && matchesMetadata && matchesDateRange && matchesQuickFilter;
     });
-  }, [data?.reviews, searchTerm, selectedFilter, metadataFilters, selectedDateRange]);
+  }, [data?.reviews, searchTerm, selectedFilter, metadataFilters, selectedDateRange, activeQuickFilter]);
 
   // Calculate sentiment breakdown for filtered reviews
   const filteredSentimentBreakdown = useMemo(() => {
@@ -279,6 +320,38 @@ const EnhancedDashboard = ({ data, isLoading }) => {
     
     return distribution;
   }, [filteredReviews]);
+
+  // Calculate rating distribution for ALL reviews (for quick filter display)
+  const allRatingDistribution = useMemo(() => {
+    const distribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    
+    if (!data?.reviews) return distribution;
+    
+    data.reviews.forEach(review => {
+      const rating = review.rating || review.Rating || 0;
+      if (rating >= 1 && rating <= 5) {
+        distribution[rating]++;
+      }
+    });
+    
+    return distribution;
+  }, [data?.reviews]);
+
+  // Calculate sentiment breakdown for ALL reviews (for quick filter display)
+  const allSentimentBreakdown = useMemo(() => {
+    const breakdown = { positive: 0, neutral: 0, negative: 0 };
+    
+    if (!data?.reviews) return breakdown;
+    
+    data.reviews.forEach(review => {
+      const sentiment = (review.sentiment || review.Sentiment || 'neutral').toLowerCase();
+      if (sentiment === 'positive') breakdown.positive++;
+      else if (sentiment === 'negative') breakdown.negative++;
+      else breakdown.neutral++;
+    });
+    
+    return breakdown;
+  }, [data?.reviews]);
 
   // Click outside handler for the popup
   useEffect(() => {
@@ -513,7 +586,20 @@ const EnhancedDashboard = ({ data, isLoading }) => {
       <div className="dashboard-header-section">
         <div className="dashboard-title-area">
           <h1 className="dashboard-title">Review Analytics Dashboard</h1>
-          <p className="dashboard-subtitle">Comprehensive insights from {summary.totalReviews.toLocaleString()} reviews</p>
+          <p className="dashboard-subtitle">
+            {activeQuickFilter ? (
+              <>
+                Showing <span className="quick-filter-badge">
+                  {activeQuickFilter === 'critical' && 'Critical Issues'}
+                  {activeQuickFilter === 'high' && 'High Priority'}
+                  {activeQuickFilter === 'negative' && 'Negative Reviews'}
+                  {activeQuickFilter === 'actionable' && 'Actionable Reviews'}
+                </span> from {summary.totalReviews.toLocaleString()} reviews
+              </>
+            ) : (
+              <>Comprehensive insights from {summary.totalReviews.toLocaleString()} reviews</>
+            )}
+          </p>
         </div>
         
         {/* Search Section */}
@@ -774,9 +860,13 @@ const EnhancedDashboard = ({ data, isLoading }) => {
 
       {/* Summary Statistics */}
       <div className="stats-overview">
-        <div className="stat-card avg-rating">
+        <div 
+          className={`stat-card avg-rating quick-filter-card ${activeQuickFilter === 'high' ? 'active' : ''}`}
+          onClick={() => handleQuickFilterClick('high')}
+          title="Click to show high priority reviews (4-5 stars)"
+        >
           <div className="stat-header">
-            <h3 className="stat-title">Average Rating</h3>
+            <h3 className="stat-title">High Priority</h3>
             <div className="stat-icon">
               {filteredAvgRating >= 4 ? (
                 <TrendingUp className="h-4 w-4" />
@@ -785,44 +875,84 @@ const EnhancedDashboard = ({ data, isLoading }) => {
               )}
             </div>
           </div>
-          <div className="stat-value">{filteredAvgRating.toFixed(2)}</div>
-          <p className="stat-change">Out of 5.0</p>
-        </div>
-
-        <div className="stat-card total-reviews">
-          <div className="stat-header">
-            <h3 className="stat-title">Total Reviews</h3>
-            <div className="stat-icon">
-              <Filter className="h-4 w-4" />
-            </div>
+          <div className="stat-value">
+            {allRatingDistribution[4] + allRatingDistribution[5]}
           </div>
-          <div className="stat-value">{filteredReviews.length.toLocaleString()}</div>
-          <p className="stat-change">of {summary.totalReviews.toLocaleString()} total</p>
+          <p className="stat-change">4-5 star reviews</p>
+          {activeQuickFilter === 'high' && (
+            <div className="quick-filter-indicator">
+              <span>Active Filter</span>
+            </div>
+          )}
         </div>
 
-        <div className="stat-card sentiment-score">
+        <div 
+          className={`stat-card total-reviews quick-filter-card ${activeQuickFilter === 'critical' ? 'active' : ''}`}
+          onClick={() => handleQuickFilterClick('critical')}
+          title="Click to show critical issues (1-2 stars)"
+        >
           <div className="stat-header">
-            <h3 className="stat-title">Positive Sentiment</h3>
+            <h3 className="stat-title">Critical Issues</h3>
             <div className="stat-icon">
-              <Sparkles className="h-4 w-4" />
+              <AlertCircle className="h-4 w-4" />
             </div>
           </div>
           <div className="stat-value">
-            {filteredReviews.length > 0 ? 
-              Math.round((filteredSentimentBreakdown.positive / filteredReviews.length) * 100) : 0}%
+            {allRatingDistribution[1] + allRatingDistribution[2]}
           </div>
-          <p className="stat-change positive">{filteredSentimentBreakdown.positive} positive reviews</p>
+          <p className="stat-change">1-2 star reviews</p>
+          {activeQuickFilter === 'critical' && (
+            <div className="quick-filter-indicator">
+              <span>Active Filter</span>
+            </div>
+          )}
         </div>
 
-        <div className="stat-card response-rate">
+        <div 
+          className={`stat-card sentiment-score quick-filter-card ${activeQuickFilter === 'negative' ? 'active' : ''}`}
+          onClick={() => handleQuickFilterClick('negative')}
+          title="Click to show negative reviews"
+        >
           <div className="stat-header">
-            <h3 className="stat-title">Response Rate</h3>
+            <h3 className="stat-title">Negative Reviews</h3>
+            <div className="stat-icon">
+              <AlertCircle className="h-4 w-4" />
+            </div>
+          </div>
+          <div className="stat-value">
+            {allSentimentBreakdown.negative}
+          </div>
+          <p className="stat-change negative">
+            {data?.reviews?.length > 0 ? 
+              Math.round((allSentimentBreakdown.negative / data.reviews.length) * 100) : 0}% of total
+          </p>
+          {activeQuickFilter === 'negative' && (
+            <div className="quick-filter-indicator">
+              <span>Active Filter</span>
+            </div>
+          )}
+        </div>
+
+        <div 
+          className={`stat-card response-rate quick-filter-card ${activeQuickFilter === 'actionable' ? 'active' : ''}`}
+          onClick={() => handleQuickFilterClick('actionable')}
+          title="Click to show actionable reviews (negative or 1-3 stars)"
+        >
+          <div className="stat-header">
+            <h3 className="stat-title">Actionable</h3>
             <div className="stat-icon">
               <Target className="h-4 w-4" />
             </div>
           </div>
-          <div className="stat-value">{data.responseRate || '0'}%</div>
-          <p className="stat-change">Developer responses</p>
+          <div className="stat-value">
+            {allRatingDistribution[1] + allRatingDistribution[2] + allRatingDistribution[3]}
+          </div>
+          <p className="stat-change">Reviews needing attention</p>
+          {activeQuickFilter === 'actionable' && (
+            <div className="quick-filter-indicator">
+              <span>Active Filter</span>
+            </div>
+          )}
         </div>
       </div>
 
