@@ -8,7 +8,8 @@ import {
   RefreshCw, Filter, ChevronDown, AlertCircle, 
   Bug, Zap, Wifi, Shield, CreditCard, Users,
   Palette, Heart, AlertTriangle, TrendingUp,
-  Siren, Flag, ThumbsDown, CheckCircle, X
+  Siren, Flag, ThumbsDown, CheckCircle, X,
+  Clock, Target, Star
 } from 'lucide-react';
 import './ReviewDisplay.css';
 
@@ -551,11 +552,12 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
     
     // Then check quick filters
     const passesQuickFilter = !activeQuickFilter || (() => {
+      const rating = review.rating || review.Rating || 0;
       switch (activeQuickFilter) {
         case 'critical':
-          return review.severity === 'critical';
+          return rating <= 2;
         case 'high':
-          return review.severity === 'high';
+          return rating >= 4;
         case 'negative':
           return review.sentiment === 'negative';
         case 'actionable':
@@ -622,8 +624,8 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
           LATEST REVIEWS ({reviews.length} Total)
           {activeQuickFilter && (
             <span className="active-quick-filter-badge">
-              {activeQuickFilter === 'critical' && ' - Critical Issues'}
-              {activeQuickFilter === 'high' && ' - High Priority'}
+              {activeQuickFilter === 'critical' && ' - Critical Issues (1-2★)'}
+              {activeQuickFilter === 'high' && ' - High Priority (4-5★)'}
               {activeQuickFilter === 'negative' && ' - Negative Reviews'}
               {activeQuickFilter === 'actionable' && ' - Actionable Items'}
             </span>
@@ -670,6 +672,55 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
       {/* Category Filters */}
       {showFilters && (
         <div className="category-filters-section">
+          {/* Advanced Filters Section */}
+          <div className="advanced-filters-header">
+            <h3>ADVANCED FILTERS</h3>
+          </div>
+          <div className="advanced-filters-grid">
+            <div className="filter-dropdown">
+              <select>
+                <option value="">All Categories</option>
+                {Object.keys(categoryConfig).map(cat => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+            </div>
+            <div className="filter-dropdown">
+              <select>
+                <option value="">All Severities</option>
+                <option value="critical">Critical</option>
+                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
+              </select>
+            </div>
+            <div className="filter-dropdown">
+              <select>
+                <option value="">All Sentiments</option>
+                <option value="positive">Positive</option>
+                <option value="negative">Negative</option>
+                <option value="neutral">Neutral</option>
+              </select>
+            </div>
+            <div className="filter-dropdown">
+              <select>
+                <option value="">All Platforms</option>
+                <option value="ios">iOS</option>
+                <option value="android">Android</option>
+                <option value="unknown">Unknown</option>
+              </select>
+            </div>
+            <div className="filter-dropdown">
+              <select>
+                <option value="">Date Range</option>
+                <option value="today">Today</option>
+                <option value="week">Last 7 Days</option>
+                <option value="month">Last 30 Days</option>
+                <option value="all">All Time</option>
+              </select>
+            </div>
+          </div>
+
           <div className="issue-summary">
             {categorizedReviews.slice(0, reviews.length).filter(r => 
               r.severity === 'critical' || 
@@ -755,70 +806,87 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
             })}
           </div>
 
-          {/* Quick Stats */}
+          {/* Quick Stats - Dark Themed Cards */}
           {issueDistribution && (
-            <div className="quick-stats">
-              <div className={`stat-item ${activeQuickFilter === 'critical' ? 'active' : ''}`}
-                   onClick={() => handleQuickFilterClick('critical')}
-                   title="Click to filter critical issues">
-                <div className="stat-content">
-                  <AlertTriangle size={20} className="stat-icon critical" />
-                  <div className="stat-info">
-                    <span className="stat-label">Critical Issues</span>
-                    <span className="stat-value critical">
-                      {String(categorizedReviews.slice(0, reviews.length).filter(r => 
-                        r.severity === 'critical' || 
-                        (r.enhanced?.severity?.level === 'critical')
-                      ).length || 0)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <div className={`stat-item ${activeQuickFilter === 'high' ? 'active' : ''}`}
+            <div className="quick-stats-dark">
+              <div className={`dark-stat-card ${activeQuickFilter === 'high' ? 'active' : ''}`}
                    onClick={() => handleQuickFilterClick('high')}
-                   title="Click to filter high priority issues">
-                <div className="stat-content">
-                  <Flag size={20} className="stat-icon high" />
-                  <div className="stat-info">
-                    <span className="stat-label">High Priority</span>
-                    <span className="stat-value high">
-                      {String(categorizedReviews.slice(0, reviews.length).filter(r => 
-                        r.severity === 'high' || 
-                        (r.enhanced?.severity?.level === 'high')
-                      ).length || 0)}
-                    </span>
+                   title="Click to filter 4-5 star reviews">
+                <div className="dark-stat-icon">
+                  <Star size={24} />
+                </div>
+                <div className="dark-stat-content">
+                  <h4>HIGH PRIORITY</h4>
+                  <p>4-5 star reviews</p>
+                  <div className="dark-stat-value">
+                    {String(categorizedReviews.slice(0, reviews.length).filter(r => {
+                      const rating = r.rating || r.Rating || 0;
+                      return rating >= 4;
+                    }).length || 0)}
                   </div>
                 </div>
               </div>
-              <div className={`stat-item ${activeQuickFilter === 'negative' ? 'active' : ''}`}
+              
+              <div className={`dark-stat-card ${activeQuickFilter === 'critical' ? 'active' : ''}`}
+                   onClick={() => handleQuickFilterClick('critical')}
+                   title="Click to filter 1-2 star reviews">
+                <div className="dark-stat-icon">
+                  <Clock size={24} />
+                </div>
+                <div className="dark-stat-content">
+                  <h4>CRITICAL ISSUES</h4>
+                  <p>1-2 star reviews</p>
+                  <div className="dark-stat-value">
+                    {String(categorizedReviews.slice(0, reviews.length).filter(r => {
+                      const rating = r.rating || r.Rating || 0;
+                      return rating <= 2;
+                    }).length || 0)}
+                  </div>
+                </div>
+              </div>
+              
+              <div className={`dark-stat-card ${activeQuickFilter === 'negative' ? 'active' : ''}`}
                    onClick={() => handleQuickFilterClick('negative')}
                    title="Click to filter negative reviews">
-                <div className="stat-content">
-                  <ThumbsDown size={20} className="stat-icon negative" />
-                  <div className="stat-info">
-                    <span className="stat-label">Negative Reviews</span>
-                    <span className="stat-value negative">
-                      {String(categorizedReviews.slice(0, reviews.length).filter(r => 
+                <div className="dark-stat-icon">
+                  <Clock size={24} />
+                </div>
+                <div className="dark-stat-content">
+                  <h4>NEGATIVE REVIEWS</h4>
+                  <p className="percentage-text">
+                    {(() => {
+                      const negativeCount = categorizedReviews.slice(0, reviews.length).filter(r => 
                         r.sentiment === 'negative' || 
                         (r.enhanced?.sentiment?.overall === 'negative')
-                      ).length || 0)}
-                    </span>
+                      ).length;
+                      const totalCount = reviews.length;
+                      const percentage = totalCount > 0 ? Math.round((negativeCount / totalCount) * 100) : 0;
+                      return `${percentage}% of total`;
+                    })()} 
+                  </p>
+                  <div className="dark-stat-value">
+                    {String(categorizedReviews.slice(0, reviews.length).filter(r => 
+                      r.sentiment === 'negative' || 
+                      (r.enhanced?.sentiment?.overall === 'negative')
+                    ).length || 0)}
                   </div>
                 </div>
               </div>
-              <div className={`stat-item ${activeQuickFilter === 'actionable' ? 'active' : ''}`}
+              
+              <div className={`dark-stat-card ${activeQuickFilter === 'actionable' ? 'active' : ''}`}
                    onClick={() => handleQuickFilterClick('actionable')}
-                   title="Click to filter actionable items">
-                <div className="stat-content">
-                  <CheckCircle size={20} className="stat-icon actionable" />
-                  <div className="stat-info">
-                    <span className="stat-label">Actionable</span>
-                    <span className="stat-value actionable">
-                      {String(categorizedReviews.slice(0, reviews.length).filter(r => 
-                        r.isActionable || 
-                        (r.enhanced?.actionable === true)
-                      ).length || 0)}
-                    </span>
+                   title="Click to filter actionable reviews">
+                <div className="dark-stat-icon">
+                  <Target size={24} />
+                </div>
+                <div className="dark-stat-content">
+                  <h4>ACTIONABLE</h4>
+                  <p>Reviews needing attention</p>
+                  <div className="dark-stat-value">
+                    {String(categorizedReviews.slice(0, reviews.length).filter(r => 
+                      r.isActionable || 
+                      (r.enhanced?.actionable === true)
+                    ).length || 0)}
                   </div>
                 </div>
               </div>
@@ -827,10 +895,10 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
           
           {/* Category Count Validation */}
           {isCategorizingComplete && (
-            <div style={{ marginTop: '12px', fontSize: '12px', color: '#6b7280' }}>
+            <div style={{ marginTop: '12px', fontSize: '12px', color: '#94a3b8' }}>
               Total categorized: {Math.min(getTotalCategorized(), reviews.length)} / {reviews.length} reviews
               {getTotalCategorized() < reviews.length && (
-                <span style={{ color: '#dc2626', marginLeft: '8px' }}>
+                <span style={{ color: '#f87171', marginLeft: '8px' }}>
                   ({reviews.length - getTotalCategorized()} uncategorized)
                 </span>
               )}
