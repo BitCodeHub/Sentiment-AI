@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dark Card Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 40px;
+            background: #f5f5f5;
+            font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', 'Roboto', sans-serif;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            margin-bottom: 30px;
+            color: #333;
+        }
+
+        /* Quick Stats - Simplified Dark Cards */
+        .quick-stats-dark {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
+            margin-top: 24px;
+        }
+
+        /* Simple Dark Card Design */
+        .simple-dark-card {
+            background: #1a1f2e;
+            border-radius: 12px;
+            padding: 20px;
+            border: 2px solid #2d3748;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .simple-dark-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+            border-color: #4a5568;
+        }
+
+        .simple-dark-card.active {
+            background: #2563eb;
+            border-color: #3b82f6;
+            transform: translateY(-2px);
+        }
+
+        /* Card Icon */
+        .card-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .card-icon.high-priority {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .card-icon.critical {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .card-icon.negative {
+            background: #fecaca;
+            color: #ef4444;
+        }
+
+        .card-icon.actionable {
+            background: #dbeafe;
+            color: #2563eb;
+        }
+
+        /* Card Content */
+        .card-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .card-label {
+            font-size: 12px;
+            font-weight: 700;
+            color: #e5e7eb;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .card-description {
+            font-size: 13px;
+            color: #9ca3af;
+            font-weight: 400;
+        }
+
+        /* Card Number - The Most Important Part */
+        .card-number {
+            font-size: 36px;
+            font-weight: 800;
+            line-height: 1;
+            letter-spacing: -1px;
+            transition: all 0.2s ease;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .card-number.high-priority-number {
+            color: #fbbf24;
+        }
+
+        .card-number.critical-number {
+            color: #ef4444;
+        }
+
+        .card-number.negative-number {
+            color: #f87171;
+        }
+
+        .card-number.actionable-number {
+            color: #60a5fa;
+        }
+
+        .simple-dark-card:hover .card-number {
+            transform: scale(1.1);
+        }
+
+        .simple-dark-card.active .card-number {
+            color: #ffffff !important;
+        }
+
+        .simple-dark-card.active .card-label,
+        .simple-dark-card.active .card-description {
+            color: #ffffff;
+        }
+
+        .simple-dark-card.active .card-icon {
+            background: rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Dark Card Visibility Test</h1>
+        
+        <div class="quick-stats-dark">
+            <div class="simple-dark-card">
+                <div class="card-icon high-priority">★</div>
+                <div class="card-content">
+                    <span class="card-label">HIGH PRIORITY</span>
+                    <span class="card-description">4-5 star reviews</span>
+                </div>
+                <div class="card-number high-priority-number">42</div>
+            </div>
+            
+            <div class="simple-dark-card active">
+                <div class="card-icon critical">⚠</div>
+                <div class="card-content">
+                    <span class="card-label">CRITICAL ISSUES</span>
+                    <span class="card-description">1-2 star reviews</span>
+                </div>
+                <div class="card-number critical-number">15</div>
+            </div>
+            
+            <div class="simple-dark-card">
+                <div class="card-icon negative">👎</div>
+                <div class="card-content">
+                    <span class="card-label">NEGATIVE</span>
+                    <span class="card-description">35% of total</span>
+                </div>
+                <div class="card-number negative-number">28</div>
+            </div>
+            
+            <div class="simple-dark-card">
+                <div class="card-icon actionable">🎯</div>
+                <div class="card-content">
+                    <span class="card-label">ACTIONABLE</span>
+                    <span class="card-description">Need attention</span>
+                </div>
+                <div class="card-number actionable-number">19</div>
+            </div>
+        </div>
+        
+        <p style="margin-top: 40px; color: #666;">
+            All numbers should be clearly visible with bright colors:<br>
+            - High Priority: Yellow (#fbbf24)<br>
+            - Critical: Red (#ef4444)<br>
+            - Negative: Light Red (#f87171)<br>
+            - Actionable: Blue (#60a5fa)<br>
+            - Active state: White (#ffffff)
+        </p>
+    </div>
+</body>
+</html>
