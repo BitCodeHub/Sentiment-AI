@@ -9,7 +9,7 @@ import {
   Bug, Zap, Wifi, Shield, CreditCard, Users,
   Palette, Heart, AlertTriangle, TrendingUp,
   Siren, Flag, ThumbsDown, CheckCircle, X,
-  Clock, Target, Star
+  Clock
 } from 'lucide-react';
 import './ReviewDisplay.css';
 
@@ -873,92 +873,6 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
             })}
           </div>
 
-          {/* Quick Stats - Simplified Dark Cards - REMOVED PER USER REQUEST
-          {issueDistribution && ( 
-            <div className="quick-stats-dark">
-              <div className={`simple-dark-card ${activeQuickFilter === 'high' ? 'active' : ''}`}
-                   onClick={() => handleQuickFilterClick('high')}
-                   title="Click to filter 4-5 star reviews">
-                <div className="card-icon high-priority">
-                  <Star size={20} />
-                </div>
-                <div className="card-content">
-                  <span className="card-label">HIGH PRIORITY</span>
-                  <span className="card-description">4-5 star reviews</span>
-                </div>
-                <div className="card-number high-priority-number">
-                  {categorizedReviews.slice(0, reviews.length).filter(r => {
-                    const rating = r.rating || r.Rating || 0;
-                    return rating >= 4;
-                  }).length}
-                </div>
-              </div>
-              
-              <div className={`simple-dark-card ${activeQuickFilter === 'critical' ? 'active' : ''}`}
-                   onClick={() => handleQuickFilterClick('critical')}
-                   title="Click to filter 1-2 star reviews">
-                <div className="card-icon critical">
-                  <AlertTriangle size={20} />
-                </div>
-                <div className="card-content">
-                  <span className="card-label">CRITICAL ISSUES</span>
-                  <span className="card-description">1-2 star reviews</span>
-                </div>
-                <div className="card-number critical-number">
-                  {categorizedReviews.slice(0, reviews.length).filter(r => {
-                    const rating = r.rating || r.Rating || 0;
-                    return rating <= 2;
-                  }).length}
-                </div>
-              </div>
-              
-              <div className={`simple-dark-card ${activeQuickFilter === 'negative' ? 'active' : ''}`}
-                   onClick={() => handleQuickFilterClick('negative')}
-                   title="Click to filter negative reviews">
-                <div className="card-icon negative">
-                  <ThumbsDown size={20} />
-                </div>
-                <div className="card-content">
-                  <span className="card-label">NEGATIVE</span>
-                  <span className="card-description">
-                    {(() => {
-                      const negativeCount = categorizedReviews.slice(0, reviews.length).filter(r => 
-                        r.sentiment === 'negative' || 
-                        (r.enhanced?.sentiment?.overall === 'negative')
-                      ).length;
-                      const totalCount = reviews.length;
-                      const percentage = totalCount > 0 ? Math.round((negativeCount / totalCount) * 100) : 0;
-                      return `${percentage}% of total`;
-                    })()} 
-                  </span>
-                </div>
-                <div className="card-number negative-number">
-                  {categorizedReviews.slice(0, reviews.length).filter(r => 
-                    r.sentiment === 'negative' || 
-                    (r.enhanced?.sentiment?.overall === 'negative')
-                  ).length}
-                </div>
-              </div>
-              
-              <div className={`simple-dark-card ${activeQuickFilter === 'actionable' ? 'active' : ''}`}
-                   onClick={() => handleQuickFilterClick('actionable')}
-                   title="Click to filter actionable reviews">
-                <div className="card-icon actionable">
-                  <Target size={20} />
-                </div>
-                <div className="card-content">
-                  <span className="card-label">ACTIONABLE</span>
-                  <span className="card-description">Need attention</span>
-                </div>
-                <div className="card-number actionable-number">
-                  {categorizedReviews.slice(0, reviews.length).filter(r => 
-                    r.isActionable || 
-                    (r.enhanced?.actionable === true)
-                  ).length}
-                </div>
-              </div>
-            </div>
-          )} */}
           
           {/* Category Count Validation */}
           {isCategorizingComplete && (
