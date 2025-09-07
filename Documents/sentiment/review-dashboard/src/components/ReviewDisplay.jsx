@@ -73,6 +73,13 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
   const [categorizeProgress, setCategorizeProgress] = useState(0);
   const [isCategorizingComplete, setIsCategorizingComplete] = useState(false);
   const [activeQuickFilter, setActiveQuickFilter] = useState(null); // 'critical', 'high', 'negative', 'actionable', or null
+  
+  // Advanced filter states
+  const [categoryFilter, setCategoryFilter] = useState('');
+  const [severityFilter, setSeverityFilter] = useState('');
+  const [sentimentFilter, setSentimentFilter] = useState('');
+  const [platformFilter, setPlatformFilter] = useState('');
+  const [dateRangeFilter, setDateRangeFilter] = useState('');
 
   // Helper function to detect OS from device info
   const getOperatingSystem = (review) => {
@@ -537,11 +544,35 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
       [category]: !prev[category]
     }));
   };
+  
+  // Helper function to check if review is within date range
+  const isWithinDateRange = (reviewDate, range) => {
+    if (!range || range === '' || range === 'all') return true;
+    
+    const date = new Date(reviewDate);
+    const now = new Date();
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    switch (range) {
+      case 'today':
+        return date >= startOfDay;
+      case 'week':
+        const weekAgo = new Date(startOfDay);
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        return date >= weekAgo;
+      case 'month':
+        const monthAgo = new Date(startOfDay);
+        monthAgo.setDate(monthAgo.getDate() - 30);
+        return date >= monthAgo;
+      default:
+        return true;
+    }
+  };
 
   // Ensure we only show reviews that are in the current filtered set
   const reviewsToShow = categorizedReviews.slice(0, reviews.length);
   
-  // Apply both category and quick filters
+  // Apply all filters: category, quick, and advanced filters
   const filteredReviews = reviewsToShow.filter(review => {
     // First check category filters
     const passesCategory = selectedCategories.length === 0 || 
@@ -567,7 +598,36 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
       }
     })();
     
-    return passesCategory && passesQuickFilter;
+    // Check advanced filters
+    // Category filter
+    const passesCategoryFilter = !categoryFilter || 
+      review.primaryCategory === categoryFilter || 
+      (Array.isArray(review.categories) && review.categories.includes(categoryFilter));
+    
+    // Severity filter
+    const passesSeverityFilter = !severityFilter || review.severity === severityFilter;
+    
+    // Sentiment filter
+    const passesSentimentFilter = !sentimentFilter || review.sentiment === sentimentFilter;
+    
+    // Platform filter
+    const passesPlatformFilter = !platformFilter || (() => {
+      const os = getOperatingSystem(review).toLowerCase();
+      if (platformFilter === 'ios') return os === 'ios';
+      if (platformFilter === 'android') return os === 'android';
+      if (platformFilter === 'unknown') return os === 'unknown';
+      return true;
+    })();
+    
+    // Date range filter
+    const passesDateFilter = isWithinDateRange(
+      review.date || review.Date || review['Review Date'], 
+      dateRangeFilter
+    );
+    
+    return passesCategory && passesQuickFilter && passesCategoryFilter && 
+           passesSeverityFilter && passesSentimentFilter && passesPlatformFilter && 
+           passesDateFilter;
   });
 
   const getCategoryCount = (category) => {
@@ -604,7 +664,7 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
   // Reset displayed reviews when filters change or reviews prop changes
   useEffect(() => {
     setDisplayedReviews(20);
-  }, [selectedCategories, reviews, activeQuickFilter]);
+  }, [selectedCategories, reviews, activeQuickFilter, categoryFilter, severityFilter, sentimentFilter, platformFilter, dateRangeFilter]);
 
   // Handle quick filter clicks
   const handleQuickFilterClick = useCallback((filterType) => {
@@ -615,6 +675,17 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
       setSelectedCategories([]); // Clear category filters to avoid confusion
     }
   }, [activeQuickFilter]);
+  
+  // Reset all filters
+  const resetAllFilters = () => {
+    setSelectedCategories([]);
+    setActiveQuickFilter(null);
+    setCategoryFilter('');
+    setSeverityFilter('');
+    setSentimentFilter('');
+    setPlatformFilter('');
+    setDateRangeFilter('');
+  };
 
   return (
     <div className="review-display-container">
@@ -630,8 +701,21 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
               {activeQuickFilter === 'actionable' && ' - Actionable Items'}
             </span>
           )}
+          {/* Show active advanced filters count */}
+          {(categoryFilter || severityFilter || sentimentFilter || platformFilter || dateRangeFilter) && (
+            <span style={{ marginLeft: '12px', fontSize: '12px', color: '#60a5fa' }}>
+              ({[categoryFilter, severityFilter, sentimentFilter, platformFilter, dateRangeFilter].filter(Boolean).length} filters active)
+            </span>
+          )}
         </h2>
         <div className="header-actions">
+          {/* Reset All Filters button */}
+          {(selectedCategories.length > 0 || activeQuickFilter || categoryFilter || severityFilter || sentimentFilter || platformFilter || dateRangeFilter) && (
+            <button className="reset-all-filters-btn" onClick={resetAllFilters}>
+              <X size={14} />
+              Reset All Filters
+            </button>
+          )}
           {activeQuickFilter && (
             <button 
               className="clear-quick-filter-btn"
@@ -678,7 +762,10 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
           </div>
           <div className="advanced-filters-grid">
             <div className="filter-dropdown">
-              <select>
+              <select 
+                value={categoryFilter} 
+                onChange={(e) => setCategoryFilter(e.target.value)}
+              >
                 <option value="">All Categories</option>
                 {Object.keys(categoryConfig).map(cat => (
                   <option key={cat} value={cat}>{cat}</option>
@@ -686,7 +773,10 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
               </select>
             </div>
             <div className="filter-dropdown">
-              <select>
+              <select 
+                value={severityFilter} 
+                onChange={(e) => setSeverityFilter(e.target.value)}
+              >
                 <option value="">All Severities</option>
                 <option value="critical">Critical</option>
                 <option value="high">High</option>
@@ -695,7 +785,10 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
               </select>
             </div>
             <div className="filter-dropdown">
-              <select>
+              <select 
+                value={sentimentFilter} 
+                onChange={(e) => setSentimentFilter(e.target.value)}
+              >
                 <option value="">All Sentiments</option>
                 <option value="positive">Positive</option>
                 <option value="negative">Negative</option>
@@ -703,7 +796,10 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
               </select>
             </div>
             <div className="filter-dropdown">
-              <select>
+              <select 
+                value={platformFilter} 
+                onChange={(e) => setPlatformFilter(e.target.value)}
+              >
                 <option value="">All Platforms</option>
                 <option value="ios">iOS</option>
                 <option value="android">Android</option>
@@ -711,7 +807,10 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
               </select>
             </div>
             <div className="filter-dropdown">
-              <select>
+              <select 
+                value={dateRangeFilter} 
+                onChange={(e) => setDateRangeFilter(e.target.value)}
+              >
                 <option value="">Date Range</option>
                 <option value="today">Today</option>
                 <option value="week">Last 7 Days</option>

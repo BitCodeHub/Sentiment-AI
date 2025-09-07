@@ -88,6 +88,27 @@
   border-color: #dc2626;
 }
 
+.reset-all-filters-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: #374151;
+  border: 1px solid #374151;
+  border-radius: 8px;
+  color: white;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.reset-all-filters-btn:hover {
+  background: #4b5563;
+  border-color: #4b5563;
+  transform: translateY(-1px);
+}
+
 .loading-indicator {
   display: flex;
   align-items: center;
