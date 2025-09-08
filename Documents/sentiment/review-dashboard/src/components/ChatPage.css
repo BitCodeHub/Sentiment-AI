@@ -669,3 +669,135 @@
     padding: 0;
   }
 }
+
+/* Audio Controls */
+.audio-toggle-button {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.audio-toggle-button:hover {
+  color: #e5e5e5;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.audio-toggle-button.active {
+  color: #60a5fa;
+}
+
+.audio-toggle-button.active:hover {
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.audio-toggle-button.speaking {
+  animation: audio-pulse 2s ease-in-out infinite;
+}
+
+@keyframes audio-pulse {
+  0%, 100% { 
+    opacity: 1;
+  }
+  50% { 
+    opacity: 0.7;
+  }
+}
+
+/* Speaking indicator */
+.speaking-indicator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.speaker-icon {
+  animation: speaker-vibrate 0.2s ease-in-out infinite alternate;
+}
+
+@keyframes speaker-vibrate {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(1px); }
+}
+
+.sound-wave {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+}
+
+.sound-wave span {
+  width: 2px;
+  height: 12px;
+  background: currentColor;
+  border-radius: 1px;
+  animation: sound-wave 0.8s ease-in-out infinite;
+}
+
+.sound-wave span:nth-child(1) {
+  animation-delay: 0s;
+  height: 8px;
+}
+
+.sound-wave span:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+.sound-wave span:nth-child(3) {
+  animation-delay: 0.2s;
+  height: 6px;
+}
+
+@keyframes sound-wave {
+  0%, 100% {
+    transform: scaleY(0.6);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+/* Message audio button */
+.message-audio-button {
+  margin-left: 8px;
+  padding: 4px;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+}
+
+.message-audio-button:hover {
+  color: #60a5fa;
+  background: rgba(59, 130, 246, 0.1);
+}
+
+/* Mobile audio adjustments */
+@media (max-width: 768px) {
+  .audio-toggle-button {
+    padding: 8px;
+  }
+  
+  .sound-wave {
+    display: none; /* Simplify on mobile */
+  }
+  
+  .audio-toggle-button.speaking .speaker-icon {
+    animation: audio-pulse 2s ease-in-out infinite;
+  }
+}

@@ -4,7 +4,7 @@ import {
   MessageSquare, Send, X, Loader, Sparkles, 
   AlertCircle, RotateCcw, ChevronDown, Bot, User,
   Mic, MicOff, Menu, ArrowLeft, Plus, Trash2,
-  Settings, History
+  Settings, History, Volume2, VolumeX
 } from 'lucide-react';
 import { 
   initializeChatSession, 
@@ -27,11 +27,38 @@ const ChatPage = ({ reviewData = [] }) => {
   const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768);
   const [conversations, setConversations] = useState([]);
   const [activeConversation, setActiveConversation] = useState(null);
+  const [audioEnabled, setAudioEnabled] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [currentUtterance, setCurrentUtterance] = useState(null);
   
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const recognitionRef = useRef(null);
   const navigate = useNavigate();
+  
+  // Check for speech synthesis support
+  const speechSynthesisSupported = 'speechSynthesis' in window;
+  
+  // Load voices when they become available
+  useEffect(() => {
+    if (speechSynthesisSupported) {
+      // Chrome loads voices asynchronously
+      window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.getVoices();
+      };
+      // Initial load attempt
+      window.speechSynthesis.getVoices();
+    }
+  }, []);
+
+  // Stop speech when component unmounts or audio is disabled
+  useEffect(() => {
+    return () => {
+      if (speechSynthesisSupported) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
 
   // Initialize speech recognition
   useEffect(() => {
@@ -106,12 +133,19 @@ const ChatPage = ({ reviewData = [] }) => {
       setSessionId(session);
       
       // Add welcome message
-      setMessages([{
+      const welcomeMessage = {
         id: 1,
         role: 'assistant',
         content: `Hello! I'm Rivue, your AI assistant specialized in analyzing customer reviews. I have access to ${reviewData.length} reviews from your app.\n\nI can help you understand:\n• Common themes and patterns\n• Customer pain points\n• Feature requests\n• Technical issues\n• Sentiment trends\n\nWhat would you like to know about your customer feedback?`,
         timestamp: new Date(),
-      }]);
+      };
+      setMessages([welcomeMessage]);
+      
+      // Speak welcome message if audio is enabled
+      if (audioEnabled && speechSynthesisSupported) {
+        // Small delay to ensure voices are loaded
+        setTimeout(() => speakMessage(welcomeMessage.content), 500);
+      }
 
       // Save conversation
       const newConvo = {
@@ -184,6 +218,11 @@ const ChatPage = ({ reviewData = [] }) => {
 
       setMessages(prev => [...prev, assistantMessage]);
       setSuggestions([]); // Clear suggestions after first interaction
+      
+      // Speak the response if audio is enabled
+      if (audioEnabled && speechSynthesisSupported) {
+        speakMessage(assistantMessage.content);
+      }
 
       // Update conversation title if it's the first real message
       if (messages.length === 1) {
@@ -265,6 +304,76 @@ const ChatPage = ({ reviewData = [] }) => {
     setConversations(conversations.filter(c => c.id !== convId));
   };
 
+  const speakMessage = (text) => {
+    // Cancel any ongoing speech
+    window.speechSynthesis.cancel();
+    
+    // Remove markdown formatting for better speech
+    const cleanText = text
+      .replace(/\*\*/g, '')
+      .replace(/\*/g, '')
+      .replace(/`/g, '')
+      .replace(/\n\n/g, '. ')
+      .replace(/\n/g, '. ')
+      .replace(/[•]/g, '')
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1'); // Remove markdown links
+    
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    
+    // Configure speech settings
+    utterance.rate = 0.9; // Slightly slower for better clarity
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
+    
+    // Try to use a natural-sounding voice
+    const voices = window.speechSynthesis.getVoices();
+    const preferredVoice = voices.find(
+      voice => voice.lang.startsWith('en') && voice.name.includes('Natural')
+    ) || voices.find(
+      voice => voice.lang.startsWith('en-US')
+    );
+    
+    if (preferredVoice) {
+      utterance.voice = preferredVoice;
+    }
+    
+    utterance.onstart = () => {
+      setIsSpeaking(true);
+      setCurrentUtterance(utterance);
+    };
+    
+    utterance.onend = () => {
+      setIsSpeaking(false);
+      setCurrentUtterance(null);
+    };
+    
+    utterance.onerror = (event) => {
+      console.error('Speech synthesis error:', event);
+      setIsSpeaking(false);
+      setCurrentUtterance(null);
+    };
+    
+    window.speechSynthesis.speak(utterance);
+  };
+  
+  const toggleAudio = () => {
+    if (isSpeaking) {
+      // Stop current speech
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+      setCurrentUtterance(null);
+    }
+    setAudioEnabled(!audioEnabled);
+  };
+  
+  const stopSpeaking = () => {
+    if (speechSynthesisSupported) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+      setCurrentUtterance(null);
+    }
+  };
+
   return (
     <div className="chat-page">
       {/* Sidebar */}
@@ -337,6 +446,30 @@ const ChatPage = ({ reviewData = [] }) => {
             <span>Rivue AI Assistant</span>
           </div>
           <div className="header-actions">
+            {speechSynthesisSupported && (
+              <button 
+                className={`audio-toggle-button ${audioEnabled ? 'active' : ''} ${isSpeaking ? 'speaking' : ''}`}
+                onClick={toggleAudio}
+                title={audioEnabled ? "Disable audio responses" : "Enable audio responses"}
+              >
+                {audioEnabled ? (
+                  isSpeaking ? (
+                    <div className="speaking-indicator">
+                      <Volume2 size={18} className="speaker-icon" />
+                      <span className="sound-wave">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                      </span>
+                    </div>
+                  ) : (
+                    <Volume2 size={18} />
+                  )
+                ) : (
+                  <VolumeX size={18} />
+                )}
+              </button>
+            )}
             <button 
               className="reset-button"
               onClick={handleNewConversation}
@@ -383,6 +516,15 @@ const ChatPage = ({ reviewData = [] }) => {
                   </div>
                   <div className="message-content">
                     {message.content}
+                    {message.role === 'assistant' && audioEnabled && (
+                      <button
+                        className="message-audio-button"
+                        onClick={() => speakMessage(message.content)}
+                        title="Play this message"
+                      >
+                        <Volume2 size={16} />
+                      </button>
+                    )}
                     {message.visualizations && message.visualizations.map((viz, idx) => (
                       <ChatVisualization
                         key={idx}
