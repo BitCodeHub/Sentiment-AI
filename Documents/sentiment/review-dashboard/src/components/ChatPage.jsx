@@ -12,6 +12,7 @@ import {
   clearChatSession,
   generateChatSuggestions 
 } from '../services/geminiChatService';
+import ChatVisualization from './ChatVisualization';
 import './ChatPage.css';
 
 const ChatPage = ({ reviewData = [] }) => {
@@ -177,6 +178,7 @@ const ChatPage = ({ reviewData = [] }) => {
         id: messages.length + 2,
         role: 'assistant',
         content: response.message,
+        visualizations: response.visualizations || [],
         timestamp: new Date(),
       };
 
@@ -381,6 +383,15 @@ const ChatPage = ({ reviewData = [] }) => {
                   </div>
                   <div className="message-content">
                     {message.content}
+                    {message.visualizations && message.visualizations.map((viz, idx) => (
+                      <ChatVisualization
+                        key={idx}
+                        type={viz.type}
+                        data={viz.data}
+                        title={viz.title}
+                        config={viz.config}
+                      />
+                    ))}
                   </div>
                   <div className="message-timestamp">
                     {new Date(message.timestamp).toLocaleTimeString([], { 

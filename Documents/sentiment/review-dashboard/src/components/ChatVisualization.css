@@ -1,0 +1,99 @@
+.chat-visualization {
+  margin: 16px 0;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.visualization-title {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #e5e5e5;
+}
+
+.chat-visualization-error {
+  padding: 24px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.5);
+  font-style: italic;
+}
+
+/* Table Styles */
+.chat-table-container {
+  overflow-x: auto;
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+
+.chat-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.chat-table th {
+  padding: 12px;
+  text-align: left;
+  font-weight: 600;
+  color: #e5e5e5;
+  background: rgba(139, 92, 246, 0.1);
+  border-bottom: 2px solid rgba(139, 92, 246, 0.3);
+  white-space: nowrap;
+}
+
+.chat-table td {
+  padding: 12px;
+  color: rgba(255, 255, 255, 0.8);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.chat-table tr:hover td {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.chat-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* Scrollbar for table */
+.chat-table-container::-webkit-scrollbar {
+  height: 6px;
+}
+
+.chat-table-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chat-table-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+.chat-table-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .chat-visualization {
+    margin: 12px -8px;
+    padding: 12px;
+    border-radius: 8px;
+  }
+  
+  .visualization-title {
+    font-size: 14px;
+  }
+  
+  .chat-table {
+    font-size: 12px;
+  }
+  
+  .chat-table th,
+  .chat-table td {
+    padding: 8px;
+  }
+}
