@@ -332,14 +332,14 @@
   justify-content: space-between;
   align-items: center;
   padding: 16px 20px;
-  border-bottom: 1px solid #e1e6ea;
-  background: #fafbfc;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: #1a1f2e;
 }
 
 .cloud-title {
   font-size: 16px;
   font-weight: 500;
-  color: #333333;
+  color: #e2e8f0;
   margin: 0;
 }
 
@@ -349,18 +349,18 @@
   justify-content: center;
   width: 32px;
   height: 32px;
-  border: 1px solid #d0d5dd;
-  background: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.05);
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.2s;
-  color: #737373;
+  color: #94a3b8;
 }
 
 .randomize-btn:hover {
-  background: #f5f6f7;
-  color: #333333;
-  border-color: #a0a9b8;
+  background: rgba(255, 255, 255, 0.1);
+  color: #e2e8f0;
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 .randomize-btn.spinning {
@@ -370,7 +370,7 @@
 .cloud-container {
   flex: 1;
   position: relative;
-  background: #ffffff;
+  background: #0a0f1e;
   overflow: hidden;
   padding: 40px;
   min-height: 400px;
@@ -400,13 +400,13 @@
 
 /* Word Cloud Tooltip */
 .word-cloud-tooltip {
-  background: #ffffff;
-  color: #333333;
+  background: #1a1f2e;
+  color: #e2e8f0;
   padding: 12px;
   border-radius: 4px;
   max-width: 350px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  border: 1px solid #e1e6ea;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   pointer-events: none;
   animation: fadeIn 0.2s ease-in-out;
 }
@@ -422,15 +422,15 @@
 
 .tooltip-header strong {
   font-size: 14px;
-  color: #333333;
+  color: #e2e8f0;
   font-weight: 500;
 }
 
 .tooltip-count {
   font-size: 12px;
-  color: #737373;
+  color: #94a3b8;
   font-weight: 400;
-  background: #f5f6f7;
+  background: rgba(255, 255, 255, 0.1);
   padding: 2px 6px;
   border-radius: 2px;
 }
@@ -443,9 +443,9 @@
 
 .tooltip-review {
   padding: 8px;
-  background: #fafbfc;
+  background: rgba(255, 255, 255, 0.05);
   border-radius: 4px;
-  border-left: 3px solid #1f77b4;
+  border-left: 3px solid #3b82f6;
   margin-bottom: 8px;
 }
 
@@ -458,7 +458,7 @@
 .review-text {
   font-size: 12px;
   line-height: 1.5;
-  color: #666666;
+  color: #94a3b8;
 }
 
 .tooltip-no-reviews {
@@ -588,12 +588,12 @@ html {
 
 /* Enhanced Dashboard Header Section - Tableau Style */
 .dashboard-header-section {
-  background: #ffffff;
-  border: 1px solid #e1e6ea;
+  background: #1a1f2e;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 6px;
   padding: 24px;
   margin-bottom: 20px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   position: relative;
 }
 
@@ -623,13 +623,13 @@ html {
 .dashboard-title {
   font-size: 28px;
   font-weight: 500;
-  color: #333333;
+  color: #e2e8f0;
   margin: 0 0 8px 0;
 }
 
 .dashboard-subtitle {
   font-size: 14px;
-  color: #737373;
+  color: #94a3b8;
   margin: 0;
   font-weight: 400;
 }
@@ -701,8 +701,8 @@ html {
 }
 
 .clear-search:hover {
-  color: #333333;
-  background: rgba(0, 0, 0, 0.05);
+  color: #e2e8f0;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 /* Filters Container - New Clean Layout */
@@ -718,10 +718,10 @@ html {
   justify-content: center;
   gap: 16px;
   padding: 16px;
-  background: #ffffff;
+  background: #1a1f2e;
   border-radius: 6px;
-  border: 1px solid #e1e6ea;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 .primary-filter-item {
@@ -738,9 +738,9 @@ html {
   gap: 12px;
   align-items: center;
   padding: 16px;
-  background: #fafbfc;
+  background: #1a1f2e;
   border-radius: 6px;
-  border: 1px solid #e1e6ea;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .secondary-filters-label {
@@ -792,7 +792,7 @@ html {
 .filter-label.secondary {
   font-size: 12px;
   margin-bottom: 0.5rem;
-  color: #737373;
+  color: #94a3b8;
   display: flex;
   align-items: center;
   gap: 0.375rem;
@@ -809,7 +809,7 @@ html {
   gap: 4px;
   font-size: 12px;
   font-weight: 400;
-  color: #737373;
+  color: #94a3b8;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   white-space: nowrap;
@@ -825,15 +825,15 @@ html {
 .filter-select {
   padding: 0.75rem 1rem;
   font-size: 14px;
-  border: 1px solid #d0d5dd;
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 6px;
-  background: #ffffff;
-  color: #333333;
+  background: rgba(255, 255, 255, 0.05);
+  color: #e2e8f0;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
   appearance: none;
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23737373' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23e2e8f0' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
   background-position: right 0.75rem center;
   background-repeat: no-repeat;
   background-size: 1rem;
@@ -844,14 +844,10 @@ html {
 }
 
 .filter-select:hover {
-  background: linear-gradient(135deg, 
-    rgba(99, 102, 241, 0.3) 0%,
-    rgba(168, 85, 247, 0.2) 100%);
-  border-color: rgba(99, 102, 241, 0.3);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1),
-              0 8px 20px rgba(99, 102, 241, 0.15),
-              inset 0 1px 0 rgba(255, 255, 255, 0.15);
-  transform: translateY(-2px) scale(1.02);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  transform: translateY(-1px);
 }
 
 .filter-select:focus {
@@ -861,34 +857,34 @@ html {
 }
 
 .filter-select.primary {
-  background: #e6f2ff;
-  border-color: #1f77b4;
+  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.4);
   font-weight: 500;
   min-width: 180px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 .filter-select.secondary {
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.05);
   font-size: 13px;
   padding: 0.625rem 0.875rem;
   padding-right: 2.25rem;
   width: 100%;
-  border: 1px solid #d0d5dd;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
   font-weight: 400;
   min-width: unset;
 }
 
 .filter-select.secondary:hover {
-  background: #f5f6f7;
-  border-color: #a0a9b8;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.25);
 }
 
 /* Filter Select Options */
 .filter-select option {
-  background: #ffffff;
-  color: #333333;
+  background: #1a1f2e;
+  color: #e2e8f0;
   padding: 0.5rem;
 }
 
@@ -946,7 +942,7 @@ html {
 .clear-date-range {
   background: transparent;
   border: none;
-  color: #737373;
+  color: #94a3b8;
   padding: 0.5rem;
   border-radius: 4px;
   cursor: pointer;
@@ -957,8 +953,8 @@ html {
 }
 
 .clear-date-range:hover {
-  background: rgba(0, 0, 0, 0.05);
-  color: #333333;
+  background: rgba(255, 255, 255, 0.1);
+  color: #e2e8f0;
 }
 
 /* Date Picker Overlay */
@@ -1010,7 +1006,7 @@ html {
 .close-date-picker {
   background: none;
   border: none;
-  color: #737373;
+  color: #94a3b8;
   cursor: pointer;
   padding: 0.25rem;
   border-radius: 4px;
@@ -1021,8 +1017,8 @@ html {
 }
 
 .close-date-picker:hover {
-  color: #333333;
-  background: rgba(0, 0, 0, 0.05);
+  color: #e2e8f0;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 @keyframes scaleIn {
