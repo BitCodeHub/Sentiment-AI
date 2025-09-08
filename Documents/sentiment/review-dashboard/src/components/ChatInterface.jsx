@@ -77,7 +77,33 @@ const ChatInterface = ({ isOpen, onClose, reviewData = [] }) => {
       }]);
     } catch (err) {
       console.error('Failed to initialize chat:', err);
-      setError('Failed to start chat session. Please try again.');
+      if (err.message.includes('API key')) {
+        setError(
+          <div>
+            <strong>API Key Required</strong>
+            <br />
+            Please configure your Gemini API key:
+            <br />
+            1. Get a free API key from{' '}
+            <a 
+              href="https://makersuite.google.com/app/apikey" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              style={{ color: '#60a5fa', textDecoration: 'underline' }}
+            >
+              Google AI Studio
+            </a>
+            <br />
+            2. Create a .env file in your project root
+            <br />
+            3. Add: VITE_GEMINI_API_KEY=your-key-here
+            <br />
+            4. Restart your development server
+          </div>
+        );
+      } else {
+        setError('Failed to start chat session. Please try again.');
+      }
     } finally {
       setIsInitializing(false);
     }
@@ -254,7 +280,7 @@ const ChatInterface = ({ isOpen, onClose, reviewData = [] }) => {
           {error && (
             <div className="chat-error">
               <AlertCircle size={16} />
-              <span>{error}</span>
+              <div>{error}</div>
             </div>
           )}
 

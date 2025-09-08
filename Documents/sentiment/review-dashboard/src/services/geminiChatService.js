@@ -4,13 +4,20 @@ import { rateLimiter } from './rateLimiter';
 // Get API key with multiple fallbacks
 let apiKey;
 try {
-  apiKey = import.meta.env?.VITE_GEMINI_API_KEY || 'AIzaSyCTBVDAQxdGCzVqH9x70p6gXNhoTl5RJN8';
+  apiKey = import.meta.env?.VITE_GEMINI_API_KEY || process.env?.VITE_GEMINI_API_KEY || '';
 } catch (e) {
   // Fallback if import.meta is not available
-  apiKey = 'AIzaSyCTBVDAQxdGCzVqH9x70p6gXNhoTl5RJN8';
+  apiKey = '';
 }
 
-const genAI = new GoogleGenerativeAI(apiKey);
+// Check if API key is configured
+if (!apiKey || apiKey === 'your-gemini-api-key-here') {
+  console.error('GEMINI API KEY NOT CONFIGURED!');
+  console.error('Please set VITE_GEMINI_API_KEY in your .env file');
+  console.error('Get your API key from: https://makersuite.google.com/app/apikey');
+}
+
+const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
 
 // Chat session storage
 let chatSessions = new Map();
@@ -31,6 +38,10 @@ function cleanJsonResponse(text) {
  */
 export async function initializeChatSession(sessionId, reviewData, metadata = {}) {
   try {
+    if (!genAI) {
+      throw new Error('Gemini API key is not configured. Please add VITE_GEMINI_API_KEY to your .env file.');
+    }
+    
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
     
     // Create system context from review data
@@ -137,11 +148,14 @@ export async function sendChatMessage(sessionId, message) {
       console.error('Error sending chat message:', error);
       
       // Check for specific errors
-      if (error.message?.includes('API_KEY_INVALID')) {
-        throw new Error('Invalid API key. Please check your Gemini API configuration.');
+      if (error.message?.includes('API_KEY_INVALID') || error.message?.includes('API key not valid')) {
+        throw new Error('Invalid Gemini API key. Please add a valid VITE_GEMINI_API_KEY to your .env file. Get your API key from: https://makersuite.google.com/app/apikey');
       }
       if (error.message?.includes('RATE_LIMIT_EXCEEDED')) {
         throw new Error('Rate limit exceeded. Please try again in a moment.');
+      }
+      if (!genAI) {
+        throw new Error('Gemini API key is not configured. Please add VITE_GEMINI_API_KEY to your .env file.');
       }
       
       throw error;
