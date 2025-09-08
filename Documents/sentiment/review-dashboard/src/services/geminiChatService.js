@@ -36,32 +36,38 @@ let requestWindowStart = Date.now();
 
 // Model configuration with fallback
 const MODEL_CONFIGS = {
-  primary: 'gemini-2.5-flash-preview-native-audio-dialog',
-  experimental: 'gemini-2.5-flash-exp-native-audio-thinking-dialog',
-  fallback: 'gemini-2.5-flash'
+  primary: 'models/gemini-2.5-flash-preview-native-audio-dialog',
+  experimental: 'models/gemini-2.0-flash-exp',
+  fallback: 'models/gemini-1.5-flash'
 };
 
+// Track which model is being used
+let currentModelIndex = 0;
+const modelOrder = ['primary', 'experimental', 'fallback'];
+
 // Helper function to get model with fallback
-async function getModelWithFallback() {
+async function getModelWithFallback(forceIndex = null) {
   if (!genAI) {
     throw new Error('Gemini API key is not configured. Please add VITE_GEMINI_API_KEY to your .env file.');
   }
 
-  try {
-    // Try primary model first
-    console.log('Attempting to use primary model:', MODEL_CONFIGS.primary);
-    return genAI.getGenerativeModel({ model: MODEL_CONFIGS.primary });
-  } catch (primaryError) {
-    console.warn('Primary model failed, trying experimental:', primaryError.message);
+  const startIndex = forceIndex !== null ? forceIndex : currentModelIndex;
+  
+  for (let i = startIndex; i < modelOrder.length; i++) {
+    const modelKey = modelOrder[i];
+    const modelName = MODEL_CONFIGS[modelKey];
     
     try {
-      // Try experimental model
-      return genAI.getGenerativeModel({ model: MODEL_CONFIGS.experimental });
-    } catch (expError) {
-      console.warn('Experimental model failed, falling back to stable:', expError.message);
-      
-      // Fallback to stable model
-      return genAI.getGenerativeModel({ model: MODEL_CONFIGS.fallback });
+      console.log(`Attempting to use ${modelKey} model:`, modelName);
+      const model = genAI.getGenerativeModel({ model: modelName });
+      currentModelIndex = i; // Remember which model worked
+      return { model, modelKey, modelName };
+    } catch (error) {
+      console.warn(`${modelKey} model failed:`, error.message);
+      if (i === modelOrder.length - 1) {
+        // All models failed
+        throw new Error('All Gemini models failed to initialize. Please check your API key and try again.');
+      }
     }
   }
 }
@@ -180,7 +186,7 @@ function cleanJsonResponse(text) {
 export async function initializeChatSession(sessionId, reviewData, metadata = {}) {
   try {
     // Get model with fallback strategy
-    const model = await getModelWithFallback();
+    const { model, modelKey, modelName } = await getModelWithFallback();
     
     // Extract comprehensive data structure
     const dataStructure = extractDataStructure(reviewData);
@@ -236,18 +242,21 @@ APP CONTEXT:
 
 You have full access to all data fields and can perform any analysis, aggregation, or visualization requested by the user.`;
 
+    // Create initial history
+    const initialHistory = [
+      {
+        role: "user",
+        parts: [{ text: context }],
+      },
+      {
+        role: "model",
+        parts: [{ text: "I understand. I'm Rivue, your comprehensive data analysis assistant. I have access to " + reviewData.length + " records with " + extractDataStructure(reviewData).fields.length + " data fields. I can analyze any aspect of your data, create visualizations (graphs, charts, tables), and provide insights. What would you like to know?" }],
+      },
+    ];
+
     // Initialize chat with context
     const chat = model.startChat({
-      history: [
-        {
-          role: "user",
-          parts: [{ text: context }],
-        },
-        {
-          role: "model",
-          parts: [{ text: "I understand. I'm Rivue, your comprehensive data analysis assistant. I have access to " + reviewData.length + " records with " + extractDataStructure(reviewData).fields.length + " data fields. I can analyze any aspect of your data, create visualizations (graphs, charts, tables), and provide insights. What would you like to know?" }],
-        },
-      ],
+      history: initialHistory,
       generationConfig: {
         temperature: 0.7,
         topK: 40,
@@ -263,9 +272,12 @@ You have full access to all data fields and can perform any analysis, aggregatio
       metadata,
       history: [],
       createdAt: new Date(),
+      modelKey,
+      modelName,
+      initialHistory, // Store for potential re-initialization
     });
 
-    return { sessionId, success: true };
+    console.log(`Chat session ${sessionId} initialized with model: ${modelName}`);\n    return { sessionId, success: true };
   } catch (error) {
     console.error('Error initializing chat session:', error);
     throw error;
@@ -296,15 +308,79 @@ export async function sendChatMessage(sessionId, message) {
         throw new Error('Chat session not found');
       }
 
-      const { chat, reviewData, metadata } = session;
+      const { chat, reviewData, metadata, modelKey } = session;
 
       // Add review data context to the message if it's asking for analysis
       const enrichedMessage = enrichMessageWithContext(message, reviewData);
 
-      // Send message and get response
-      const result = await chat.sendMessage(enrichedMessage);
-      const response = await result.response;
-      let text = response.text();
+      let result, response, text;
+      let retryCount = 0;
+      const maxRetries = modelOrder.length - modelOrder.indexOf(modelKey);
+
+      while (retryCount < maxRetries) {
+        try {
+          // Send message and get response
+          result = await chat.sendMessage(enrichedMessage);
+          response = await result.response;
+          text = response.text();
+          break; // Success!
+        } catch (error) {
+          // Check if this is a model not found error
+          if (error.message?.includes('is not found') || 
+              error.message?.includes('404') ||
+              error.message?.includes('not supported')) {
+            
+            console.warn(`Model error with ${session.modelName}, trying fallback...`);
+            retryCount++;
+            
+            // Try next model in the order
+            const nextModelIndex = modelOrder.indexOf(modelKey) + retryCount;
+            if (nextModelIndex < modelOrder.length) {
+              try {
+                // Get next model
+                const { model: newModel, modelKey: newModelKey, modelName: newModelName } = 
+                  await getModelWithFallback(nextModelIndex);
+                
+                // Build full history for new chat
+                const fullHistory = [...(session.initialHistory || [])];
+                
+                // Add conversation history
+                session.history.forEach(msg => {
+                  fullHistory.push({
+                    role: msg.role === 'user' ? 'user' : 'model',
+                    parts: [{ text: msg.message }]
+                  });
+                });
+                
+                // Reinitialize chat with new model and full history
+                const newChat = newModel.startChat({
+                  history: fullHistory,
+                  generationConfig: {
+                    temperature: 0.7,
+                    topK: 40,
+                    topP: 0.95,
+                    maxOutputTokens: 4096,
+                  },
+                });
+                
+                // Update session
+                session.chat = newChat;
+                session.modelKey = newModelKey;
+                session.modelName = newModelName;
+                
+                continue; // Retry with new model
+              } catch (modelError) {
+                // If we can't get a new model, throw the original error
+                throw error;
+              }
+            } else {
+              throw error; // No more models to try
+            }
+          } else {
+            throw error; // Not a model error, don't retry
+          }
+        }
+      }
 
       // Parse visualization commands
       const visualizations = [];
