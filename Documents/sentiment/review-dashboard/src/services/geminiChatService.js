@@ -36,8 +36,8 @@ let requestWindowStart = Date.now();
 
 // Model configuration with fallback
 const MODEL_CONFIGS = {
-  primary: 'models/gemini-2.5-flash-preview-native-audio-dialog',
-  experimental: 'models/gemini-2.0-flash-exp',
+  primary: 'models/gemini-2.5-flash',
+  experimental: 'models/gemini-1.5-flash-latest',
   fallback: 'models/gemini-1.5-flash'
 };
 
