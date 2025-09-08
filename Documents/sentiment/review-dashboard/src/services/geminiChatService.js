@@ -4,9 +4,19 @@ import { rateLimiter } from './rateLimiter';
 // Get API key with multiple fallbacks
 let apiKey;
 try {
-  apiKey = import.meta.env?.VITE_GEMINI_API_KEY || process.env?.VITE_GEMINI_API_KEY || '';
+  // Try to get from import.meta.env first (Vite)
+  apiKey = import.meta.env?.VITE_GEMINI_API_KEY;
+  
+  // Debug logging
+  console.log('Environment check:', {
+    hasImportMeta: !!import.meta,
+    hasEnv: !!import.meta?.env,
+    envKeys: import.meta?.env ? Object.keys(import.meta.env) : [],
+    apiKeyLength: apiKey?.length || 0
+  });
 } catch (e) {
   // Fallback if import.meta is not available
+  console.error('Error accessing import.meta.env:', e);
   apiKey = '';
 }
 
@@ -15,6 +25,7 @@ if (!apiKey || apiKey === 'your-gemini-api-key-here') {
   console.error('GEMINI API KEY NOT CONFIGURED!');
   console.error('Please set VITE_GEMINI_API_KEY in your .env file');
   console.error('Get your API key from: https://makersuite.google.com/app/apikey');
+  console.error('Current API key value:', apiKey ? '[HIDDEN]' : 'empty');
 }
 
 const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
