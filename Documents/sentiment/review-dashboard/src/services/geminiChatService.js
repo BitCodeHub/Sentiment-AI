@@ -277,7 +277,8 @@ You have full access to all data fields and can perform any analysis, aggregatio
       initialHistory, // Store for potential re-initialization
     });
 
-    console.log(`Chat session ${sessionId} initialized with model: ${modelName}`);\n    return { sessionId, success: true };
+    console.log(`Chat session ${sessionId} initialized with model: ${modelName}`);
+    return { sessionId, success: true };
   } catch (error) {
     console.error('Error initializing chat session:', error);
     throw error;
