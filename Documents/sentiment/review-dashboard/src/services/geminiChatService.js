@@ -76,7 +76,7 @@ export async function initializeChatSession(sessionId, reviewData, metadata = {}
       throw new Error('Gemini API key is not configured. Please add VITE_GEMINI_API_KEY to your .env file.');
     }
     
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
     
     // Create system context from review data
     const context = `You are an AI assistant specialized in analyzing customer reviews and feedback. You have access to ${reviewData.length} customer reviews for analysis.
