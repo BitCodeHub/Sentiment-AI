@@ -15,7 +15,7 @@ import {
   ChevronDown, ChevronUp, X, Download, RefreshCw, Calendar,
   Smartphone, Package, Layers, Globe, Monitor,
   Share2, Printer, Save, Settings, HelpCircle, Undo, Redo,
-  CheckCircle
+  CheckCircle, MessageSquare
 } from 'lucide-react';
 import { analyzeReviews, generateInsights } from '../services/geminiAIAnalysis';
 import { performDeepAnalysis } from '../services/geminiDeepAnalysis';
@@ -29,6 +29,7 @@ import DateRangeCalendar from './DateRangeCalendar';
 import ErrorDisplay from './ErrorDisplay';
 import KeywordCloud from './KeywordCloud';
 import SentimentAnalysis from './SentimentAnalysis';
+import ChatInterface from './ChatInterface';
 import './EnhancedDashboard.css';
 
 const TABLEAU_COLORS = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'];
@@ -70,6 +71,8 @@ const EnhancedDashboard = ({ data, isLoading }) => {
   const [currentView, setCurrentView] = useState('dashboard');
   // Add state for sentiment analysis modal
   const [showSentimentAnalysis, setShowSentimentAnalysis] = useState(false);
+  // Add state for chat interface
+  const [showChat, setShowChat] = useState(false);
   
   // Debug logging
   useEffect(() => {
@@ -1319,6 +1322,22 @@ const EnhancedDashboard = ({ data, isLoading }) => {
           onClose={() => setShowSentimentAnalysis(false)}
         />
       )}
+      
+      {/* Chat Interface */}
+      <ChatInterface 
+        isOpen={showChat}
+        onClose={() => setShowChat(false)}
+        reviewData={filteredReviews}
+      />
+      
+      {/* Floating Chat Button */}
+      <button 
+        className="floating-chat-button"
+        onClick={() => setShowChat(true)}
+        title="Ask AI about your reviews"
+      >
+        <MessageSquare size={24} />
+      </button>
     </div>
   );
 };
