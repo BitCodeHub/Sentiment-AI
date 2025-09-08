@@ -108,7 +108,7 @@ const ChatPage = ({ reviewData = [] }) => {
       setMessages([{
         id: 1,
         role: 'assistant',
-        content: `Hello! I'm your AI assistant specialized in analyzing customer reviews. I have access to ${reviewData.length} reviews from your app.\n\nI can help you understand:\n• Common themes and patterns\n• Customer pain points\n• Feature requests\n• Technical issues\n• Sentiment trends\n\nWhat would you like to know about your customer feedback?`,
+        content: `Hello! I'm Rivue, your AI assistant specialized in analyzing customer reviews. I have access to ${reviewData.length} reviews from your app.\n\nI can help you understand:\n• Common themes and patterns\n• Customer pain points\n• Feature requests\n• Technical issues\n• Sentiment trends\n\nWhat would you like to know about your customer feedback?`,
         timestamp: new Date(),
       }]);
 
@@ -268,14 +268,10 @@ const ChatPage = ({ reviewData = [] }) => {
       {/* Sidebar */}
       <div className={`chat-sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
-          <button 
-            className="back-button"
-            onClick={() => navigate('/')}
-            title="Back to dashboard"
-          >
-            <ArrowLeft size={20} />
-            <span>Dashboard</span>
-          </button>
+          <div className="app-branding">
+            <Sparkles size={24} className="app-icon" />
+            <span className="app-name">Rivue</span>
+          </div>
           <button
             className="new-chat-button"
             onClick={handleNewConversation}
@@ -336,15 +332,25 @@ const ChatPage = ({ reviewData = [] }) => {
           </button>
           <div className="chat-page-title">
             <Sparkles size={20} />
-            <span>Review Insights Assistant</span>
+            <span>Rivue AI Assistant</span>
           </div>
-          <button 
-            className="reset-button"
-            onClick={handleNewConversation}
-            title="Reset conversation"
-          >
-            <RotateCcw size={20} />
-          </button>
+          <div className="header-actions">
+            <button 
+              className="reset-button"
+              onClick={handleNewConversation}
+              title="Reset conversation"
+            >
+              <RotateCcw size={18} />
+            </button>
+            <button 
+              className="exit-chat-button"
+              onClick={() => navigate('/')}
+              title="Exit to dashboard"
+            >
+              <X size={20} />
+              <span>Exit Chat</span>
+            </button>
+          </div>
         </div>
 
         {/* Messages Area */}
@@ -371,7 +377,7 @@ const ChatPage = ({ reviewData = [] }) => {
                 </div>
                 <div className="message-content-wrapper">
                   <div className="message-role">
-                    {message.role === 'user' ? 'You' : 'Assistant'}
+                    {message.role === 'user' ? 'You' : 'Rivue'}
                   </div>
                   <div className="message-content">
                     {message.content}
@@ -394,7 +400,7 @@ const ChatPage = ({ reviewData = [] }) => {
                   <Bot size={20} />
                 </div>
                 <div className="message-content-wrapper">
-                  <div className="message-role">Assistant</div>
+                  <div className="message-role">Rivue</div>
                   <div className="message-content">
                     <div className="typing-indicator">
                       <span></span>
@@ -444,7 +450,7 @@ const ChatPage = ({ reviewData = [] }) => {
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Message Review Insights Assistant..."
+              placeholder="Ask Rivue about your reviews..."
               rows={1}
               disabled={isLoading || !sessionId}
             />

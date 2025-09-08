@@ -79,7 +79,7 @@ export async function initializeChatSession(sessionId, reviewData, metadata = {}
     const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
     
     // Create system context from review data
-    const context = `You are an AI assistant specialized in analyzing customer reviews and feedback. You have access to ${reviewData.length} customer reviews for analysis.
+    const context = `You are Rivue, an AI assistant specialized in analyzing customer reviews and feedback. You have access to ${reviewData.length} customer reviews for analysis.
 
 IMPORTANT INSTRUCTIONS:
 1. You must ONLY answer questions based on the review data provided
@@ -110,7 +110,7 @@ You have full access to all review content, ratings, dates, and metadata.`;
         },
         {
           role: "model",
-          parts: [{ text: "I understand. I'm ready to help you analyze the customer reviews. I have access to " + reviewData.length + " reviews and will only provide insights based on this data. What would you like to know about your customer feedback?" }],
+          parts: [{ text: "I understand. I'm Rivue, ready to help you analyze the customer reviews. I have access to " + reviewData.length + " reviews and will only provide insights based on this data. What would you like to know about your customer feedback?" }],
         },
       ],
       generationConfig: {
