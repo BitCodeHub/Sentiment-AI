@@ -1,10 +1,16 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { getRateLimiter } from './rateLimiter';
+import { rateLimiter } from './rateLimiter';
 
-// Initialize Gemini API with fallback
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY || 'AIzaSyCTBVDAQxdGCzVqH9x70p6gXNhoTl5RJN8';
+// Get API key with multiple fallbacks
+let apiKey;
+try {
+  apiKey = import.meta.env?.VITE_GEMINI_API_KEY || 'AIzaSyCTBVDAQxdGCzVqH9x70p6gXNhoTl5RJN8';
+} catch (e) {
+  // Fallback if import.meta is not available
+  apiKey = 'AIzaSyCTBVDAQxdGCzVqH9x70p6gXNhoTl5RJN8';
+}
+
 const genAI = new GoogleGenerativeAI(apiKey);
-const rateLimiter = getRateLimiter();
 
 // Chat session storage
 let chatSessions = new Map();
@@ -93,7 +99,7 @@ You have full access to all review content, ratings, dates, and metadata.`;
  * @returns {Object} AI response
  */
 export async function sendChatMessage(sessionId, message) {
-  return rateLimiter.addToQueue(async () => {
+  return rateLimiter.addRequest(async () => {
     try {
       const session = chatSessions.get(sessionId);
       if (!session) {
