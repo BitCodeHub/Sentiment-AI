@@ -5,6 +5,7 @@ import AppleImport from './components/AppleImport';
 import Dashboard from './components/Dashboard';
 import EnhancedDashboard from './components/EnhancedDashboard';
 import TopicDetailView from './components/TopicDetailView';
+import ChatPage from './components/ChatPage';
 import ErrorBoundary from './components/ErrorBoundary';
 import RateLimitNotification from './components/RateLimitNotification';
 import { parseExcelFile, aggregateData } from './utils/excelParser';
@@ -126,6 +127,10 @@ function App() {
           
           <Route path="/topic/:topicName" element={
             data ? <TopicDetailView data={data} /> : <Navigate to="/" />
+          } />
+          
+          <Route path="/chat" element={
+            data ? <ChatPage reviewData={data.reviews || []} /> : <Navigate to="/" />
           } />
         </Routes>
       </div>

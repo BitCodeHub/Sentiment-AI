@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
@@ -29,13 +30,13 @@ import DateRangeCalendar from './DateRangeCalendar';
 import ErrorDisplay from './ErrorDisplay';
 import KeywordCloud from './KeywordCloud';
 import SentimentAnalysis from './SentimentAnalysis';
-import ChatInterface from './ChatInterface';
 import './EnhancedDashboard.css';
 
 const TABLEAU_COLORS = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'];
 const COLORS = TABLEAU_COLORS.slice(0, 5); // Use first 5 Tableau colors
 
 const EnhancedDashboard = ({ data, isLoading }) => {
+  const navigate = useNavigate();
   const [aiInsights, setAiInsights] = useState(null);
   const [deepInsights, setDeepInsights] = useState(null);
   const [executiveAnalysis, setExecutiveAnalysis] = useState(null);
@@ -71,8 +72,6 @@ const EnhancedDashboard = ({ data, isLoading }) => {
   const [currentView, setCurrentView] = useState('dashboard');
   // Add state for sentiment analysis modal
   const [showSentimentAnalysis, setShowSentimentAnalysis] = useState(false);
-  // Add state for chat interface
-  const [showChat, setShowChat] = useState(false);
   
   // Debug logging
   useEffect(() => {
@@ -1323,17 +1322,11 @@ const EnhancedDashboard = ({ data, isLoading }) => {
         />
       )}
       
-      {/* Chat Interface */}
-      <ChatInterface 
-        isOpen={showChat}
-        onClose={() => setShowChat(false)}
-        reviewData={filteredReviews}
-      />
       
       {/* Floating Chat Button */}
       <button 
         className="floating-chat-button"
-        onClick={() => setShowChat(true)}
+        onClick={() => navigate('/chat')}
         title="Ask AI about your reviews"
       >
         <MessageSquare size={24} />
