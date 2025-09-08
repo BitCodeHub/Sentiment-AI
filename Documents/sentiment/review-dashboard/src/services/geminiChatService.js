@@ -34,6 +34,38 @@ let lastRequestTime = 0;
 let requestCount = 0;
 let requestWindowStart = Date.now();
 
+// Model configuration with fallback
+const MODEL_CONFIGS = {
+  primary: 'gemini-2.5-flash-preview-native-audio-dialog',
+  experimental: 'gemini-2.5-flash-exp-native-audio-thinking-dialog',
+  fallback: 'gemini-2.5-flash'
+};
+
+// Helper function to get model with fallback
+async function getModelWithFallback() {
+  if (!genAI) {
+    throw new Error('Gemini API key is not configured. Please add VITE_GEMINI_API_KEY to your .env file.');
+  }
+
+  try {
+    // Try primary model first
+    console.log('Attempting to use primary model:', MODEL_CONFIGS.primary);
+    return genAI.getGenerativeModel({ model: MODEL_CONFIGS.primary });
+  } catch (primaryError) {
+    console.warn('Primary model failed, trying experimental:', primaryError.message);
+    
+    try {
+      // Try experimental model
+      return genAI.getGenerativeModel({ model: MODEL_CONFIGS.experimental });
+    } catch (expError) {
+      console.warn('Experimental model failed, falling back to stable:', expError.message);
+      
+      // Fallback to stable model
+      return genAI.getGenerativeModel({ model: MODEL_CONFIGS.fallback });
+    }
+  }
+}
+
 // Helper function to execute requests with proper error handling
 async function executeRequest(fn) {
   try {
@@ -147,11 +179,8 @@ function cleanJsonResponse(text) {
  */
 export async function initializeChatSession(sessionId, reviewData, metadata = {}) {
   try {
-    if (!genAI) {
-      throw new Error('Gemini API key is not configured. Please add VITE_GEMINI_API_KEY to your .env file.');
-    }
-    
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    // Get model with fallback strategy
+    const model = await getModelWithFallback();
     
     // Extract comprehensive data structure
     const dataStructure = extractDataStructure(reviewData);
@@ -279,7 +308,7 @@ export async function sendChatMessage(sessionId, message) {
 
       // Parse visualization commands
       const visualizations = [];
-      const vizRegex = /{{VIZ:(LINE|BAR|PIE|TABLE|AREA)}}\s*([\s\S]*?)\s*{{/VIZ}}/g;
+      const vizRegex = /{{VIZ:(LINE|BAR|PIE|TABLE|AREA)}}\s*([\s\S]*?)\s*{{\/VIZ}}/g;
       let match;
       
       while ((match = vizRegex.exec(text)) !== null) {
