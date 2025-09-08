@@ -1,5 +1,4 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { rateLimiter } from './rateLimiter';
 
 // Get API key with multiple fallbacks
 let apiKey;
@@ -29,6 +28,30 @@ if (!apiKey || apiKey === 'your-gemini-api-key-here') {
 }
 
 const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
+
+// Simple rate limiting
+let lastRequestTime = 0;
+let requestCount = 0;
+let requestWindowStart = Date.now();
+
+// Helper function to execute requests with proper error handling
+async function executeRequest(fn) {
+  try {
+    return await fn();
+  } catch (error) {
+    console.error('Gemini API Error:', error);
+    
+    // Check for rate limit errors from Gemini
+    if (error.message?.includes('429') || 
+        error.message?.includes('Resource has been exhausted') ||
+        error.message?.includes('quota') ||
+        error.status === 429) {
+      throw new Error('Rate limit reached. Please wait a moment and try again.');
+    }
+    
+    throw error;
+  }
+}
 
 // Chat session storage
 let chatSessions = new Map();
@@ -121,7 +144,17 @@ You have full access to all review content, ratings, dates, and metadata.`;
  * @returns {Object} AI response
  */
 export async function sendChatMessage(sessionId, message) {
-  return rateLimiter.addRequest(async () => {
+  // Simple rate limiting for Gemini - 60 requests per minute
+  const now = Date.now();
+  const minInterval = 1000; // 1 second between requests
+  
+  if (lastRequestTime && (now - lastRequestTime) < minInterval) {
+    await new Promise(resolve => setTimeout(resolve, minInterval - (now - lastRequestTime)));
+  }
+  
+  lastRequestTime = now;
+  
+  return executeRequest(async () => {
     try {
       const session = chatSessions.get(sessionId);
       if (!session) {

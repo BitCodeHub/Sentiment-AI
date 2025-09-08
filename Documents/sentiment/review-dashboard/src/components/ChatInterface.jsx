@@ -138,7 +138,21 @@ const ChatInterface = ({ isOpen, onClose, reviewData = [] }) => {
       setSuggestions([]); // Clear suggestions after first interaction
     } catch (err) {
       console.error('Failed to send message:', err);
-      setError(err.message || 'Failed to get response. Please try again.');
+      
+      // Handle rate limit errors gracefully
+      if (err.message?.includes('Rate limit') || err.message?.includes('quota')) {
+        setError(
+          <div>
+            <strong>Rate Limit Reached</strong>
+            <br />
+            Too many requests. Please wait a moment and try again.
+            <br />
+            <small>Free tier allows 60 requests per minute</small>
+          </div>
+        );
+      } else {
+        setError(err.message || 'Failed to get response. Please try again.');
+      }
       
       // Remove the user message if failed
       setMessages(prev => prev.filter(m => m.id !== userMessage.id));
