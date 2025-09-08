@@ -192,14 +192,41 @@ export async function initializeChatSession(sessionId, reviewData, metadata = {}
     const dataStructure = extractDataStructure(reviewData);
     
     // Create system context from review data
-    const context = `You are Rivue, an AI assistant specialized in analyzing customer reviews and app data. You have access to ${reviewData.length} records with comprehensive data.
+    const context = `You are Rivue, an advanced AI assistant combining the expertise of a Data Scientist, Business Intelligence Analyst, and Technical Analyst. You specialize in analyzing customer reviews and app data with ${reviewData.length} records at your disposal.
+
+YOUR CORE CAPABILITIES:
+
+As a DATA SCIENTIST, you:
+- Perform advanced statistical analysis and predictive modeling
+- Identify patterns, correlations, and anomalies in data
+- Create forecasts and trend analyses
+- Calculate confidence intervals and standard deviations
+- Conduct sentiment analysis and NLP on review text
+- Perform cohort and segmentation analysis
+
+As a BUSINESS INTELLIGENCE ANALYST, you:
+- Generate actionable insights and strategic recommendations
+- Calculate KPIs like NPS, customer satisfaction scores, and retention metrics
+- Create executive summaries and dashboards
+- Identify growth opportunities and market trends
+- Perform competitive analysis from user feedback
+- Assess ROI and revenue impact of issues
+
+As a TECHNICAL ANALYST, you:
+- Diagnose technical issues and bugs from user reports
+- Analyze performance, stability, and compatibility problems
+- Create bug priority matrices based on impact
+- Identify API, backend, and infrastructure issues
+- Assess technical debt from user feedback
+- Provide device and version-specific analysis
 
 IMPORTANT INSTRUCTIONS:
-1. You can answer ANY questions about the uploaded data, not just review content
-2. You can create visualizations by outputting special JSON structures
-3. When asked for graphs, charts, or tables, respond with the appropriate visualization format
-4. Be helpful, concise, and data-driven in your analysis
-5. You have access to ALL fields in the data, including metadata
+1. You have access to ALL fields in the uploaded data, not just review content
+2. Create sophisticated visualizations using the JSON formats below
+3. Provide deep, actionable insights backed by data
+4. Consider multiple perspectives: technical, business, and customer experience
+5. Speak naturally - your responses will be converted to audio when users enable that feature
+6. Be concise but comprehensive in your analysis
 
 VISUALIZATION CAPABILITIES:
 When users ask for visualizations, you can create:
@@ -250,7 +277,7 @@ You have full access to all data fields and can perform any analysis, aggregatio
       },
       {
         role: "model",
-        parts: [{ text: "I understand. I'm Rivue, your comprehensive data analysis assistant. I have access to " + reviewData.length + " records with " + extractDataStructure(reviewData).fields.length + " data fields. I can analyze any aspect of your data, create visualizations (graphs, charts, tables), and provide insights. What would you like to know?" }],
+        parts: [{ text: "I understand. I'm Rivue, your AI-powered Data Scientist, Business Intelligence Analyst, and Technical Expert. I have access to " + reviewData.length + " records with " + extractDataStructure(reviewData).fields.length + " data fields.\n\nI can help you with:\n📊 Advanced analytics and predictive modeling\n📈 Interactive visualizations and dashboards\n💡 Strategic business insights and recommendations\n🔧 Technical issue diagnosis and prioritization\n🎯 Customer experience optimization\n🔊 Audio responses for hands-free interaction\n\nWhat insights would you like to explore today?" }],
       },
     ];
 
@@ -582,49 +609,216 @@ function findRelevantReviews(query, reviews, maxReviews = 10) {
 
 // Export additional utilities
 export function generateChatSuggestions(reviewData) {
+  if (!reviewData || reviewData.length === 0) return [];
+  
+  // Analyze data characteristics
   const totalReviews = reviewData.length;
   const avgRating = reviewData.reduce((acc, r) => acc + (r.rating || r.Rating || 0), 0) / totalReviews;
-  const hasDeviceInfo = reviewData.some(r => r.device || r.Device || r.platform);
+  const hasDeviceInfo = reviewData.some(r => r.device || r.Device || r.platform || r.Platform);
   const hasVersionInfo = reviewData.some(r => r.version || r.Version || r['App Version']);
+  const hasDateInfo = reviewData.some(r => r.date || r.Date || r['Review Date']);
+  const hasLocation = reviewData.some(r => r.location || r.Location || r.country || r.Country);
+  const hasLanguage = reviewData.some(r => r.language || r.Language || r.lang);
+  const hasUserInfo = reviewData.some(r => r.username || r.user || r['User Name']);
   
-  const suggestions = [
-    "Show me a trend graph of reviews over the last 7 days",
-    "What are the most common complaints in the reviews?",
-    "Display a table of device distribution (Android vs iOS)",
-    "Create a bar chart of ratings distribution",
-    "What features are customers requesting most?",
-    "Show me app version usage statistics",
-    "Generate a pie chart of sentiment analysis",
-    "What do customers love most about the app?",
-    "Show review volume trends by week",
-    "Are there any recurring technical issues mentioned?",
-  ];
-
-  // Prioritize suggestions based on data availability
-  const prioritizedSuggestions = [];
+  // Get date range if available
+  const dateRange = getDateRange(reviewData);
+  const hasRecentData = dateRange && dateRange.totalDays < 30;
   
-  if (avgRating < 3.5) {
-    prioritizedSuggestions.push("Why are customers giving low ratings?");
+  // Define question categories
+  const categories = {
+    // Data Science & Analytics
+    dataScience: [
+      "Perform sentiment analysis and show the emotional distribution in a pie chart",
+      "What statistical patterns emerge from the review data?",
+      "Can you identify any correlation between ratings and device types?",
+      "Show me a predictive trend analysis for future ratings",
+      "What's the standard deviation of ratings across different app versions?",
+      "Perform a cohort analysis of users by review month",
+      "Can you detect any anomalies or outliers in the review patterns?",
+      "What's the confidence interval for our average rating?",
+      "Show me a time series decomposition of review volume",
+      "Calculate the review velocity and forecast next month's volume"
+    ],
+    
+    // Business Intelligence
+    businessIntelligence: [
+      "Create a comprehensive dashboard showing key metrics and KPIs",
+      "What insights can help improve our app's market position?",
+      "Show me a competitive analysis based on user feedback",
+      "What's our Net Promoter Score (NPS) based on the reviews?",
+      "Identify the top 3 opportunities for business growth",
+      "Create an executive summary with actionable insights",
+      "What's the customer lifetime value indicated by review patterns?",
+      "Show me a SWOT analysis based on customer feedback",
+      "What market segments should we focus on based on the data?",
+      "Calculate the potential revenue impact of addressing top complaints",
+      "What's the ROI of fixing the most common issues?"
+    ],
+    
+    // Technical Analysis
+    technicalAnalysis: [
+      "What technical issues are most frequently reported?",
+      "Show me a breakdown of crashes and errors by device type",
+      "Which app versions have the highest stability issues?",
+      "Create a bug priority matrix based on user impact",
+      "What performance issues are users experiencing?",
+      "Show me a compatibility analysis across different OS versions",
+      "Identify memory or battery drain complaints",
+      "What API or backend issues are users reporting?",
+      "Create a technical debt assessment from user feedback",
+      "Which features have the most technical problems?"
+    ],
+    
+    // Visualizations
+    visualizations: [
+      "Create an interactive line chart showing review trends over time",
+      "Show me a heatmap of ratings by day and hour",
+      "Generate a word cloud of most common terms in reviews",
+      "Create a stacked bar chart of ratings by category",
+      "Show me a geographic distribution map of reviews",
+      "Create a bubble chart of feature requests by frequency and impact",
+      "Generate a Sankey diagram of user journey issues",
+      "Show me a radar chart comparing different app aspects",
+      "Create a treemap of complaint categories",
+      "Generate a correlation matrix of all review attributes"
+    ],
+    
+    // Customer Experience
+    customerExperience: [
+      "What do customers love most about our product?",
+      "Identify the top pain points in the customer journey",
+      "Show me the customer satisfaction trend over the last quarter",
+      "What features are customers requesting most frequently?",
+      "Create a customer persona based on review data",
+      "What's causing customer churn based on negative reviews?",
+      "Show me the emotional journey map of our users",
+      "What onboarding issues are new users facing?",
+      "How has customer satisfaction evolved over time?",
+      "What would make users give us 5 stars?"
+    ],
+    
+    // Comparative Analysis
+    comparativeAnalysis: [
+      "Compare Android vs iOS user satisfaction",
+      "Show me how different app versions perform",
+      "Compare weekday vs weekend review patterns",
+      "What's the difference between new and returning user feedback?",
+      "Compare ratings across different countries/regions",
+      "Show me seasonal patterns in customer feedback",
+      "Compare premium vs free user satisfaction",
+      "How do power users differ from casual users?",
+      "Compare morning vs evening review sentiments"
+    ]
+  };
+  
+  // Build contextual suggestions based on data characteristics
+  const contextualSuggestions = [];
+  
+  // Always include a data overview question
+  contextualSuggestions.push("Give me a comprehensive overview of all the data insights");
+  
+  // Add rating-based suggestions
+  if (avgRating < 3.0) {
+    contextualSuggestions.push("Why are we getting such low ratings? Create a root cause analysis");
+    contextualSuggestions.push("What immediate actions can improve our rating to 4+ stars?");
+  } else if (avgRating > 4.5) {
+    contextualSuggestions.push("What makes our app so successful? Analyze our strengths");
+    contextualSuggestions.push("How can we maintain and improve our high ratings?");
   }
   
-  prioritizedSuggestions.push("Show me a trend graph of reviews over the last 7 days");
-  
-  if (hasDeviceInfo) {
-    prioritizedSuggestions.push("Display a table of device distribution (Android vs iOS)");
-  }
-  
-  if (hasVersionInfo) {
-    prioritizedSuggestions.push("Show me app version usage statistics");
-  }
-  
-  prioritizedSuggestions.push("Create a bar chart of ratings distribution");
-  
-  // Add remaining suggestions
-  suggestions.forEach(s => {
-    if (!prioritizedSuggestions.includes(s) && prioritizedSuggestions.length < 6) {
-      prioritizedSuggestions.push(s);
+  // Add time-based suggestions if date data exists
+  if (hasDateInfo) {
+    if (hasRecentData) {
+      contextualSuggestions.push("Show me the review trend for the last 7 days with daily breakdown");
+      contextualSuggestions.push("What changed in the last week that affected reviews?");
+    } else {
+      contextualSuggestions.push("Create a historical analysis of review trends");
+      contextualSuggestions.push("Show me the long-term rating evolution");
     }
+  }
+  
+  // Add device-specific suggestions
+  if (hasDeviceInfo) {
+    contextualSuggestions.push("Create a detailed device compatibility report");
+    contextualSuggestions.push("Which devices have the most issues?");
+  }
+  
+  // Add version-specific suggestions
+  if (hasVersionInfo) {
+    contextualSuggestions.push("Show me a version comparison dashboard");
+    contextualSuggestions.push("Which version should we roll back to based on user feedback?");
+  }
+  
+  // Add location-based suggestions
+  if (hasLocation) {
+    contextualSuggestions.push("Create a geographic analysis of user satisfaction");
+    contextualSuggestions.push("Which markets should we prioritize for improvement?");
+  }
+  
+  // Intelligently select from categories
+  const selectedSuggestions = [];
+  
+  // Ensure variety by picking from different categories
+  const categoryKeys = Object.keys(categories);
+  const shuffledCategories = categoryKeys.sort(() => Math.random() - 0.5);
+  
+  // Pick at least one from each major category
+  shuffledCategories.forEach(category => {
+    const categoryQuestions = categories[category];
+    const randomIndex = Math.floor(Math.random() * categoryQuestions.length);
+    selectedSuggestions.push(categoryQuestions[randomIndex]);
   });
-
-  return prioritizedSuggestions.slice(0, 4);
+  
+  // Combine contextual and category suggestions
+  const allSuggestions = [...contextualSuggestions, ...selectedSuggestions];
+  
+  // Shuffle and ensure diversity
+  const shuffled = allSuggestions.sort(() => Math.random() - 0.5);
+  
+  // Ensure we have a good mix of visualization and analysis questions
+  const finalSuggestions = [];
+  let hasViz = false;
+  let hasAnalysis = false;
+  let hasActionable = false;
+  
+  for (const suggestion of shuffled) {
+    if (finalSuggestions.length >= 6) break;
+    
+    const isViz = suggestion.toLowerCase().includes('chart') || 
+                  suggestion.toLowerCase().includes('graph') || 
+                  suggestion.toLowerCase().includes('show') ||
+                  suggestion.toLowerCase().includes('display') ||
+                  suggestion.toLowerCase().includes('create');
+    
+    const isAnalysis = suggestion.toLowerCase().includes('analyze') || 
+                      suggestion.toLowerCase().includes('why') || 
+                      suggestion.toLowerCase().includes('what');
+    
+    const isActionable = suggestion.toLowerCase().includes('improve') || 
+                        suggestion.toLowerCase().includes('action') || 
+                        suggestion.toLowerCase().includes('should');
+    
+    // Ensure variety
+    if (isViz && hasViz && finalSuggestions.length > 2) continue;
+    if (isAnalysis && hasAnalysis && finalSuggestions.length > 2) continue;
+    
+    finalSuggestions.push(suggestion);
+    
+    if (isViz) hasViz = true;
+    if (isAnalysis) hasAnalysis = true;
+    if (isActionable) hasActionable = true;
+  }
+  
+  // If we don't have certain types, add them
+  if (!hasViz && finalSuggestions.length < 6) {
+    finalSuggestions.push("Create a comprehensive visual dashboard of all key metrics");
+  }
+  
+  if (!hasActionable && finalSuggestions.length < 6) {
+    finalSuggestions.push("What are the top 3 actions we should take to improve user satisfaction?");
+  }
+  
+  // Return 4-6 diverse, relevant suggestions
+  return finalSuggestions.slice(0, Math.min(6, Math.max(4, finalSuggestions.length)));
 }

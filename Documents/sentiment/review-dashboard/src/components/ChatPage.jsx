@@ -136,7 +136,7 @@ const ChatPage = ({ reviewData = [] }) => {
       const welcomeMessage = {
         id: 1,
         role: 'assistant',
-        content: `Hello! I'm Rivue, your AI assistant specialized in analyzing customer reviews. I have access to ${reviewData.length} reviews from your app.\n\nI can help you understand:\n• Common themes and patterns\n• Customer pain points\n• Feature requests\n• Technical issues\n• Sentiment trends\n\nWhat would you like to know about your customer feedback?`,
+        content: `Hello! I'm Rivue, your AI-powered Data Scientist, Business Intelligence Analyst, and Technical Expert. I have access to ${reviewData.length} records with comprehensive data.\n\nI can help you with:\n📊 Advanced analytics and predictive modeling\n📈 Interactive visualizations and dashboards\n💡 Strategic business insights and recommendations\n🔧 Technical issue diagnosis and prioritization\n🎯 Customer experience optimization\n🔊 Audio responses for hands-free interaction\n\nWhat insights would you like to explore today?`,
         timestamp: new Date(),
       };
       setMessages([welcomeMessage]);
