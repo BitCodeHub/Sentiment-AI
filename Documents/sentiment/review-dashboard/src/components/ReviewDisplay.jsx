@@ -73,6 +73,8 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
   const [categorizeProgress, setCategorizeProgress] = useState(0);
   const [isCategorizingComplete, setIsCategorizingComplete] = useState(false);
   // const [activeQuickFilter, setActiveQuickFilter] = useState(null); // 'critical', 'high', 'negative', 'actionable', or null - REMOVED
+  const [expandedReviews, setExpandedReviews] = useState(new Set()); // For mobile review content expansion
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false); // For mobile advanced filters
   
   // Advanced filter states
   const [categoryFilter, setCategoryFilter] = useState('');
@@ -673,6 +675,19 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
     setDateRangeFilter('');
   };
 
+  // Toggle expanded state for mobile reviews
+  const toggleReviewExpanded = useCallback((index) => {
+    setExpandedReviews(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(index)) {
+        newSet.delete(index);
+      } else {
+        newSet.add(index);
+      }
+      return newSet;
+    });
+  }, []);
+
   return (
     <div className="review-display-container">
       {/* Header Section */}
@@ -723,10 +738,16 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
 
       {/* Category Filters */}
       {showFilters && (
-        <div className="category-filters-section">
+        <div className={`category-filters-section ${showAdvancedFilters ? 'filters-expanded' : ''}`}>
           {/* Advanced Filters Section */}
           <div className="advanced-filters-header">
-            <h3>ADVANCED FILTERS</h3>
+            <h3 onClick={() => setShowAdvancedFilters(!showAdvancedFilters)} style={{ cursor: 'pointer' }}>
+              ADVANCED FILTERS {window.innerWidth <= 768 && (
+                <span style={{ float: 'right', fontSize: '16px' }}>
+                  {showAdvancedFilters ? '−' : '+'}
+                </span>
+              )}
+            </h3>
           </div>
           <div className="advanced-filters-grid">
             <div className="filter-dropdown">
@@ -905,8 +926,11 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
           // Only render if the review is actually in the filtered set
           if (!isInFilteredSet) return null;
           
+          const isExpanded = expandedReviews.has(index);
+          const isMobile = window.innerWidth <= 768;
+          
           return (
-          <div key={index} className={`review-card ${review.severity}`}>
+          <div key={index} className={`review-card ${review.severity} ${isExpanded ? 'expanded' : ''}`}>
             <div className="review-header">
               <div className="review-rating">
                 <span className="stars">{formatStars(review.rating || review.Rating || 0)}</span>
@@ -954,6 +978,16 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
                 </div>
               )}
             </div>
+
+            {/* Show More/Less toggle for mobile */}
+            {isMobile && (review.content || review['Review Text'] || review.Body || '').length > 200 && (
+              <button 
+                className="review-toggle"
+                onClick={() => toggleReviewExpanded(index)}
+              >
+                {isExpanded ? 'Show Less' : 'Show More'}
+              </button>
+            )}
 
             <div className="review-footer">
               <div className="review-categories">

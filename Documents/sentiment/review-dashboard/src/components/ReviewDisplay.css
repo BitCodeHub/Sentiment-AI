@@ -864,48 +864,446 @@
   color: #374151;
 }
 
-/* Responsive Design */
+/* Comprehensive Mobile Responsive Design */
 @media (max-width: 768px) {
+  /* Container and Base Adjustments */
   .review-display-container {
+    padding: 12px;
+  }
+
+  /* Compact Header for Mobile */
+  .review-display-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+  }
+
+  .header-title {
+    font-size: 12px;
+    letter-spacing: 1px;
+  }
+
+  .header-actions {
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  .filter-toggle-btn {
+    padding: 6px 12px;
+    font-size: 13px;
+    flex: 1;
+    justify-content: center;
+  }
+
+  .reset-all-filters-btn {
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+
+  /* Mobile-First Category Filters Section */
+  .category-filters-section {
     padding: 16px;
+    margin-bottom: 16px;
+    background: #f8fafc;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border: none;
   }
 
-  .category-grid {
+  .advanced-filters-header h3 {
+    font-size: 12px;
+    color: #64748b;
+    margin-bottom: 12px;
+  }
+
+  /* Collapsible Advanced Filters */
+  .advanced-filters-grid {
+    display: none; /* Hidden by default on mobile */
     grid-template-columns: 1fr;
+    gap: 8px;
+    margin-bottom: 16px;
   }
 
-  .quick-stats {
-    flex-wrap: wrap;
+  .category-filters-section.filters-expanded .advanced-filters-grid {
+    display: grid;
+  }
+
+  .filter-dropdown select {
+    padding: 10px 12px;
+    font-size: 13px;
+    background-color: white;
+    color: #1f2937;
+    border: 1px solid #e5e7eb;
+  }
+
+  /* Horizontal Scrollable Categories */
+  .category-grid {
+    display: flex;
+    overflow-x: auto;
+    overflow-y: hidden;
+    gap: 12px;
+    padding: 4px;
+    margin: 0 -16px;
+    padding-left: 16px;
+    padding-right: 16px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none;  /* IE and Edge */
+  }
+
+  .category-grid::-webkit-scrollbar {
+    display: none; /* Chrome, Safari and Opera */
+  }
+
+  /* Compact Category Pills for Mobile */
+  .category-item {
+    flex: 0 0 auto;
+  }
+
+  .category-card {
+    background: white;
+    border: 2px solid #e5e7eb;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+    min-width: fit-content;
+  }
+
+  .category-card.selected {
+    background: #3b82f6;
+    border-color: #3b82f6;
+  }
+
+  .category-card.selected .category-name,
+  .category-card.selected .category-count {
+    color: white;
+  }
+
+  .category-header {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .category-icon {
+    width: 28px;
+    height: 28px;
+    background: #f3f4f6;
+    flex-shrink: 0;
+  }
+
+  .category-card.selected .category-icon {
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  .category-info {
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .category-name {
+    font-size: 13px;
+    color: #1f2937;
+    font-weight: 600;
+  }
+
+  .category-count {
+    font-size: 11px;
+    color: #6b7280;
+    font-weight: 500;
+  }
+
+  /* Hide expand button and subcategories on mobile */
+  .expand-btn,
+  .subcategories {
+    display: none;
+  }
+
+  /* Mobile Issue Summary */
+  .issue-summary {
+    margin-bottom: 12px;
+  }
+
+  .urgent-issues-banner {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
+  .categorization-progress {
+    padding: 6px 12px;
+    font-size: 11px;
+  }
+
+  /* Compact Review Cards for Mobile */
+  .reviews-list {
     gap: 12px;
   }
 
-  .stat-item {
-    flex: 1 1 calc(50% - 12px);
-    min-width: 140px;
-  }
-
-  .stat-value {
-    font-size: 28px;
-    padding: 4px 8px;
+  .review-card {
+    padding: 12px;
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   }
 
   .review-header {
-    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 8px;
     align-items: flex-start;
   }
 
-  .review-meta {
-    margin-top: 8px;
+  .stars {
+    font-size: 14px;
+    letter-spacing: 1px;
   }
 
-  .review-footer {
+  .review-meta {
+    font-size: 11px;
+    gap: 6px;
     flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
   }
-  
-  .categorization-status {
-    bottom: 16px;
-    right: 16px;
-    left: 16px;
+
+  .review-separator {
+    display: none; /* Hide separators on mobile for cleaner look */
+  }
+
+  .review-date {
+    font-weight: 600;
+    color: #374151;
+  }
+
+  .review-author,
+  .review-version,
+  .review-device,
+  .review-region {
+    display: inline-block;
+  }
+
+  .review-os {
+    display: inline-block;
+    padding: 1px 6px;
+    font-size: 10px;
+    margin-left: 0;
+  }
+
+  /* Compact Review Content */
+  .review-content {
+    margin-bottom: 10px;
+  }
+
+  .review-content p {
+    font-size: 13px;
+    line-height: 1.5;
+    color: #374151;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 4; /* Show only 4 lines by default */
+    -webkit-box-orient: vertical;
+  }
+
+  .review-card.expanded .review-content p {
+    -webkit-line-clamp: unset; /* Show full content when expanded */
+  }
+
+  .review-helpful {
+    font-size: 11px;
+    margin-top: 6px;
+  }
+
+  /* Mobile Review Footer */
+  .review-footer {
+    gap: 8px;
+  }
+
+  .review-categories {
+    gap: 6px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    max-width: 100%;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .review-categories::-webkit-scrollbar {
+    display: none;
+  }
+
+  .primary-category {
+    padding: 3px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .secondary-category {
+    padding: 2px 8px;
+    font-size: 10px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .severity-badge {
+    padding: 2px 8px;
+    font-size: 10px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .suggested-action {
+    padding: 4px 8px;
+    font-size: 11px;
+    gap: 4px;
+    width: 100%;
+  }
+
+  /* Mobile Loading States */
+  .loading-state,
+  .empty-state {
+    padding: 40px 20px;
+  }
+
+  .loading-state p,
+  .empty-state p {
+    font-size: 13px;
+  }
+
+  /* Mobile Progress Bar */
+  .progress-bar-container {
+    max-width: 280px;
+    height: 6px;
+  }
+
+  .progress-text {
+    font-size: 11px;
+  }
+
+  /* Mobile Load More */
+  .load-more-indicator {
+    padding: 20px;
+  }
+
+  .load-more-indicator p {
     font-size: 12px;
+  }
+
+  .scroll-hint {
+    font-size: 11px;
+  }
+
+  /* Mobile Categorization Status - Floating Pill */
+  .categorization-status {
+    bottom: 12px;
+    right: 12px;
+    left: 12px;
+    padding: 8px 12px;
+    font-size: 11px;
+    border-radius: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    gap: 8px;
+  }
+
+  .categorization-status svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  /* Loading Indicator Mobile Adjustments */
+  .loading-indicator {
+    font-size: 12px;
+  }
+
+  .loading-indicator svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  /* Show More/Less Toggle for Reviews */
+  .review-card {
+    position: relative;
+  }
+
+  .review-toggle {
+    display: block;
+    width: 100%;
+    text-align: center;
+    padding: 4px;
+    margin-top: 8px;
+    font-size: 11px;
+    color: #3b82f6;
+    font-weight: 600;
+    background: none;
+    border: none;
+    cursor: pointer;
+  }
+}
+
+/* Extra Small Mobile Adjustments */
+@media (max-width: 375px) {
+  .review-display-container {
+    padding: 8px;
+  }
+
+  .header-title {
+    font-size: 11px;
+  }
+
+  .category-filters-section {
+    padding: 12px;
+  }
+
+  .category-card {
+    padding: 10px 12px;
+  }
+
+  .category-icon {
+    width: 24px;
+    height: 24px;
+  }
+
+  .review-card {
+    padding: 10px;
+  }
+
+  .review-content p {
+    -webkit-line-clamp: 3;
+  }
+}
+
+/* Accessibility and Touch Improvements */
+@media (hover: none) and (pointer: coarse) {
+  /* Larger touch targets for mobile */
+  .category-card {
+    min-height: 44px;
+  }
+
+  .filter-dropdown select {
+    min-height: 44px;
+  }
+
+  .filter-toggle-btn,
+  .reset-all-filters-btn {
+    min-height: 40px;
+  }
+
+  /* Better spacing for touch */
+  .review-categories {
+    padding: 4px 0;
+  }
+
+  .primary-category,
+  .secondary-category,
+  .severity-badge {
+    padding: 6px 12px;
+    min-height: 28px;
+    display: inline-flex;
+    align-items: center;
   }
 }
