@@ -60,7 +60,15 @@ async function getModelWithFallback(forceIndex = null) {
     
     try {
       console.log(`Attempting to use ${modelKey} model:`, modelName);
-      const model = genAI.getGenerativeModel({ model: modelName });
+      const model = genAI.getGenerativeModel({ 
+        model: modelName,
+        tools: [{
+          googleSearchGrounding: {
+            enable: true,
+            fallback: true
+          }
+        }]
+      });
       currentModelIndex = i; // Remember which model worked
       return { model, modelKey, modelName };
     } catch (error) {
@@ -477,7 +485,7 @@ You have full access to all data fields and can perform any analysis, aggregatio
       },
       {
         role: "model",
-        parts: [{ text: "I understand. I'm Rivue, your AI-powered Data Scientist, Business Intelligence Analyst, and Technical Expert. I have access to " + reviewData.length + " records with " + extractDataStructure(reviewData).fields.length + " data fields.\n\n" + (proactiveInsights ? "🚨 **Intelligence Brief:**\n" + proactiveInsights + "\n\n" : "") + (weeklyAutoSummary && weeklyAutoSummary.criticalIssues.length > 0 ? "📋 **Weekly Support Summary:**\n" + weeklyAutoSummary.criticalIssues.slice(0, 3).map(i => `• ${i.issue}: ${i.count} reports (${i.trend})`).join('\n') + "\n\n" : "") + "I can help you with:\n📊 Advanced analytics and predictive modeling\n📈 Interactive visualizations and dashboards\n💡 Strategic business insights and recommendations\n🔧 Technical issue diagnosis and prioritization\n🎯 Customer experience optimization\n📃 Scenario testing and forecasting\n👥 Persona-based analysis\n🎨 Aspect-based sentiment analysis (UI, performance, features, pricing)\n😊 Emotion detection and severity assessment\n🗣️ Natural language queries (\"Why did ratings drop in Canada?\")\n📑 AI Storyboards for presentations\n📋 Auto-summaries for support teams\n🔊 Audio responses for hands-free interaction\n\nWhat would you like to explore? I can also elaborate on any of the issues I've identified." }],
+        parts: [{ text: "I understand. I'm Rivue, your AI-powered Data Scientist, Business Intelligence Analyst, and Technical Expert. I have access to " + reviewData.length + " records with " + extractDataStructure(reviewData).fields.length + " data fields.\n\n" + (proactiveInsights ? "🚨 **Intelligence Brief:**\n" + proactiveInsights + "\n\n" : "") + (weeklyAutoSummary && weeklyAutoSummary.criticalIssues.length > 0 ? "📋 **Weekly Support Summary:**\n" + weeklyAutoSummary.criticalIssues.slice(0, 3).map(i => `• ${i.issue}: ${i.count} reports (${i.trend})`).join('\n') + "\n\n" : "") + "I can help you with:\n📊 Advanced analytics and predictive modeling\n📈 Interactive visualizations and dashboards\n💡 Strategic business insights and recommendations\n🔧 Technical issue diagnosis and prioritization\n🎯 Customer experience optimization\n📃 Scenario testing and forecasting\n👥 Persona-based analysis\n🎨 Aspect-based sentiment analysis (UI, performance, features, pricing)\n😊 Emotion detection and severity assessment\n🗣️ Natural language queries (\"Why did ratings drop in Canada?\")\n📑 AI Storyboards for presentations\n📋 Auto-summaries for support teams\n🔊 Audio responses for hands-free interaction\n🌐 Real-time web search and influence detection\n🔍 Reddit and HackerNews monitoring for viral posts\n⚡ Automatic spike detection and external influence analysis\n📰 Google Search integration for current events impact\n\nI can search the web in real-time to find Reddit posts, HackerNews discussions, and other online sources that might be influencing your app reviews. Just ask me about spikes, viral posts, or external influences!\n\nWhat would you like to explore? I can also elaborate on any of the issues I've identified." }],
       },
     ];
 
