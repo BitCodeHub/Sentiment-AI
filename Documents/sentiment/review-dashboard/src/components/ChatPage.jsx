@@ -5,7 +5,8 @@ import {
   AlertCircle, RotateCcw, ChevronDown, Bot, User,
   Mic, MicOff, Menu, ArrowLeft, Plus, Trash2,
   Settings, History, Volume2, VolumeX,
-  TrendingUp, BarChart2, Users, Lightbulb
+  TrendingUp, BarChart2, Users, Lightbulb,
+  ChevronLeft, ChevronRight, RefreshCw
 } from 'lucide-react';
 import { 
   initializeChatSession, 
@@ -31,14 +32,31 @@ const ChatPage = ({ reviewData = [] }) => {
   const [audioEnabled, setAudioEnabled] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [currentUtterance, setCurrentUtterance] = useState(null);
+  const [placeholderIndex, setPlaceholderIndex] = useState(0);
+  const [currentSuggestionSet, setCurrentSuggestionSet] = useState(0);
   
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const recognitionRef = useRef(null);
+  const suggestionsScrollRef = useRef(null);
   const navigate = useNavigate();
   
   // Check for speech synthesis support
   const speechSynthesisSupported = 'speechSynthesis' in window;
+  
+  // Placeholder examples that rotate
+  const placeholderExamples = [
+    "Ask Rivue about your reviews...",
+    "Try: \"Show me rating trends over time\"",
+    "Try: \"What are the main customer complaints?\"",
+    "Try: \"Create a sentiment analysis chart\"",
+    "Try: \"Which devices have the most issues?\"",
+    "Try: \"What's our NPS score?\"",
+    "Try: \"Show me top feature requests\"",
+    "Try: \"Analyze customer satisfaction by region\"",
+    "Try: \"What technical issues are reported?\"",
+    "Try: \"Create an executive summary\"",
+  ];
   
   // Load voices when they become available
   useEffect(() => {
@@ -114,6 +132,17 @@ const ChatPage = ({ reviewData = [] }) => {
   useEffect(() => {
     setTimeout(() => inputRef.current?.focus(), 100);
   }, []);
+
+  // Animate placeholder text
+  useEffect(() => {
+    if (inputMessage) return; // Don't animate if user is typing
+    
+    const interval = setInterval(() => {
+      setPlaceholderIndex((prev) => (prev + 1) % placeholderExamples.length);
+    }, 3000); // Change every 3 seconds
+
+    return () => clearInterval(interval);
+  }, [inputMessage]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -383,6 +412,34 @@ const ChatPage = ({ reviewData = [] }) => {
     }
   };
 
+  const scrollSuggestions = (direction) => {
+    if (suggestionsScrollRef.current) {
+      const scrollAmount = 320; // Width of one card + gap
+      const currentScroll = suggestionsScrollRef.current.scrollLeft;
+      const targetScroll = direction === 'left' 
+        ? currentScroll - scrollAmount 
+        : currentScroll + scrollAmount;
+      
+      suggestionsScrollRef.current.scrollTo({
+        left: targetScroll,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  const refreshSuggestions = () => {
+    if (sessionId && reviewData.length > 0) {
+      // Generate new suggestions
+      const newSuggestions = generateChatSuggestions(reviewData);
+      setSuggestions(newSuggestions);
+      
+      // Reset scroll position
+      if (suggestionsScrollRef.current) {
+        suggestionsScrollRef.current.scrollTo({ left: 0, behavior: 'smooth' });
+      }
+    }
+  };
+
   return (
     <div className="chat-page">
       {/* Sidebar */}
@@ -605,7 +662,24 @@ const ChatPage = ({ reviewData = [] }) => {
                 </div>
               </div>
               
-              <div className="suggestions-grid-new">
+              <div className="suggestions-scroll-container">
+                <button 
+                  className="suggestion-scroll-btn left"
+                  onClick={() => scrollSuggestions('left')}
+                  aria-label="Scroll suggestions left"
+                >
+                  <ChevronLeft size={20} />
+                </button>
+                
+                <button 
+                  className="suggestion-refresh-btn"
+                  onClick={refreshSuggestions}
+                  title="Get new suggestions"
+                >
+                  <RefreshCw size={18} />
+                </button>
+                
+                <div className="suggestions-scroll-wrapper" ref={suggestionsScrollRef}>
                 {suggestions.map((suggestion, idx) => {
                   // Determine icon based on suggestion content
                   let Icon = Lightbulb;
@@ -642,6 +716,15 @@ const ChatPage = ({ reviewData = [] }) => {
                     </button>
                   );
                 })}
+                </div>
+                
+                <button 
+                  className="suggestion-scroll-btn right"
+                  onClick={() => scrollSuggestions('right')}
+                  aria-label="Scroll suggestions right"
+                >
+                  <ChevronRight size={20} />
+                </button>
               </div>
             </div>
           )}
@@ -665,7 +748,7 @@ const ChatPage = ({ reviewData = [] }) => {
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Ask Rivue about your reviews..."
+              placeholder={placeholderExamples[placeholderIndex]}
               rows={1}
               disabled={isLoading || !sessionId}
             />

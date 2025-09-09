@@ -881,6 +881,6 @@ export function generateChatSuggestions(reviewData) {
     finalSuggestions.push("What are the top 3 actions we should take to improve user satisfaction?");
   }
   
-  // Return 4-6 diverse, relevant suggestions
-  return finalSuggestions.slice(0, Math.min(6, Math.max(4, finalSuggestions.length)));
+  // Return 12-15 diverse, relevant suggestions for horizontal scrolling
+  return finalSuggestions.slice(0, Math.min(15, Math.max(12, finalSuggestions.length)));
 }

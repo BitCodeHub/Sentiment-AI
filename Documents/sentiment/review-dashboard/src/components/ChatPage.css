@@ -523,11 +523,102 @@
   letter-spacing: 0.3px;
 }
 
-.suggestions-grid-new {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 16px;
+.suggestions-scroll-container {
+  position: relative;
   margin-top: 24px;
+  padding: 0 50px; /* Space for scroll buttons */
+}
+
+.suggestion-scroll-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  z-index: 2;
+}
+
+.suggestion-scroll-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #e5e5e5;
+  border-color: rgba(139, 92, 246, 0.3);
+  transform: translateY(-50%) scale(1.1);
+}
+
+.suggestion-scroll-btn.left {
+  left: 0;
+}
+
+.suggestion-scroll-btn.right {
+  right: 0;
+}
+
+.suggestion-refresh-btn {
+  position: absolute;
+  top: -40px;
+  right: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  animation: rotate-suggestion 20s linear infinite paused;
+}
+
+.suggestion-refresh-btn:hover {
+  background: rgba(139, 92, 246, 0.1);
+  color: #8b5cf6;
+  border-color: rgba(139, 92, 246, 0.3);
+  animation-play-state: running;
+}
+
+@keyframes rotate-suggestion {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.suggestions-scroll-wrapper {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-behavior: smooth;
+  padding: 8px 0;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}
+
+.suggestions-scroll-wrapper::-webkit-scrollbar {
+  height: 6px;
+}
+
+.suggestions-scroll-wrapper::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.suggestions-scroll-wrapper::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+.suggestions-scroll-wrapper::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
 }
 
 /* Suggestion Cards */
@@ -547,6 +638,9 @@
   position: relative;
   overflow: hidden;
   min-height: 56px;
+  min-width: 300px;
+  max-width: 400px;
+  flex-shrink: 0;
 }
 
 .suggestion-card::before {
@@ -784,6 +878,19 @@
 
 .chat-input-field::placeholder {
   color: rgba(255, 255, 255, 0.3);
+  transition: opacity 0.5s ease;
+  animation: placeholder-fade 0.5s ease;
+}
+
+@keyframes placeholder-fade {
+  0% {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .chat-input-actions {
@@ -903,8 +1010,28 @@
     font-size: 14px;
   }
 
-  .suggestions-grid {
-    grid-template-columns: 1fr;
+  .suggestions-scroll-container {
+    padding: 0 40px;
+  }
+  
+  .suggestion-scroll-btn {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .suggestion-refresh-btn {
+    display: none; /* Hide on mobile to save space */
+  }
+  
+  .suggestions-scroll-wrapper {
+    gap: 12px;
+    padding: 4px 0;
+  }
+  
+  .suggestion-card {
+    min-width: 260px;
+    max-width: 300px;
+    padding: 14px 16px;
   }
 
   .chat-input-area {
@@ -1125,10 +1252,7 @@
     font-size: 12px;
   }
   
-  .suggestions-grid-new {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
+  /* Horizontal scroll maintained on mobile */
   
   .suggestion-card {
     padding: 14px 16px;
