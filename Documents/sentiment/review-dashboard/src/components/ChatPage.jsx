@@ -425,24 +425,36 @@ const ChatPage = ({ reviewData = [] }) => {
   const scrollSuggestions = (direction) => {
     if (suggestionsScrollRef.current) {
       const containerWidth = suggestionsScrollRef.current.offsetWidth;
-      const currentScroll = suggestionsScrollRef.current.scrollLeft;
-      const targetScroll = direction === 'left' 
-        ? currentScroll - containerWidth 
-        : currentScroll + containerWidth;
+      const maxPages = Math.ceil(allSuggestions.length / 6);
       
-      suggestionsScrollRef.current.scrollTo({
-        left: targetScroll,
-        behavior: 'smooth'
-      });
+      let newPage = currentPage;
+      if (direction === 'left') {
+        newPage = Math.max(0, currentPage - 1);
+      } else {
+        newPage = Math.min(maxPages - 1, currentPage + 1);
+      }
       
-      // Update current page
-      const newPage = Math.round(targetScroll / containerWidth);
-      setCurrentPage(newPage);
-      
-      // Randomize suggestions after scroll
-      setTimeout(() => {
-        randomizeSuggestionsForPage(newPage);
-      }, 300);
+      // Only scroll if page actually changes
+      if (newPage !== currentPage) {
+        const targetScroll = newPage * containerWidth;
+        
+        suggestionsScrollRef.current.scrollTo({
+          left: targetScroll,
+          behavior: 'smooth'
+        });
+        
+        setCurrentPage(newPage);
+        
+        // Clear any pending scroll timeout to prevent conflicts
+        if (scrollTimeoutRef.current) {
+          clearTimeout(scrollTimeoutRef.current);
+        }
+        
+        // Randomize suggestions after scroll completes
+        setTimeout(() => {
+          randomizeSuggestionsForPage(newPage);
+        }, 300);
+      }
     }
   };
 
@@ -491,13 +503,28 @@ const ChatPage = ({ reviewData = [] }) => {
       // Set new timeout to detect when scrolling stops
       scrollTimeoutRef.current = setTimeout(() => {
         const container = suggestionsScrollRef.current;
+        if (!container) return;
+        
         const pageWidth = container.offsetWidth;
         const currentScroll = container.scrollLeft;
         const newPage = Math.round(currentScroll / pageWidth);
+        const maxPages = Math.ceil(allSuggestions.length / 6);
         
-        if (newPage !== currentPage) {
-          setCurrentPage(newPage);
-          randomizeSuggestionsForPage(newPage);
+        // Ensure page is within bounds
+        const validPage = Math.min(Math.max(0, newPage), maxPages - 1);
+        
+        if (validPage !== currentPage) {
+          setCurrentPage(validPage);
+          randomizeSuggestionsForPage(validPage);
+          
+          // Snap to exact position if needed
+          const exactPosition = validPage * pageWidth;
+          if (Math.abs(currentScroll - exactPosition) > 5) {
+            container.scrollTo({
+              left: exactPosition,
+              behavior: 'smooth'
+            });
+          }
         }
       }, 150);
     }
@@ -730,6 +757,8 @@ const ChatPage = ({ reviewData = [] }) => {
                   className="suggestion-scroll-btn left"
                   onClick={() => scrollSuggestions('left')}
                   aria-label="Scroll suggestions left"
+                  disabled={currentPage === 0}
+                  style={{ opacity: currentPage === 0 ? 0.3 : 1, cursor: currentPage === 0 ? 'not-allowed' : 'pointer' }}
                 >
                   <ChevronLeft size={20} />
                 </button>
@@ -787,6 +816,8 @@ const ChatPage = ({ reviewData = [] }) => {
                   className="suggestion-scroll-btn right"
                   onClick={() => scrollSuggestions('right')}
                   aria-label="Scroll suggestions right"
+                  disabled={currentPage >= Math.ceil(allSuggestions.length / 6) - 1}
+                  style={{ opacity: currentPage >= Math.ceil(allSuggestions.length / 6) - 1 ? 0.3 : 1, cursor: currentPage >= Math.ceil(allSuggestions.length / 6) - 1 ? 'not-allowed' : 'pointer' }}
                 >
                   <ChevronRight size={20} />
                 </button>
@@ -794,13 +825,19 @@ const ChatPage = ({ reviewData = [] }) => {
               
               {/* Pagination dots */}
               <div className="suggestions-pagination">
-                {[0, 1, 2].map((pageIndex) => (
+                {Array.from({ length: Math.min(3, Math.ceil(allSuggestions.length / 6)) }, (_, pageIndex) => (
                   <button
                     key={pageIndex}
                     className={`pagination-dot ${currentPage === pageIndex ? 'active' : ''}`}
                     onClick={() => {
-                      if (suggestionsScrollRef.current) {
+                      if (suggestionsScrollRef.current && pageIndex !== currentPage) {
                         const containerWidth = suggestionsScrollRef.current.offsetWidth;
+                        
+                        // Clear any pending scroll timeout
+                        if (scrollTimeoutRef.current) {
+                          clearTimeout(scrollTimeoutRef.current);
+                        }
+                        
                         suggestionsScrollRef.current.scrollTo({
                           left: pageIndex * containerWidth,
                           behavior: 'smooth'
@@ -810,6 +847,7 @@ const ChatPage = ({ reviewData = [] }) => {
                       }
                     }}
                     aria-label={`Go to page ${pageIndex + 1}`}
+                    disabled={currentPage === pageIndex}
                   />
                 ))}
               </div>
