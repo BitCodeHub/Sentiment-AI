@@ -199,6 +199,11 @@ export async function initializeChatSession(sessionId, reviewData, metadata = {}
     const weeklyAutoSummary = generateAutoSummary(reviewData, 'week');
     const aiStoryboard = generateAIStoryboard(reviewData);
     
+    // AI-Powered Diagnostics
+    const rootCauseAnalysis = extractRootCauses(reviewData);
+    const causalLinks = analyzeCausalLinks(reviewData);
+    const explainableAI = generateExplainableAI(reviewData);
+    
     // Create system context from review data
     const context = `You are Rivue, an advanced AI assistant combining the expertise of a Data Scientist, Business Intelligence Analyst, and Technical Analyst. You specialize in analyzing customer reviews and app data with ${reviewData.length} records at your disposal.
 
@@ -382,6 +387,29 @@ ADVANCED CAPABILITIES:
 - Provide actionable recommendations and support templates
 ${weeklyAutoSummary ? `\nCURRENT WEEK SUMMARY:\n- ${weeklyAutoSummary.totalReviews} reviews in ${weeklyAutoSummary.period}\n- Critical issues: ${weeklyAutoSummary.criticalIssues.map(i => `${i.issue} (${i.count} reports, ${i.trend})`).join(', ')}\n- Top recommendation: ${weeklyAutoSummary.recommendations[0] || 'Continue monitoring'}` : ''}
 
+6. AI-POWERED DIAGNOSTICS:
+
+ROOT CAUSE EXTRACTION:
+- Automatically identify when and where issues originated
+- Track issue-to-version correlation with confidence scores
+- Example: "Battery drain issues (95% confidence) introduced in v7.3, affecting 120+ users"
+${rootCauseAnalysis.extractedCauses ? rootCauseAnalysis.extractedCauses.slice(0, 3).map(cause => 
+  `- ${cause.issue}: ${cause.rootCause} (${cause.confidence}% confidence, first seen ${cause.evidence.firstSeen})`
+).join('\n') : ''}
+
+CAUSAL LINKS ANALYSIS:
+- Identify cause-and-effect relationships with time lags
+- Example: "When crash reports increase, uninstall intent rises 2 weeks later (78% correlation)"
+${causalLinks.leadingIndicators ? causalLinks.leadingIndicators.slice(0, 3).map(indicator => 
+  `- ${indicator.indicator} → ${indicator.predicts} (${indicator.leadTime} lead time, ${indicator.reliability} reliability)`
+).join('\n') : ''}
+
+EXPLAINABLE AI:
+- Highlight exact phrases driving classifications
+- Show confidence levels and decision factors
+- Example: Tagged as "angry" due to: "absolutely furious!!!" (caps ratio: 40%, exclamations: 3)
+${explainableAI.summary ? `- Total classified: ${explainableAI.summary.classificationCounts.negative || 0} negative, ${explainableAI.summary.classificationCounts.angry || 0} angry, ${explainableAI.summary.classificationCounts['churn-risk'] || 0} churn-risk` : ''}
+
 When responding:
 1. Start with proactive insights if relevant
 2. Use natural language understanding to parse complex queries
@@ -389,9 +417,12 @@ When responding:
 4. Provide auto-summaries when asked about support insights
 5. Use ABSA to provide nuanced feedback analysis
 6. Include emotion detection for severity assessment
-7. Use scenario modeling for forward-looking questions
-8. Segment analysis by persona when appropriate
-9. Provide actionable recommendations with impact estimates
+7. Apply root cause extraction for "why" questions
+8. Use causal links for predictive insights
+9. Provide explainable AI summaries when classifying
+10. Use scenario modeling for forward-looking questions
+11. Segment analysis by persona when appropriate
+12. Provide actionable recommendations with impact estimates
 10. Alert on any critical patterns or anomalies detected
 
 You have full access to all data fields and can perform any analysis, aggregation, or visualization requested by the user.`;
@@ -1395,6 +1426,492 @@ function analyzeTrends(reviewData) {
   return { dataPoints };
 }
 
+// AI-Powered Root Cause Extraction
+function extractRootCauses(reviewData) {
+  if (!reviewData || reviewData.length === 0) return {};
+  
+  const rootCauses = {
+    issueToVersionMap: {},
+    issueToFeatureMap: {},
+    temporalPatterns: {},
+    userSegmentPatterns: {},
+    cascadeEffects: []
+  };
+  
+  // Build issue-to-version correlation
+  const issuePatterns = {
+    battery: ['battery', 'drain', 'power', 'charging'],
+    crash: ['crash', 'freeze', 'hang', 'restart', 'force close'],
+    login: ['login', 'sign in', 'authentication', 'password', 'access'],
+    performance: ['slow', 'lag', 'delay', 'loading', 'performance'],
+    ui: ['button', 'display', 'screen', 'layout', 'interface']
+  };
+  
+  // Track when issues started appearing by version
+  reviewData.forEach(review => {
+    const content = (review.content || review.Review || review.Body || '').toLowerCase();
+    const version = review.version || review.Version || review['App Version'];
+    const date = new Date(review.date || review.Date || review['Review Date']);
+    const rating = review.rating || review.Rating || 0;
+    
+    if (version && !isNaN(date.getTime()) && rating <= 2) {
+      Object.entries(issuePatterns).forEach(([issueName, keywords]) => {
+        if (keywords.some(kw => content.includes(kw))) {
+          // Track first appearance by version
+          if (!rootCauses.issueToVersionMap[issueName]) {
+            rootCauses.issueToVersionMap[issueName] = {};
+          }
+          
+          if (!rootCauses.issueToVersionMap[issueName][version]) {
+            rootCauses.issueToVersionMap[issueName][version] = {
+              firstSeen: date,
+              count: 0,
+              examples: []
+            };
+          }
+          
+          rootCauses.issueToVersionMap[issueName][version].count++;
+          if (rootCauses.issueToVersionMap[issueName][version].examples.length < 3) {
+            rootCauses.issueToVersionMap[issueName][version].examples.push(content.substring(0, 100) + '...');
+          }
+          
+          // Update first seen if earlier
+          if (date < rootCauses.issueToVersionMap[issueName][version].firstSeen) {
+            rootCauses.issueToVersionMap[issueName][version].firstSeen = date;
+          }
+        }
+      });
+    }
+  });
+  
+  // Identify temporal patterns (day of week, time of month)
+  reviewData.forEach(review => {
+    const date = new Date(review.date || review.Date || review['Review Date']);
+    const rating = review.rating || review.Rating || 0;
+    
+    if (!isNaN(date.getTime())) {
+      const dayOfWeek = date.toLocaleDateString('en-US', { weekday: 'long' });
+      const weekOfMonth = Math.ceil(date.getDate() / 7);
+      
+      if (!rootCauses.temporalPatterns[dayOfWeek]) {
+        rootCauses.temporalPatterns[dayOfWeek] = { total: 0, negative: 0 };
+      }
+      
+      rootCauses.temporalPatterns[dayOfWeek].total++;
+      if (rating <= 2) rootCauses.temporalPatterns[dayOfWeek].negative++;
+    }
+  });
+  
+  // Extract probable root causes with confidence scores
+  const extractedCauses = [];
+  
+  Object.entries(rootCauses.issueToVersionMap).forEach(([issue, versionData]) => {
+    const versions = Object.entries(versionData)
+      .sort((a, b) => new Date(a[1].firstSeen) - new Date(b[1].firstSeen));
+    
+    if (versions.length > 0) {
+      const [introducedVersion, data] = versions[0];
+      const totalAffected = Object.values(versionData).reduce((sum, v) => sum + v.count, 0);
+      
+      extractedCauses.push({
+        issue: issue,
+        rootCause: `${issue} issues likely introduced in version ${introducedVersion}`,
+        confidence: Math.min(95, 60 + (totalAffected * 2)),
+        evidence: {
+          firstSeen: data.firstSeen.toISOString().split('T')[0],
+          versionsAffected: versions.length,
+          totalReports: totalAffected,
+          examples: data.examples
+        }
+      });
+    }
+  });
+  
+  rootCauses.extractedCauses = extractedCauses.sort((a, b) => b.confidence - a.confidence);
+  
+  return rootCauses;
+}
+
+// Causal Links Analysis using correlation modeling
+function analyzeCausalLinks(reviewData) {
+  if (!reviewData || reviewData.length === 0) return {};
+  
+  const causalAnalysis = {
+    correlations: [],
+    predictivePatterns: [],
+    leadingIndicators: []
+  };
+  
+  // Time-series data preparation
+  const timeSeries = {};
+  const metrics = {
+    crashes: { keywords: ['crash', 'freeze', 'hang'], values: {} },
+    uninstalls: { keywords: ['uninstall', 'delete', 'remove', 'switch'], values: {} },
+    performance: { keywords: ['slow', 'lag', 'performance'], values: {} },
+    login: { keywords: ['login', 'sign in', 'authentication'], values: {} },
+    frustration: { keywords: ['frustrated', 'annoyed', 'angry', 'disappointed'], values: {} }
+  };
+  
+  // Build time series data
+  reviewData.forEach(review => {
+    const date = new Date(review.date || review.Date || review['Review Date']);
+    if (!isNaN(date.getTime())) {
+      const weekKey = getWeekKey(date);
+      const content = (review.content || review.Review || review.Body || '').toLowerCase();
+      
+      if (!timeSeries[weekKey]) {
+        timeSeries[weekKey] = {};
+        Object.keys(metrics).forEach(metric => {
+          timeSeries[weekKey][metric] = 0;
+        });
+      }
+      
+      // Count occurrences of each metric
+      Object.entries(metrics).forEach(([metricName, metricData]) => {
+        if (metricData.keywords.some(kw => content.includes(kw))) {
+          timeSeries[weekKey][metricName]++;
+        }
+      });
+    }
+  });
+  
+  // Calculate correlations with lag
+  const weeks = Object.keys(timeSeries).sort();
+  const lags = [0, 1, 2, 3]; // Check up to 3 weeks lag
+  
+  // Analyze crash -> uninstall correlation
+  lags.forEach(lag => {
+    let crashUninstallCorr = calculateLaggedCorrelation(
+      weeks.map(w => timeSeries[w].crashes),
+      weeks.map(w => timeSeries[w].uninstalls),
+      lag
+    );
+    
+    if (Math.abs(crashUninstallCorr) > 0.5) {
+      causalAnalysis.correlations.push({
+        cause: 'crash mentions',
+        effect: 'uninstall intent',
+        correlation: crashUninstallCorr,
+        lag: lag,
+        interpretation: lag === 0 ? 'immediate' : `${lag} week${lag > 1 ? 's' : ''} later`,
+        strength: Math.abs(crashUninstallCorr) > 0.7 ? 'strong' : 'moderate'
+      });
+    }
+  });
+  
+  // Analyze performance -> frustration correlation
+  lags.forEach(lag => {
+    let perfFrustrationCorr = calculateLaggedCorrelation(
+      weeks.map(w => timeSeries[w].performance),
+      weeks.map(w => timeSeries[w].frustration),
+      lag
+    );
+    
+    if (Math.abs(perfFrustrationCorr) > 0.4) {
+      causalAnalysis.correlations.push({
+        cause: 'performance complaints',
+        effect: 'user frustration',
+        correlation: perfFrustrationCorr,
+        lag: lag,
+        interpretation: lag === 0 ? 'immediate' : `${lag} week${lag > 1 ? 's' : ''} later`,
+        strength: Math.abs(perfFrustrationCorr) > 0.7 ? 'strong' : 'moderate'
+      });
+    }
+  });
+  
+  // Identify leading indicators
+  causalAnalysis.correlations.forEach(corr => {
+    if (corr.lag > 0 && corr.correlation > 0.6) {
+      causalAnalysis.leadingIndicators.push({
+        indicator: corr.cause,
+        predicts: corr.effect,
+        leadTime: `${corr.lag} week${corr.lag > 1 ? 's' : ''}`,
+        reliability: `${Math.round(corr.correlation * 100)}%`
+      });
+    }
+  });
+  
+  // Generate predictive patterns
+  if (weeks.length > 4) {
+    const recentWeeks = weeks.slice(-4);
+    const recentMetrics = {};
+    
+    Object.keys(metrics).forEach(metric => {
+      recentMetrics[metric] = recentWeeks.map(w => timeSeries[w][metric]);
+    });
+    
+    // Check for concerning trends
+    Object.entries(recentMetrics).forEach(([metric, values]) => {
+      const trend = calculateTrend(values);
+      if (trend.slope > 0.5) {
+        causalAnalysis.predictivePatterns.push({
+          pattern: `Rising ${metric} reports`,
+          trend: `${Math.round(trend.percentChange)}% increase over 4 weeks`,
+          prediction: predictNextValue(values, causalAnalysis.leadingIndicators, metric),
+          confidence: trend.r2 > 0.7 ? 'high' : 'moderate'
+        });
+      }
+    });
+  }
+  
+  return causalAnalysis;
+}
+
+// Explainable AI Summaries
+function generateExplainableAI(reviewData, classifications) {
+  if (!reviewData || reviewData.length === 0) return {};
+  
+  const explainableResults = {
+    classifications: [],
+    keyPhrases: {},
+    decisionFactors: [],
+    confidenceExplanations: []
+  };
+  
+  // Sentiment classification keywords and weights
+  const sentimentIndicators = {
+    positive: {
+      strong: ['love', 'excellent', 'amazing', 'perfect', 'fantastic', 'best'],
+      moderate: ['good', 'great', 'nice', 'helpful', 'useful', 'works well'],
+      weight: 1
+    },
+    negative: {
+      strong: ['hate', 'terrible', 'awful', 'worst', 'useless', 'garbage'],
+      moderate: ['bad', 'poor', 'disappointing', 'frustrating', 'annoying'],
+      weight: -1
+    },
+    angry: {
+      keywords: ['angry', 'furious', 'rage', 'pissed', 'mad', 'infuriating'],
+      indicators: ['!!!', 'ALL CAPS', 'swearing'],
+      weight: -2
+    },
+    churnRisk: {
+      keywords: ['uninstall', 'switch', 'competitor', 'leaving', 'done with', 'fed up'],
+      patterns: ['will uninstall', 'going to delete', 'switching to', 'found better'],
+      weight: -3
+    }
+  };
+  
+  // Analyze each review for explainability
+  reviewData.forEach(review => {
+    const content = review.content || review.Review || review.Body || '';
+    const contentLower = content.toLowerCase();
+    const rating = review.rating || review.Rating || 0;
+    
+    const explanation = {
+      reviewId: review.id || reviewData.indexOf(review),
+      content: content.substring(0, 100) + '...',
+      classifications: [],
+      keyFactors: [],
+      highlightedPhrases: []
+    };
+    
+    // Check for sentiment indicators
+    let sentimentScore = 0;
+    let foundIndicators = [];
+    
+    // Check positive indicators
+    sentimentIndicators.positive.strong.forEach(word => {
+      if (contentLower.includes(word)) {
+        sentimentScore += 2;
+        foundIndicators.push({ word, type: 'positive-strong', weight: 2 });
+        explanation.highlightedPhrases.push(extractPhrase(content, word));
+      }
+    });
+    
+    sentimentIndicators.positive.moderate.forEach(word => {
+      if (contentLower.includes(word)) {
+        sentimentScore += 1;
+        foundIndicators.push({ word, type: 'positive-moderate', weight: 1 });
+      }
+    });
+    
+    // Check negative indicators
+    sentimentIndicators.negative.strong.forEach(word => {
+      if (contentLower.includes(word)) {
+        sentimentScore -= 2;
+        foundIndicators.push({ word, type: 'negative-strong', weight: -2 });
+        explanation.highlightedPhrases.push(extractPhrase(content, word));
+      }
+    });
+    
+    sentimentIndicators.negative.moderate.forEach(word => {
+      if (contentLower.includes(word)) {
+        sentimentScore -= 1;
+        foundIndicators.push({ word, type: 'negative-moderate', weight: -1 });
+      }
+    });
+    
+    // Check for anger
+    let angerScore = 0;
+    sentimentIndicators.angry.keywords.forEach(word => {
+      if (contentLower.includes(word)) {
+        angerScore += 2;
+        explanation.highlightedPhrases.push(extractPhrase(content, word));
+        explanation.classifications.push({
+          type: 'angry',
+          confidence: 85,
+          reason: `Contains anger keyword: "${word}"`
+        });
+      }
+    });
+    
+    // Check for exclamation marks and caps
+    const exclamationCount = (content.match(/!/g) || []).length;
+    const capsRatio = (content.match(/[A-Z]/g) || []).length / content.length;
+    
+    if (exclamationCount > 3) {
+      angerScore += 1;
+      explanation.keyFactors.push(`Multiple exclamation marks (${exclamationCount})`);
+    }
+    
+    if (capsRatio > 0.3) {
+      angerScore += 1;
+      explanation.keyFactors.push(`High caps ratio (${Math.round(capsRatio * 100)}%)`);
+    }
+    
+    // Check for churn risk
+    let churnRisk = false;
+    sentimentIndicators.churnRisk.patterns.forEach(pattern => {
+      if (contentLower.includes(pattern)) {
+        churnRisk = true;
+        explanation.highlightedPhrases.push(extractPhrase(content, pattern));
+        explanation.classifications.push({
+          type: 'churn-risk',
+          confidence: 90,
+          reason: `Contains churn pattern: "${pattern}"`
+        });
+      }
+    });
+    
+    // Overall sentiment classification
+    if (sentimentScore <= -3 || rating <= 2) {
+      explanation.classifications.push({
+        type: 'negative',
+        confidence: Math.min(95, 70 + Math.abs(sentimentScore) * 5),
+        reason: `Sentiment score: ${sentimentScore}, Rating: ${rating}★`
+      });
+    } else if (sentimentScore >= 3 || rating >= 4) {
+      explanation.classifications.push({
+        type: 'positive',
+        confidence: Math.min(95, 70 + sentimentScore * 5),
+        reason: `Sentiment score: ${sentimentScore}, Rating: ${rating}★`
+      });
+    }
+    
+    // Add explanation if it has classifications
+    if (explanation.classifications.length > 0) {
+      explainableResults.classifications.push(explanation);
+    }
+  });
+  
+  // Generate summary statistics
+  const classificationCounts = {};
+  explainableResults.classifications.forEach(exp => {
+    exp.classifications.forEach(cls => {
+      if (!classificationCounts[cls.type]) {
+        classificationCounts[cls.type] = 0;
+      }
+      classificationCounts[cls.type]++;
+    });
+  });
+  
+  explainableResults.summary = {
+    totalAnalyzed: reviewData.length,
+    classificationCounts,
+    averageConfidence: explainableResults.classifications.reduce((sum, exp) => {
+      const avgConf = exp.classifications.reduce((s, c) => s + c.confidence, 0) / exp.classifications.length;
+      return sum + avgConf;
+    }, 0) / explainableResults.classifications.length
+  };
+  
+  return explainableResults;
+}
+
+// Helper functions
+function getWeekKey(date) {
+  const year = date.getFullYear();
+  const week = Math.ceil((date - new Date(year, 0, 1)) / (7 * 24 * 60 * 60 * 1000));
+  return `${year}-W${week.toString().padStart(2, '0')}`;
+}
+
+function calculateLaggedCorrelation(series1, series2, lag) {
+  if (lag >= series1.length || lag >= series2.length) return 0;
+  
+  const x = series1.slice(0, series1.length - lag);
+  const y = series2.slice(lag);
+  
+  const n = x.length;
+  if (n < 2) return 0;
+  
+  const sumX = x.reduce((a, b) => a + b, 0);
+  const sumY = y.reduce((a, b) => a + b, 0);
+  const sumXY = x.reduce((total, xi, i) => total + xi * y[i], 0);
+  const sumX2 = x.reduce((total, xi) => total + xi * xi, 0);
+  const sumY2 = y.reduce((total, yi) => total + yi * yi, 0);
+  
+  const correlation = (n * sumXY - sumX * sumY) / 
+    Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+  
+  return isNaN(correlation) ? 0 : correlation;
+}
+
+function calculateTrend(values) {
+  const n = values.length;
+  const x = Array.from({ length: n }, (_, i) => i);
+  const sumX = x.reduce((a, b) => a + b, 0);
+  const sumY = values.reduce((a, b) => a + b, 0);
+  const sumXY = x.reduce((total, xi, i) => total + xi * values[i], 0);
+  const sumX2 = x.reduce((total, xi) => total + xi * xi, 0);
+  
+  const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+  const intercept = (sumY - slope * sumX) / n;
+  
+  // Calculate R-squared
+  const yMean = sumY / n;
+  const ssTotal = values.reduce((total, yi) => total + Math.pow(yi - yMean, 2), 0);
+  const ssResidual = values.reduce((total, yi, i) => {
+    const yPred = slope * i + intercept;
+    return total + Math.pow(yi - yPred, 2);
+  }, 0);
+  
+  const r2 = 1 - (ssResidual / ssTotal);
+  const percentChange = values[0] > 0 ? ((values[n-1] - values[0]) / values[0]) * 100 : 0;
+  
+  return { slope, intercept, r2, percentChange };
+}
+
+function predictNextValue(values, leadingIndicators, metric) {
+  const trend = calculateTrend(values);
+  const nextValue = trend.slope * values.length + trend.intercept;
+  
+  // Adjust based on leading indicators
+  let adjustment = 0;
+  leadingIndicators.forEach(indicator => {
+    if (indicator.predicts.includes(metric)) {
+      adjustment += 0.1; // Conservative adjustment
+    }
+  });
+  
+  const predicted = Math.max(0, nextValue * (1 + adjustment));
+  
+  return {
+    value: Math.round(predicted),
+    trend: trend.slope > 0 ? 'increasing' : 'decreasing',
+    confidence: trend.r2 > 0.7 ? 'high' : trend.r2 > 0.4 ? 'moderate' : 'low'
+  };
+}
+
+function extractPhrase(content, keyword) {
+  const index = content.toLowerCase().indexOf(keyword.toLowerCase());
+  if (index === -1) return '';
+  
+  const start = Math.max(0, index - 20);
+  const end = Math.min(content.length, index + keyword.length + 20);
+  
+  return '...' + content.substring(start, end) + '...';
+}
+
 // Export additional utilities
 export function generateChatSuggestions(reviewData) {
   if (!reviewData || reviewData.length === 0) return [];
@@ -1553,6 +2070,25 @@ export function generateChatSuggestions(reviewData) {
       "Compare premium vs free user satisfaction",
       "How do power users differ from casual users?",
       "Compare morning vs evening review sentiments"
+    ],
+    
+    // AI-Powered Diagnostics
+    aiDiagnostics: [
+      "Why did battery complaints spike after version 7.3?",
+      "Show me the root cause of login issues with confidence scores",
+      "What issues were introduced in our latest release?",
+      "When did crash reports first appear and in which version?",
+      "Analyze causal links between crashes and uninstall intent",
+      "What happens 2 weeks after performance complaints increase?",
+      "Show me leading indicators that predict user churn",
+      "Which issues cascade into other problems?",
+      "Explain why this review was classified as 'angry'",
+      "Show me the exact phrases driving negative sentiment",
+      "What factors determine if a user is at churn risk?",
+      "Provide explainable AI analysis for high-priority reviews",
+      "Which temporal patterns affect negative reviews?",
+      "Show correlation between issue mentions and future uninstalls",
+      "Extract root causes for our top 3 critical issues"
     ]
   };
   
