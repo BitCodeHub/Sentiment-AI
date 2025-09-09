@@ -527,6 +527,7 @@
   position: relative;
   margin-top: 24px;
   padding: 0 50px; /* Space for scroll buttons */
+  height: 340px; /* Height for 3 rows */
 }
 
 .suggestion-scroll-btn {
@@ -594,31 +595,63 @@
 
 .suggestions-scroll-wrapper {
   display: flex;
-  gap: 16px;
+  gap: 24px;
+  height: 100%;
   overflow-x: auto;
   overflow-y: hidden;
   scroll-behavior: smooth;
+  scroll-snap-type: x mandatory;
   padding: 8px 0;
   -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+  scrollbar-width: none; /* Hide scrollbar for cleaner look */
+  -ms-overflow-style: none;
 }
 
 .suggestions-scroll-wrapper::-webkit-scrollbar {
-  height: 6px;
+  display: none; /* Hide scrollbar */
 }
 
-.suggestions-scroll-wrapper::-webkit-scrollbar-track {
-  background: transparent;
+/* Each page contains 3x2 grid */
+.suggestions-page {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 16px;
+  min-width: 100%;
+  flex-shrink: 0;
+  scroll-snap-align: start;
 }
 
-.suggestions-scroll-wrapper::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 3px;
+/* Pagination dots */
+.suggestions-pagination {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 20px;
 }
 
-.suggestions-scroll-wrapper::-webkit-scrollbar-thumb:hover {
+.pagination-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
   background: rgba(255, 255, 255, 0.2);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.pagination-dot:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.pagination-dot.active {
+  background: #8b5cf6;
+  transform: scale(1.2);
+}
+
+.pagination-dot.active:hover {
+  background: #a78bfa;
 }
 
 /* Suggestion Cards */
@@ -637,10 +670,8 @@
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
-  min-height: 56px;
-  min-width: 300px;
-  max-width: 400px;
-  flex-shrink: 0;
+  min-height: 100px;
+  height: 100%;
 }
 
 .suggestion-card::before {
@@ -1023,15 +1054,15 @@
     display: none; /* Hide on mobile to save space */
   }
   
-  .suggestions-scroll-wrapper {
+  .suggestions-page {
+    grid-template-columns: 1fr;
+    grid-template-rows: repeat(6, 1fr);
     gap: 12px;
-    padding: 4px 0;
   }
   
   .suggestion-card {
-    min-width: 260px;
-    max-width: 300px;
     padding: 14px 16px;
+    min-height: 80px;
   }
 
   .chat-input-area {

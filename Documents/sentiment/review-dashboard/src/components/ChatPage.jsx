@@ -33,12 +33,14 @@ const ChatPage = ({ reviewData = [] }) => {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [currentUtterance, setCurrentUtterance] = useState(null);
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
-  const [currentSuggestionSet, setCurrentSuggestionSet] = useState(0);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [allSuggestions, setAllSuggestions] = useState([]);
   
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const recognitionRef = useRef(null);
   const suggestionsScrollRef = useRef(null);
+  const scrollTimeoutRef = useRef(null);
   const navigate = useNavigate();
   
   // Check for speech synthesis support
@@ -119,7 +121,15 @@ const ChatPage = ({ reviewData = [] }) => {
   // Generate suggestions when session is ready
   useEffect(() => {
     if (sessionId && reviewData.length > 0) {
-      setSuggestions(generateChatSuggestions(reviewData));
+      // Generate more suggestions for multiple pages
+      const generatedSuggestions = [];
+      for (let i = 0; i < 5; i++) { // Generate 5 sets
+        generatedSuggestions.push(...generateChatSuggestions(reviewData));
+      }
+      setAllSuggestions(generatedSuggestions);
+      
+      // Set initial visible suggestions (first 6)
+      setSuggestions(generatedSuggestions.slice(0, 6));
     }
   }, [sessionId, reviewData]);
 
@@ -414,29 +424,82 @@ const ChatPage = ({ reviewData = [] }) => {
 
   const scrollSuggestions = (direction) => {
     if (suggestionsScrollRef.current) {
-      const scrollAmount = 320; // Width of one card + gap
+      const containerWidth = suggestionsScrollRef.current.offsetWidth;
       const currentScroll = suggestionsScrollRef.current.scrollLeft;
       const targetScroll = direction === 'left' 
-        ? currentScroll - scrollAmount 
-        : currentScroll + scrollAmount;
+        ? currentScroll - containerWidth 
+        : currentScroll + containerWidth;
       
       suggestionsScrollRef.current.scrollTo({
         left: targetScroll,
         behavior: 'smooth'
       });
+      
+      // Update current page
+      const newPage = Math.round(targetScroll / containerWidth);
+      setCurrentPage(newPage);
+      
+      // Randomize suggestions after scroll
+      setTimeout(() => {
+        randomizeSuggestionsForPage(newPage);
+      }, 300);
+    }
+  };
+
+  const randomizeSuggestionsForPage = (pageIndex) => {
+    if (allSuggestions.length > 0) {
+      // Shuffle all suggestions
+      const shuffled = [...allSuggestions].sort(() => Math.random() - 0.5);
+      
+      // Get 6 suggestions for the current page
+      const startIndex = pageIndex * 6;
+      const pageSuggestions = shuffled.slice(startIndex, startIndex + 6);
+      
+      // Update the visible suggestions
+      setSuggestions(pageSuggestions);
     }
   };
 
   const refreshSuggestions = () => {
     if (sessionId && reviewData.length > 0) {
-      // Generate new suggestions
-      const newSuggestions = generateChatSuggestions(reviewData);
-      setSuggestions(newSuggestions);
+      // Generate completely new suggestions
+      const generatedSuggestions = [];
+      for (let i = 0; i < 5; i++) {
+        generatedSuggestions.push(...generateChatSuggestions(reviewData));
+      }
+      setAllSuggestions(generatedSuggestions);
+      
+      // Reset to first page
+      setCurrentPage(0);
+      setSuggestions(generatedSuggestions.slice(0, 6));
       
       // Reset scroll position
       if (suggestionsScrollRef.current) {
         suggestionsScrollRef.current.scrollTo({ left: 0, behavior: 'smooth' });
       }
+    }
+  };
+  
+  // Handle manual scroll
+  const handleScroll = () => {
+    if (suggestionsScrollRef.current) {
+      // Clear existing timeout
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+      
+      // Set new timeout to detect when scrolling stops
+      scrollTimeoutRef.current = setTimeout(() => {
+        const container = suggestionsScrollRef.current;
+        const pageWidth = container.offsetWidth;
+        const currentScroll = container.scrollLeft;
+        const newPage = Math.round(currentScroll / pageWidth);
+        
+        if (newPage !== currentPage) {
+          setCurrentPage(newPage);
+          randomizeSuggestionsForPage(newPage);
+        }
+      }, 150);
     }
   };
 
@@ -679,43 +742,45 @@ const ChatPage = ({ reviewData = [] }) => {
                   <RefreshCw size={18} />
                 </button>
                 
-                <div className="suggestions-scroll-wrapper" ref={suggestionsScrollRef}>
-                {suggestions.map((suggestion, idx) => {
-                  // Determine icon based on suggestion content
-                  let Icon = Lightbulb;
-                  let categoryClass = 'recommendation';
-                  
-                  if (suggestion.toLowerCase().includes('chart') || 
-                      suggestion.toLowerCase().includes('graph') || 
-                      suggestion.toLowerCase().includes('show') ||
-                      suggestion.toLowerCase().includes('display')) {
-                    Icon = BarChart2;
-                    categoryClass = 'visualization';
-                  } else if (suggestion.toLowerCase().includes('trend') ||
-                             suggestion.toLowerCase().includes('analysis') ||
-                             suggestion.toLowerCase().includes('pattern')) {
-                    Icon = TrendingUp;
-                    categoryClass = 'analytics';
-                  } else if (suggestion.toLowerCase().includes('customer') ||
-                             suggestion.toLowerCase().includes('user') ||
-                             suggestion.toLowerCase().includes('feedback')) {
-                    Icon = Users;
-                    categoryClass = 'insights';
-                  }
-                  
-                  return (
-                    <button
-                      key={idx}
-                      className={`suggestion-card ${categoryClass}`}
-                      onClick={() => handleSuggestionClick(suggestion)}
-                      disabled={isLoading}
-                    >
-                      <Icon size={18} className="suggestion-icon" />
-                      <span className="suggestion-text">{suggestion}</span>
-                      <ChevronDown size={16} className="suggestion-arrow" />
-                    </button>
-                  );
-                })}
+                <div className="suggestions-scroll-wrapper" ref={suggestionsScrollRef} onScroll={handleScroll}>
+                  <div className="suggestions-page">
+                    {suggestions.map((suggestion, idx) => {
+                      // Determine icon based on suggestion content
+                      let Icon = Lightbulb;
+                      let categoryClass = 'recommendation';
+                      
+                      if (suggestion.toLowerCase().includes('chart') || 
+                          suggestion.toLowerCase().includes('graph') || 
+                          suggestion.toLowerCase().includes('show') ||
+                          suggestion.toLowerCase().includes('display')) {
+                        Icon = BarChart2;
+                        categoryClass = 'visualization';
+                      } else if (suggestion.toLowerCase().includes('trend') ||
+                                 suggestion.toLowerCase().includes('analysis') ||
+                                 suggestion.toLowerCase().includes('pattern')) {
+                        Icon = TrendingUp;
+                        categoryClass = 'analytics';
+                      } else if (suggestion.toLowerCase().includes('customer') ||
+                                 suggestion.toLowerCase().includes('user') ||
+                                 suggestion.toLowerCase().includes('feedback')) {
+                        Icon = Users;
+                        categoryClass = 'insights';
+                      }
+                      
+                      return (
+                        <button
+                          key={idx}
+                          className={`suggestion-card ${categoryClass}`}
+                          onClick={() => handleSuggestionClick(suggestion)}
+                          disabled={isLoading}
+                        >
+                          <Icon size={18} className="suggestion-icon" />
+                          <span className="suggestion-text">{suggestion}</span>
+                          <ChevronDown size={16} className="suggestion-arrow" />
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
                 
                 <button 
@@ -725,6 +790,28 @@ const ChatPage = ({ reviewData = [] }) => {
                 >
                   <ChevronRight size={20} />
                 </button>
+              </div>
+              
+              {/* Pagination dots */}
+              <div className="suggestions-pagination">
+                {[0, 1, 2].map((pageIndex) => (
+                  <button
+                    key={pageIndex}
+                    className={`pagination-dot ${currentPage === pageIndex ? 'active' : ''}`}
+                    onClick={() => {
+                      if (suggestionsScrollRef.current) {
+                        const containerWidth = suggestionsScrollRef.current.offsetWidth;
+                        suggestionsScrollRef.current.scrollTo({
+                          left: pageIndex * containerWidth,
+                          behavior: 'smooth'
+                        });
+                        setCurrentPage(pageIndex);
+                        setTimeout(() => randomizeSuggestionsForPage(pageIndex), 300);
+                      }
+                    }}
+                    aria-label={`Go to page ${pageIndex + 1}`}
+                  />
+                ))}
               </div>
             </div>
           )}
