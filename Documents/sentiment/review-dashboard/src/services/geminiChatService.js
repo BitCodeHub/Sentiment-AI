@@ -35,12 +35,15 @@ let lastRequestTime = 0;
 let requestCount = 0;
 let requestWindowStart = Date.now();
 
-// Model configuration with fallback - using models with grounding support
+// Model configuration with fallback
 const MODEL_CONFIGS = {
-  primary: 'gemini-2.0-flash-exp',  // Has built-in grounding
+  primary: 'gemini-2.5-flash',  // Best performance for general AI features
   experimental: 'gemini-1.5-flash-latest',
   fallback: 'gemini-1.5-flash'
 };
+
+// Separate model for Google Search Grounding
+const GROUNDING_MODEL = 'gemini-2.0-flash-exp'; // Has built-in grounding
 
 // Track which model is being used
 let currentModelIndex = 0;
@@ -78,6 +81,30 @@ async function getModelWithFallback(forceIndex = null) {
         throw new Error('All Gemini models failed to initialize. Please check your API key and try again.');
       }
     }
+  }
+}
+
+// Helper function to get grounding model for web search
+async function getGroundingModel() {
+  if (!genAI) {
+    throw new Error('Gemini API key is not configured. Please add VITE_GEMINI_API_KEY to your .env file.');
+  }
+  
+  try {
+    console.log('Initializing grounding model:', GROUNDING_MODEL);
+    const model = genAI.getGenerativeModel({
+      model: GROUNDING_MODEL,
+      generationConfig: {
+        temperature: 0.7,
+        topP: 0.95,
+        topK: 40,
+        maxOutputTokens: 8192,
+      }
+    });
+    return model;
+  } catch (error) {
+    console.error('Failed to initialize grounding model:', error.message);
+    throw new Error('Could not initialize Google Search grounding model');
   }
 }
 
@@ -553,6 +580,9 @@ export async function sendChatMessage(sessionId, message) {
 
       const { chat, reviewData, metadata, modelKey } = session;
 
+      // Check if this query needs web grounding
+      const needsGrounding = checkIfNeedsGrounding(message);
+      
       // Add review data context to the message if it's asking for analysis
       const enrichedMessage = await enrichMessageWithContext(message, reviewData);
 
@@ -560,17 +590,35 @@ export async function sendChatMessage(sessionId, message) {
       let retryCount = 0;
       const maxRetries = modelOrder.length - modelOrder.indexOf(modelKey);
 
-      while (retryCount < maxRetries) {
+      // If web grounding is needed, use the grounding model
+      if (needsGrounding) {
+        console.log('Using Gemini 2.0 Flash for web grounding...');
         try {
-          // Send message and get response
-          result = await chat.sendMessage(enrichedMessage);
-          response = await result.response;
-          text = response.text();
-          break; // Success!
-        } catch (error) {
-          // Check if this is a model not found error
-          if (error.message?.includes('is not found') || 
-              error.message?.includes('404') ||
+          const groundingModel = await getGroundingModel();
+          const groundingResult = await groundingModel.generateContent(enrichedMessage);
+          const groundingResponse = await groundingResult.response;
+          text = groundingResponse.text();
+          console.log('Web grounding successful');
+        } catch (groundingError) {
+          console.error('Grounding model failed, falling back to regular model:', groundingError);
+          // Fall back to regular chat if grounding fails
+          needsGrounding = false;
+        }
+      }
+      
+      // Use regular model if no grounding needed or grounding failed
+      if (!needsGrounding) {
+        while (retryCount < maxRetries) {
+          try {
+            // Send message and get response
+            result = await chat.sendMessage(enrichedMessage);
+            response = await result.response;
+            text = response.text();
+            break; // Success!
+          } catch (error) {
+            // Check if this is a model not found error
+            if (error.message?.includes('is not found') || 
+                error.message?.includes('404') ||
               error.message?.includes('not supported')) {
             
             console.warn(`Model error with ${session.modelName}, trying fallback...`);
@@ -623,6 +671,7 @@ export async function sendChatMessage(sessionId, message) {
             throw error; // Not a model error, don't retry
           }
         }
+      }
       }
 
       // Parse and clean visualization commands
@@ -770,6 +819,30 @@ function getPlatformSummary(reviews) {
     .slice(0, 3)
     .map(([platform]) => platform)
     .join(', ');
+}
+
+// Check if a query needs web grounding (Gemini 2.0)
+function checkIfNeedsGrounding(message) {
+  const groundingKeywords = [
+    // Real-time and current event keywords
+    'real-time', 'real time', 'right now', 'current', 'latest', 'recent',
+    'today', 'yesterday', 'this week', 'trending', 'viral', 'alert',
+    
+    // Web and social media keywords
+    'reddit', 'hackernews', 'hacker news', 'twitter', 'social media',
+    'online', 'web', 'internet', 'forum', 'discussion', 'thread', 'post',
+    
+    // External influence keywords
+    'external', 'outside', 'brigade', 'campaign', 'coordinate',
+    'influencer', 'viral post', 'viral thread',
+    
+    // Search-specific keywords
+    'search', 'find', 'look up', 'google', 'check online',
+    'what are people saying', 'monitor', 'track'
+  ];
+  
+  const lowerMessage = message.toLowerCase();
+  return groundingKeywords.some(keyword => lowerMessage.includes(keyword));
 }
 
 async function enrichMessageWithContext(message, reviewData) {
