@@ -700,7 +700,7 @@ const ChatPage = ({ reviewData = [] }) => {
             <div className="chat-welcome-container">
               <div className="welcome-header">
                 <div className="welcome-icon">
-                  <Sparkles size={32} className="welcome-sparkle" />
+                  <Sparkles size={24} className="welcome-sparkle" />
                 </div>
                 <h2 className="welcome-title">What would you like to explore?</h2>
                 <p className="welcome-subtitle">Choose a topic or type your own question</p>
@@ -774,9 +774,9 @@ const ChatPage = ({ reviewData = [] }) => {
                           onClick={() => handleSuggestionClick(suggestion)}
                           disabled={isLoading}
                         >
-                          <Icon size={18} className="suggestion-icon" />
+                          <Icon size={16} className="suggestion-icon" />
                           <span className="suggestion-text">{suggestion}</span>
-                          <ChevronDown size={16} className="suggestion-arrow" />
+                          <ChevronDown size={14} className="suggestion-arrow" />
                         </button>
                       );
                     })}

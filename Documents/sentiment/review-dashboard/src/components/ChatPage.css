@@ -401,11 +401,13 @@
 .chat-welcome-container {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
   max-width: 900px;
   margin: 0 auto;
-  padding: 40px 52px;
+  padding: 20px 52px;
   animation: fadeIn 0.6s ease-out;
+  height: 100%;
+  overflow: hidden;
 }
 
 @keyframes fadeIn {
@@ -421,18 +423,18 @@
 
 .welcome-header {
   text-align: center;
-  margin-bottom: 32px;
+  margin-bottom: 16px;
 }
 
 .welcome-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 64px;
-  height: 64px;
+  width: 48px;
+  height: 48px;
   background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(139, 92, 246, 0.2));
-  border-radius: 20px;
-  margin-bottom: 20px;
+  border-radius: 16px;
+  margin-bottom: 12px;
   position: relative;
   overflow: hidden;
 }
@@ -467,15 +469,15 @@
 }
 
 .welcome-title {
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 600;
   color: #fff;
-  margin: 0 0 8px;
+  margin: 0 0 4px;
   letter-spacing: -0.5px;
 }
 
 .welcome-subtitle {
-  font-size: 16px;
+  font-size: 14px;
   color: rgba(255, 255, 255, 0.7);
   margin: 0;
   font-weight: 400;
@@ -485,8 +487,8 @@
 .suggestions-categories {
   display: flex;
   justify-content: center;
-  gap: 16px;
-  margin-bottom: 24px;
+  gap: 12px;
+  margin-bottom: 16px;
   flex-wrap: wrap;
 }
 
@@ -525,9 +527,10 @@
 
 .suggestions-scroll-container {
   position: relative;
-  margin-top: 24px;
+  margin-top: 16px;
   padding: 0 50px; /* Space for scroll buttons */
-  height: 340px; /* Height for 3 rows */
+  height: 280px; /* Adjusted height for 3 rows */
+  flex: 1;
 }
 
 .suggestion-scroll-btn {
@@ -616,8 +619,9 @@
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   grid-template-rows: repeat(3, 1fr);
-  gap: 16px;
+  gap: 12px;
   min-width: 100%;
+  height: 100%;
   flex-shrink: 0;
   scroll-snap-align: start;
 }
@@ -627,7 +631,7 @@
   display: flex;
   justify-content: center;
   gap: 8px;
-  margin-top: 20px;
+  margin-top: 12px;
 }
 
 .pagination-dot {
@@ -658,20 +662,19 @@
 .suggestion-card {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 16px 20px;
+  gap: 10px;
+  padding: 12px 16px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
   color: #e5e5e5;
-  font-size: 14px;
+  font-size: 13px;
   text-align: left;
   cursor: pointer;
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
-  min-height: 100px;
-  height: 100%;
+  height: 80px;
 }
 
 .suggestion-card::before {
@@ -1061,8 +1064,9 @@
   }
   
   .suggestion-card {
-    padding: 14px 16px;
-    min-height: 80px;
+    padding: 12px 14px;
+    height: 70px;
+    font-size: 12px;
   }
 
   .chat-input-area {
@@ -1283,7 +1287,37 @@
     font-size: 12px;
   }
   
-  /* Horizontal scroll maintained on mobile */
+  .chat-welcome-container {
+    padding: 16px;
+  }
+  
+  .welcome-header {
+    margin-bottom: 12px;
+  }
+  
+  .welcome-icon {
+    width: 40px;
+    height: 40px;
+    margin-bottom: 8px;
+  }
+  
+  .welcome-title {
+    font-size: 20px;
+  }
+  
+  .welcome-subtitle {
+    font-size: 13px;
+  }
+  
+  .suggestions-categories {
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  
+  .suggestions-scroll-container {
+    height: 240px;
+    margin-top: 12px;
+  }
   
   .suggestion-card {
     padding: 14px 16px;
