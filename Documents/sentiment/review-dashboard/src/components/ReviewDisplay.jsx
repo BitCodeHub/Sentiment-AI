@@ -82,6 +82,22 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
   const [sentimentFilter, setSentimentFilter] = useState('');
   const [platformFilter, setPlatformFilter] = useState('');
   const [dateRangeFilter, setDateRangeFilter] = useState('');
+  
+  // State for debounced search to prevent jiggling
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
+  const [isFiltering, setIsFiltering] = useState(false);
+
+  // Debounce search term to prevent jiggling
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+      setIsFiltering(false);
+    }, 300); // 300ms debounce delay
+
+    setIsFiltering(true);
+    
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   // Helper function to detect OS from device info
   const getOperatingSystem = (review) => {
@@ -516,15 +532,16 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
     return stars;
   };
 
-  const highlightSearchTerm = (text, searchTerm) => {
-    if (!searchTerm || searchTerm.trim() === '') {
+  const highlightSearchTerm = (text) => {
+    // Always use debounced search term for highlighting to prevent jiggling
+    if (!debouncedSearchTerm || debouncedSearchTerm.trim() === '') {
       return text;
     }
 
-    const parts = text.split(new RegExp(`(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'));
+    const parts = text.split(new RegExp(`(${debouncedSearchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'));
     
     return parts.map((part, index) => 
-      part.toLowerCase() === searchTerm.toLowerCase() ? (
+      part.toLowerCase() === debouncedSearchTerm.toLowerCase() ? (
         <span key={index} className="search-highlight">{part}</span>
       ) : (
         part
@@ -910,8 +927,17 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
       )}
 
       {/* Reviews List */}
-      <div className="reviews-list">
-        {filteredReviews.slice(0, Math.min(displayedReviews, filteredReviews.length)).map((review, index) => {
+      <div className={`reviews-list ${isFiltering ? 'filtering' : ''}`}>
+        {isFiltering && filteredReviews.length === 0 ? (
+          // Show loading skeleton during filtering
+          <div className="filtering-placeholder">
+            <div className="review-card skeleton">
+              <div className="skeleton-line skeleton-header"></div>
+              <div className="skeleton-line skeleton-content"></div>
+              <div className="skeleton-line skeleton-content short"></div>
+            </div>
+          </div>
+        ) : filteredReviews.slice(0, Math.min(displayedReviews, filteredReviews.length)).map((review, index) => {
           // Double-check that this review is actually from the current filtered set
           const reviewDate = review.date || review.Date || review['Review Date'];
           const reviewContent = review.content || review['Review Text'] || review.Body || '';
@@ -938,7 +964,7 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
               <div className="review-meta">
                 <span className="review-date">{formatDate(review.date || review.Date)}</span>
                 <span className="review-separator">•</span>
-                <span className="review-author">{highlightSearchTerm(review.author || review.Author || 'Anonymous', searchTerm)}</span>
+                <span className="review-author">{highlightSearchTerm(review.author || review.Author || 'Anonymous')}</span>
                 {(review.version || review.Version || review['App Version']) && (
                   <>
                     <span className="review-separator">•</span>
@@ -967,7 +993,7 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
             </div>
 
             <div className="review-content">
-              <p>{highlightSearchTerm(review.content || review['Review Text'] || review.Body || '', searchTerm)}</p>
+              <p>{highlightSearchTerm(review.content || review['Review Text'] || review.Body || '')}</p>
               {/* Additional metadata */}
               {(review.helpful || review['Helpful Count']) > 0 && (
                 <div className="review-helpful">

@@ -553,6 +553,21 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+  min-height: 200px; /* Prevent layout shifts */
+  position: relative;
+  transform: translateZ(0); /* Force GPU acceleration */
+}
+
+/* Prevent jiggling during filtering */
+.reviews-list::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: -1;
+  pointer-events: none;
 }
 
 /* Review Card - Matching the image format */
@@ -561,8 +576,9 @@
   border-radius: 12px;
   padding: 20px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  transition: all 0.2s ease;
+  transition: box-shadow 0.2s ease, transform 0.2s ease; /* Only animate specific properties */
   border-left: 4px solid transparent;
+  will-change: transform; /* Optimize for animations */
 }
 
 .review-card:hover {
@@ -1305,5 +1321,63 @@
     min-height: 28px;
     display: inline-flex;
     align-items: center;
+  }
+}
+
+/* Search Highlight */
+.search-highlight {
+  background-color: #fef08a;
+  color: #1f2937;
+  padding: 0 2px;
+  border-radius: 2px;
+  font-weight: 600;
+}
+
+/* Filtering State */
+.reviews-list.filtering {
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+/* Skeleton Loading State for Filtering */
+.filtering-placeholder {
+  min-height: 150px;
+  animation: fadeIn 0.3s ease;
+}
+
+.review-card.skeleton {
+  background: #f3f4f6;
+  cursor: default;
+  pointer-events: none;
+}
+
+.skeleton-line {
+  background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+  height: 16px;
+  margin-bottom: 12px;
+}
+
+.skeleton-line.skeleton-header {
+  width: 30%;
+  height: 20px;
+}
+
+.skeleton-line.skeleton-content {
+  width: 100%;
+}
+
+.skeleton-line.skeleton-content.short {
+  width: 70%;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
   }
 }
