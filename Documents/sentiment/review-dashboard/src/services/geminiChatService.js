@@ -196,6 +196,8 @@ export async function initializeChatSession(sessionId, reviewData, metadata = {}
     const userPersonas = identifyUserPersonas(reviewData);
     const aspectAnalysis = performAspectBasedSentiment(reviewData);
     const emotionAnalysis = detectEmotions(reviewData);
+    const weeklyAutoSummary = generateAutoSummary(reviewData, 'week');
+    const aiStoryboard = generateAIStoryboard(reviewData);
     
     // Create system context from review data
     const context = `You are Rivue, an advanced AI assistant combining the expertise of a Data Scientist, Business Intelligence Analyst, and Technical Analyst. You specialize in analyzing customer reviews and app data with ${reviewData.length} records at your disposal.
@@ -361,14 +363,36 @@ ADVANCED CAPABILITIES:
 - Example: "15% of reviews show high-severity anger - requires immediate attention"
 - Use emotion data for triage and response strategy
 
+3. NATURAL LANGUAGE UNDERSTANDING:
+- Process queries like "Show me why negative reviews spiked in Canada last month"
+- Automatically extract timeframes, locations, metrics, and aspects from questions
+- Understand context: spikes, trends, comparisons, geographic patterns
+- Example: Detecting "last month" + "Canada" + "negative" + "spike" to filter and analyze
+
+4. AI STORYBOARDS:
+- Generate slide-ready presentations with charts and customer quotes
+- Create executive-ready visualizations with key metrics
+- Include trend analysis, issue distribution, and recommendations
+- Format: Title slide → Metrics overview → Issues with quotes → Trends → Action items
+
+5. AUTO-SUMMARIES FOR SUPPORT:
+- Generate weekly/monthly briefings for support teams
+- Identify critical issues with severity levels (critical/high/medium)
+- Track issue trends: "Login bugs increased 30% post v7.3"
+- Provide actionable recommendations and support templates
+${weeklyAutoSummary ? `\nCURRENT WEEK SUMMARY:\n- ${weeklyAutoSummary.totalReviews} reviews in ${weeklyAutoSummary.period}\n- Critical issues: ${weeklyAutoSummary.criticalIssues.map(i => `${i.issue} (${i.count} reports, ${i.trend})`).join(', ')}\n- Top recommendation: ${weeklyAutoSummary.recommendations[0] || 'Continue monitoring'}` : ''}
+
 When responding:
 1. Start with proactive insights if relevant
-2. Use ABSA to provide nuanced feedback analysis
-3. Include emotion detection for severity assessment
-4. Use scenario modeling for forward-looking questions
-5. Segment analysis by persona when appropriate
-6. Provide actionable recommendations with impact estimates
-7. Alert on any critical patterns or anomalies detected
+2. Use natural language understanding to parse complex queries
+3. Generate AI storyboards for presentation requests
+4. Provide auto-summaries when asked about support insights
+5. Use ABSA to provide nuanced feedback analysis
+6. Include emotion detection for severity assessment
+7. Use scenario modeling for forward-looking questions
+8. Segment analysis by persona when appropriate
+9. Provide actionable recommendations with impact estimates
+10. Alert on any critical patterns or anomalies detected
 
 You have full access to all data fields and can perform any analysis, aggregation, or visualization requested by the user.`;
 
@@ -380,7 +404,7 @@ You have full access to all data fields and can perform any analysis, aggregatio
       },
       {
         role: "model",
-        parts: [{ text: "I understand. I'm Rivue, your AI-powered Data Scientist, Business Intelligence Analyst, and Technical Expert. I have access to " + reviewData.length + " records with " + extractDataStructure(reviewData).fields.length + " data fields.\n\n" + (proactiveInsights ? "🚨 **Intelligence Brief:**\n" + proactiveInsights + "\n\n" : "") + "I can help you with:\n📊 Advanced analytics and predictive modeling\n📈 Interactive visualizations and dashboards\n💡 Strategic business insights and recommendations\n🔧 Technical issue diagnosis and prioritization\n🎯 Customer experience optimization\n📃 Scenario testing and forecasting\n👥 Persona-based analysis\n🎨 Aspect-based sentiment analysis (UI, performance, features, pricing)\n😊 Emotion detection and severity assessment\n🔊 Audio responses for hands-free interaction\n\nWhat would you like to explore? I can also elaborate on any of the issues I've identified." }],
+        parts: [{ text: "I understand. I'm Rivue, your AI-powered Data Scientist, Business Intelligence Analyst, and Technical Expert. I have access to " + reviewData.length + " records with " + extractDataStructure(reviewData).fields.length + " data fields.\n\n" + (proactiveInsights ? "🚨 **Intelligence Brief:**\n" + proactiveInsights + "\n\n" : "") + (weeklyAutoSummary && weeklyAutoSummary.criticalIssues.length > 0 ? "📋 **Weekly Support Summary:**\n" + weeklyAutoSummary.criticalIssues.slice(0, 3).map(i => `• ${i.issue}: ${i.count} reports (${i.trend})`).join('\n') + "\n\n" : "") + "I can help you with:\n📊 Advanced analytics and predictive modeling\n📈 Interactive visualizations and dashboards\n💡 Strategic business insights and recommendations\n🔧 Technical issue diagnosis and prioritization\n🎯 Customer experience optimization\n📃 Scenario testing and forecasting\n👥 Persona-based analysis\n🎨 Aspect-based sentiment analysis (UI, performance, features, pricing)\n😊 Emotion detection and severity assessment\n🗣️ Natural language queries (\"Why did ratings drop in Canada?\")\n📑 AI Storyboards for presentations\n📋 Auto-summaries for support teams\n🔊 Audio responses for hands-free interaction\n\nWhat would you like to explore? I can also elaborate on any of the issues I've identified." }],
       },
     ];
 
@@ -1042,6 +1066,335 @@ function identifyUserPersonas(reviewData) {
   return personaSummary.join('\\n');
 }
 
+// Process Natural Language Queries with advanced context understanding
+function processNaturalLanguageQuery(query, reviewData) {
+  const queryLower = query.toLowerCase();
+  const queryContext = {
+    timeframe: null,
+    location: null,
+    metric: null,
+    comparison: null,
+    aspect: null
+  };
+  
+  // Extract timeframe
+  const timePatterns = {
+    'last month': 30,
+    'last week': 7,
+    'yesterday': 1,
+    'today': 0,
+    'this week': 7,
+    'this month': 30,
+    'last quarter': 90,
+    'last year': 365
+  };
+  
+  for (const [pattern, days] of Object.entries(timePatterns)) {
+    if (queryLower.includes(pattern)) {
+      queryContext.timeframe = { pattern, days };
+      break;
+    }
+  }
+  
+  // Extract location/region
+  const locationKeywords = ['canada', 'usa', 'uk', 'europe', 'asia', 'australia'];
+  for (const location of locationKeywords) {
+    if (queryLower.includes(location)) {
+      queryContext.location = location;
+      break;
+    }
+  }
+  
+  // Extract metrics
+  const metricKeywords = ['spike', 'increase', 'decrease', 'trend', 'drop', 'surge'];
+  for (const metric of metricKeywords) {
+    if (queryLower.includes(metric)) {
+      queryContext.metric = metric;
+      break;
+    }
+  }
+  
+  // Extract aspects
+  const aspectKeywords = ['negative', 'positive', 'crash', 'bug', 'performance', 'ui', 'pricing'];
+  for (const aspect of aspectKeywords) {
+    if (queryLower.includes(aspect)) {
+      queryContext.aspect = aspect;
+      break;
+    }
+  }
+  
+  return queryContext;
+}
+
+// Generate AI Storyboards with slide-ready insights
+function generateAIStoryboard(reviewData, topic = 'general') {
+  if (!reviewData || reviewData.length === 0) return null;
+  
+  const storyboard = {
+    title: '',
+    slides: [],
+    executiveSummary: '',
+    recommendations: []
+  };
+  
+  // Analyze data for storyboard
+  const avgRating = reviewData.reduce((acc, r) => acc + (r.rating || r.Rating || 0), 0) / reviewData.length;
+  const recentReviews = reviewData.slice(-50); // Last 50 reviews
+  const oldReviews = reviewData.slice(0, 50); // First 50 reviews
+  
+  // Title slide
+  storyboard.title = `${topic === 'general' ? 'Customer Feedback Analysis' : topic} - Key Insights`;
+  
+  // Slide 1: Overview metrics
+  const ratingDist = {};
+  reviewData.forEach(r => {
+    const rating = r.rating || r.Rating || 0;
+    ratingDist[rating] = (ratingDist[rating] || 0) + 1;
+  });
+  
+  storyboard.slides.push({
+    title: 'Rating Distribution Overview',
+    type: 'metrics',
+    content: {
+      totalReviews: reviewData.length,
+      avgRating: avgRating.toFixed(2),
+      distribution: ratingDist
+    },
+    visualization: {
+      type: 'BAR',
+      data: Object.entries(ratingDist).map(([rating, count]) => ({
+        rating: `${rating}★`,
+        count
+      })),
+      config: { xAxis: 'rating', yAxis: 'count' }
+    }
+  });
+  
+  // Slide 2: Key issues with quotes
+  const negativeReviews = reviewData.filter(r => (r.rating || r.Rating) <= 2);
+  const topIssues = {};
+  const issueQuotes = {};
+  
+  negativeReviews.forEach(review => {
+    const content = (review.content || review.Review || review.Body || '').toLowerCase();
+    const issues = ['crash', 'bug', 'slow', 'expensive', 'confusing', 'login', 'sync'];
+    
+    issues.forEach(issue => {
+      if (content.includes(issue)) {
+        topIssues[issue] = (topIssues[issue] || 0) + 1;
+        if (!issueQuotes[issue]) {
+          issueQuotes[issue] = review.content || review.Review || review.Body;
+        }
+      }
+    });
+  });
+  
+  const sortedIssues = Object.entries(topIssues)
+    .sort(([,a], [,b]) => b - a)
+    .slice(0, 5);
+  
+  storyboard.slides.push({
+    title: 'Top Issues & Customer Quotes',
+    type: 'issues',
+    content: {
+      issues: sortedIssues.map(([issue, count]) => ({
+        issue,
+        count,
+        percentage: ((count / negativeReviews.length) * 100).toFixed(1),
+        quote: issueQuotes[issue]?.substring(0, 150) + '...'
+      }))
+    }
+  });
+  
+  // Slide 3: Trend analysis
+  const trendData = analyzeTrends(reviewData);
+  storyboard.slides.push({
+    title: 'Rating Trends Over Time',
+    type: 'trends',
+    content: trendData,
+    visualization: {
+      type: 'LINE',
+      data: trendData.dataPoints,
+      config: { xAxis: 'date', yAxis: 'avgRating' }
+    }
+  });
+  
+  // Slide 4: Recommendations
+  storyboard.recommendations = [
+    sortedIssues[0] ? `Priority 1: Fix ${sortedIssues[0][0]} issues (affecting ${sortedIssues[0][1]} users)` : '',
+    avgRating < 3.5 ? 'Implement emergency response plan for low ratings' : '',
+    'Set up automated alerts for rating drops > 10%',
+    'Create targeted communication for affected users'
+  ].filter(r => r);
+  
+  // Executive summary
+  storyboard.executiveSummary = `Analysis of ${reviewData.length} reviews shows an average rating of ${avgRating.toFixed(2)}★. ` +
+    (sortedIssues[0] ? `The most critical issue is ${sortedIssues[0][0]}, mentioned by ${sortedIssues[0][1]} users. ` : '') +
+    (avgRating < oldReviews.reduce((acc, r) => acc + (r.rating || r.Rating || 0), 0) / oldReviews.length ? 
+      'Rating trend is declining and requires immediate attention.' : 'Rating trend is stable.');
+  
+  return storyboard;
+}
+
+// Generate Auto-Summaries for Support Teams
+function generateAutoSummary(reviewData, timeframe = 'week') {
+  if (!reviewData || reviewData.length === 0) return null;
+  
+  const summary = {
+    timeframe,
+    period: '',
+    totalReviews: 0,
+    criticalIssues: [],
+    trends: [],
+    recommendations: [],
+    supportActions: []
+  };
+  
+  // Filter by timeframe
+  const now = new Date();
+  let daysToFilter = timeframe === 'week' ? 7 : timeframe === 'month' ? 30 : 7;
+  const cutoffDate = new Date(now - daysToFilter * 24 * 60 * 60 * 1000);
+  
+  const recentReviews = reviewData.filter(r => {
+    const reviewDate = new Date(r.date || r.Date || r['Review Date']);
+    return reviewDate >= cutoffDate && !isNaN(reviewDate.getTime());
+  });
+  
+  summary.totalReviews = recentReviews.length;
+  summary.period = `Last ${daysToFilter} days`;
+  
+  // Analyze critical issues
+  const issuePatterns = {
+    'login': { keywords: ['login', 'sign in', 'authentication', 'password'], severity: 'high' },
+    'crash': { keywords: ['crash', 'freeze', 'hang', 'restart'], severity: 'critical' },
+    'data loss': { keywords: ['lost data', 'disappeared', 'missing', 'deleted'], severity: 'critical' },
+    'performance': { keywords: ['slow', 'lag', 'performance', 'loading'], severity: 'medium' },
+    'billing': { keywords: ['charge', 'billing', 'payment', 'subscription'], severity: 'high' }
+  };
+  
+  const detectedIssues = {};
+  const previousPeriodReviews = reviewData.filter(r => {
+    const reviewDate = new Date(r.date || r.Date || r['Review Date']);
+    const previousCutoff = new Date(cutoffDate - daysToFilter * 24 * 60 * 60 * 1000);
+    return reviewDate >= previousCutoff && reviewDate < cutoffDate && !isNaN(reviewDate.getTime());
+  });
+  
+  // Count issues in current period
+  recentReviews.forEach(review => {
+    const content = (review.content || review.Review || review.Body || '').toLowerCase();
+    
+    Object.entries(issuePatterns).forEach(([issueName, pattern]) => {
+      if (pattern.keywords.some(keyword => content.includes(keyword))) {
+        if (!detectedIssues[issueName]) {
+          detectedIssues[issueName] = {
+            count: 0,
+            severity: pattern.severity,
+            examples: [],
+            previousCount: 0
+          };
+        }
+        detectedIssues[issueName].count++;
+        if (detectedIssues[issueName].examples.length < 2) {
+          detectedIssues[issueName].examples.push(content.substring(0, 100) + '...');
+        }
+      }
+    });
+  });
+  
+  // Count issues in previous period for comparison
+  previousPeriodReviews.forEach(review => {
+    const content = (review.content || review.Review || review.Body || '').toLowerCase();
+    
+    Object.entries(issuePatterns).forEach(([issueName, pattern]) => {
+      if (pattern.keywords.some(keyword => content.includes(keyword))) {
+        if (detectedIssues[issueName]) {
+          detectedIssues[issueName].previousCount++;
+        }
+      }
+    });
+  });
+  
+  // Build critical issues list with trends
+  Object.entries(detectedIssues).forEach(([issueName, data]) => {
+    const increase = data.previousCount > 0 ? 
+      ((data.count - data.previousCount) / data.previousCount * 100).toFixed(0) : 
+      'new';
+    
+    summary.criticalIssues.push({
+      issue: issueName,
+      count: data.count,
+      severity: data.severity,
+      trend: increase === 'new' ? 'New issue' : `${increase}% ${increase > 0 ? 'increase' : 'decrease'}`,
+      examples: data.examples
+    });
+  });
+  
+  // Sort by severity and count
+  summary.criticalIssues.sort((a, b) => {
+    const severityOrder = { critical: 3, high: 2, medium: 1 };
+    if (severityOrder[a.severity] !== severityOrder[b.severity]) {
+      return severityOrder[b.severity] - severityOrder[a.severity];
+    }
+    return b.count - a.count;
+  });
+  
+  // Generate recommendations
+  summary.criticalIssues.forEach(issue => {
+    if (issue.severity === 'critical') {
+      summary.recommendations.push(`URGENT: Deploy hotfix for ${issue.issue} (${issue.count} reports)`);
+      summary.supportActions.push(`Create support template for ${issue.issue} issues`);
+    } else if (issue.severity === 'high' && issue.count > 10) {
+      summary.recommendations.push(`Schedule emergency fix for ${issue.issue} in next release`);
+      summary.supportActions.push(`Brief support team on ${issue.issue} workarounds`);
+    }
+  });
+  
+  // Add version-specific insights
+  const versionIssues = {};
+  recentReviews.forEach(r => {
+    const version = r.version || r.Version || r['App Version'];
+    if (version && (r.rating || r.Rating) <= 2) {
+      versionIssues[version] = (versionIssues[version] || 0) + 1;
+    }
+  });
+  
+  const problematicVersion = Object.entries(versionIssues)
+    .sort(([,a], [,b]) => b - a)[0];
+  
+  if (problematicVersion && problematicVersion[1] > 5) {
+    summary.recommendations.push(`Consider rolling back version ${problematicVersion[0]} (${problematicVersion[1]} complaints)`);
+  }
+  
+  return summary;
+}
+
+// Helper function to analyze trends
+function analyzeTrends(reviewData) {
+  const trendMap = {};
+  
+  reviewData.forEach(review => {
+    const date = new Date(review.date || review.Date || review['Review Date']);
+    if (!isNaN(date.getTime())) {
+      const dateKey = date.toISOString().split('T')[0];
+      if (!trendMap[dateKey]) {
+        trendMap[dateKey] = { count: 0, totalRating: 0 };
+      }
+      trendMap[dateKey].count++;
+      trendMap[dateKey].totalRating += (review.rating || review.Rating || 0);
+    }
+  });
+  
+  const dataPoints = Object.entries(trendMap)
+    .map(([date, data]) => ({
+      date,
+      avgRating: (data.totalRating / data.count).toFixed(2),
+      count: data.count
+    }))
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
+  
+  return { dataPoints };
+}
+
 // Export additional utilities
 export function generateChatSuggestions(reviewData) {
   if (!reviewData || reviewData.length === 0) return [];
@@ -1062,6 +1415,34 @@ export function generateChatSuggestions(reviewData) {
   
   // Define question categories
   const categories = {
+    // Natural Language & AI Storyboards
+    naturalLanguageAndStoryboards: [
+      "Show me why negative reviews spiked in Canada last month",
+      "Why did ratings drop after version 7.3 was released?",
+      "What caused the increase in login complaints last week?",
+      "Create an AI storyboard presentation for our board meeting",
+      "Generate slide-ready insights about customer satisfaction",
+      "Show me a presentation comparing this month vs last month",
+      "Create an executive presentation about top issues and recommendations",
+      "Why are European users more dissatisfied than US users?",
+      "What's driving the negative trend in enterprise customer feedback?",
+      "Build a storyboard showing our progress on addressing key issues"
+    ],
+    
+    // Auto-Summaries & Support Intelligence
+    supportIntelligence: [
+      "Give me this week's support team briefing",
+      "Generate an auto-summary of critical issues for support",
+      "What should our support team prioritize this week?",
+      "Show me trending support issues with severity levels",
+      "Create a support action plan based on recent feedback",
+      "Which issues need immediate hotfixes?",
+      "Generate support response templates for top issues",
+      "What's the week-over-week trend for technical issues?",
+      "Alert me to any new critical issues emerging today",
+      "Create a monthly support performance dashboard"
+    ],
+    
     // Aspect-Based Sentiment & Emotion Analysis
     aspectAndEmotion: [
       "Show me aspect-based sentiment analysis across all reviews",
