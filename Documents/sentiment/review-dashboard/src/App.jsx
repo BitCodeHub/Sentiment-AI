@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import FileUpload from './components/FileUpload';
-import AppleImport from './components/AppleImport';
+import UploadPage from './components/UploadPage';
 import Dashboard from './components/Dashboard';
 import EnhancedDashboard from './components/EnhancedDashboard';
 import TopicDetailView from './components/TopicDetailView';
@@ -10,7 +9,6 @@ import ErrorBoundary from './components/ErrorBoundary';
 import RateLimitNotification from './components/RateLimitNotification';
 import { parseExcelFile, aggregateData } from './utils/excelParser';
 import { downloadSampleExcel } from './utils/sampleDataGenerator';
-import { Loader, Download } from 'lucide-react';
 import './App.css';
 
 function App() {
@@ -80,44 +78,12 @@ function App() {
         <Routes>
           <Route path="/" element={
             !data ? (
-              <div className="upload-section">
-                <div className="app-header">
-                  <h1>App Review Analytics Dashboard</h1>
-                  <p>Upload your Excel file or import directly from App Store to analyze app reviews</p>
-                </div>
-                
-                <div className="import-options">
-                  <FileUpload onFileUpload={handleFileUpload} />
-                  
-                  <div className="divider">
-                    <span>OR</span>
-                  </div>
-                  
-                  <AppleImport onImport={handleAppleImport} />
-                </div>
-                
-                <button 
-                  className="sample-data-btn"
-                  onClick={downloadSampleExcel}
-                  title="Download sample Excel file to see expected format"
-                >
-                  <Download size={20} />
-                  Download Sample Format
-                </button>
-                
-                {isLoading && (
-                  <div className="loading">
-                    <Loader className="spinner" />
-                    <p>Processing your review data...</p>
-                  </div>
-                )}
-                
-                {error && (
-                  <div className="error">
-                    <p>{error}</p>
-                  </div>
-                )}
-              </div>
+              <UploadPage 
+                onFileUpload={handleFileUpload}
+                onAppleImport={handleAppleImport}
+                isLoading={isLoading}
+                error={error}
+              />
             ) : (
               <ErrorBoundary>
                 <EnhancedDashboard data={data} />
