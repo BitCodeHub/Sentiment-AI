@@ -4,7 +4,8 @@ import {
   MessageSquare, Send, X, Loader, Sparkles, 
   AlertCircle, RotateCcw, ChevronDown, Bot, User,
   Mic, MicOff, Menu, ArrowLeft, Plus, Trash2,
-  Settings, History, Volume2, VolumeX
+  Settings, History, Volume2, VolumeX,
+  TrendingUp, BarChart2, Users, Lightbulb
 } from 'lucide-react';
 import { 
   initializeChatSession, 
@@ -136,8 +137,9 @@ const ChatPage = ({ reviewData = [] }) => {
       const welcomeMessage = {
         id: 1,
         role: 'assistant',
-        content: `Hello! I'm Rivue, your AI-powered Data Scientist, Business Intelligence Analyst, and Technical Expert. I have access to ${reviewData.length} records with comprehensive data.\n\nI can help you with:\n📊 Advanced analytics and predictive modeling\n📈 Interactive visualizations and dashboards\n💡 Strategic business insights and recommendations\n🔧 Technical issue diagnosis and prioritization\n🎯 Customer experience optimization\n🔊 Audio responses for hands-free interaction\n\nWhat insights would you like to explore today?`,
+        content: `Hello! I'm Rivue, your AI assistant. I've analyzed ${reviewData.length} records and I'm ready to provide insights, create visualizations, and help you understand your data better.`,
         timestamp: new Date(),
+        isWelcome: true,
       };
       setMessages([welcomeMessage]);
       
@@ -266,9 +268,16 @@ const ChatPage = ({ reviewData = [] }) => {
     }
   };
 
-  const handleSuggestionClick = (suggestion) => {
+  const handleSuggestionClick = async (suggestion) => {
+    // Set the message and immediately send it
     setInputMessage(suggestion);
-    inputRef.current?.focus();
+    
+    // Small delay to show the message in input briefly
+    setTimeout(async () => {
+      if (!isLoading && sessionId) {
+        await handleSendMessage();
+      }
+    }, 100);
   };
 
   const handleVoiceInput = () => {
@@ -566,20 +575,73 @@ const ChatPage = ({ reviewData = [] }) => {
             </div>
           )}
 
-          {/* Suggestions */}
+          {/* Welcome & Suggestions */}
           {suggestions.length > 0 && messages.length <= 1 && (
-            <div className="chat-suggestions-container">
-              <p className="suggestions-title">Try asking:</p>
-              <div className="suggestions-grid">
-                {suggestions.map((suggestion, idx) => (
-                  <button
-                    key={idx}
-                    className="suggestion-chip"
-                    onClick={() => handleSuggestionClick(suggestion)}
-                  >
-                    {suggestion}
-                  </button>
-                ))}
+            <div className="chat-welcome-container">
+              <div className="welcome-header">
+                <div className="welcome-icon">
+                  <Sparkles size={32} className="welcome-sparkle" />
+                </div>
+                <h2 className="welcome-title">What would you like to explore?</h2>
+                <p className="welcome-subtitle">Choose a topic or type your own question</p>
+              </div>
+              
+              <div className="suggestions-categories">
+                <div className="suggestion-category">
+                  <TrendingUp size={20} className="category-icon" />
+                  <span className="category-label">Analytics</span>
+                </div>
+                <div className="suggestion-category">
+                  <BarChart2 size={20} className="category-icon" />
+                  <span className="category-label">Visualizations</span>
+                </div>
+                <div className="suggestion-category">
+                  <Users size={20} className="category-icon" />
+                  <span className="category-label">Customer Insights</span>
+                </div>
+                <div className="suggestion-category">
+                  <Lightbulb size={20} className="category-icon" />
+                  <span className="category-label">Recommendations</span>
+                </div>
+              </div>
+              
+              <div className="suggestions-grid-new">
+                {suggestions.map((suggestion, idx) => {
+                  // Determine icon based on suggestion content
+                  let Icon = Lightbulb;
+                  let categoryClass = 'recommendation';
+                  
+                  if (suggestion.toLowerCase().includes('chart') || 
+                      suggestion.toLowerCase().includes('graph') || 
+                      suggestion.toLowerCase().includes('show') ||
+                      suggestion.toLowerCase().includes('display')) {
+                    Icon = BarChart2;
+                    categoryClass = 'visualization';
+                  } else if (suggestion.toLowerCase().includes('trend') ||
+                             suggestion.toLowerCase().includes('analysis') ||
+                             suggestion.toLowerCase().includes('pattern')) {
+                    Icon = TrendingUp;
+                    categoryClass = 'analytics';
+                  } else if (suggestion.toLowerCase().includes('customer') ||
+                             suggestion.toLowerCase().includes('user') ||
+                             suggestion.toLowerCase().includes('feedback')) {
+                    Icon = Users;
+                    categoryClass = 'insights';
+                  }
+                  
+                  return (
+                    <button
+                      key={idx}
+                      className={`suggestion-card ${categoryClass}`}
+                      onClick={() => handleSuggestionClick(suggestion)}
+                      disabled={isLoading}
+                    >
+                      <Icon size={18} className="suggestion-icon" />
+                      <span className="suggestion-text">{suggestion}</span>
+                      <ChevronDown size={16} className="suggestion-arrow" />
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
