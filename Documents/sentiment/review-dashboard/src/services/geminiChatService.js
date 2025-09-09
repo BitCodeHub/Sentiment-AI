@@ -191,6 +191,10 @@ export async function initializeChatSession(sessionId, reviewData, metadata = {}
     // Extract comprehensive data structure
     const dataStructure = extractDataStructure(reviewData);
     
+    // Generate proactive insights
+    const proactiveInsights = generateProactiveInsights(reviewData);
+    const userPersonas = identifyUserPersonas(reviewData);
+    
     // Create system context from review data
     const context = `You are Rivue, an advanced AI assistant combining the expertise of a Data Scientist, Business Intelligence Analyst, and Technical Analyst. You specialize in analyzing customer reviews and app data with ${reviewData.length} records at your disposal.
 
@@ -287,6 +291,57 @@ APP CONTEXT:
 - Rating Distribution: ${getDistributionSummary(reviewData)}
 - Common Platforms: ${getPlatformSummary(reviewData)}
 
+PROACTIVE INTELLIGENCE CAPABILITIES:
+
+1. INSIGHT COPILOT MODE:
+- Automatically generate executive briefings
+- Surface top issues without being asked
+- Provide weekly/monthly intelligence summaries
+- Alert on emerging trends and anomalies
+- Example: "This week's top 3 issues: 1) Login authentication errors (↑23%), 2) Subscription renewal confusion (15 mentions), 3) Battery drain on v3.2.1 (affecting 8% of Android users)"
+
+2. SCENARIO TESTING & FORECASTING:
+- Simulate "what-if" scenarios based on historical data
+- Predict impact of issues if left unaddressed
+- Forecast review trends based on patterns
+- Model potential outcomes of fixes
+- Example: "If login issues double next release, expect: 32% increase in 1-star reviews, 15% churn risk, $45K potential revenue impact"
+
+3. PERSONA-BASED ANALYSIS:
+- Segment users into distinct personas:
+  * Power Users: High engagement, technical feedback, feature requests
+  * New Users: Onboarding issues, basic functionality questions
+  * Casual Users: Intermittent usage, UI/UX feedback
+  * Enterprise Users: Security, integration, performance concerns
+- Analyze feedback by persona
+- Provide persona-specific recommendations
+- Example: "Power users (18% of base) are frustrated by missing API features, while new users (45%) struggle with initial setup"
+
+4. INTELLIGENT TRIGGERS:
+- Monitor for critical thresholds (e.g., negative sentiment >20%)
+- Detect sudden changes in feedback patterns
+- Identify correlated issues across different user segments
+- Proactively suggest deep-dives when anomalies detected
+
+5. CONTEXTUAL RECOMMENDATIONS:
+- Prioritize fixes based on business impact
+- Suggest A/B testing for contentious features
+- Recommend targeted communications to affected users
+- Provide competitive insights from user comparisons
+
+CURRENT INTELLIGENCE BRIEF:
+${proactiveInsights}
+
+USER PERSONAS IDENTIFIED:
+${userPersonas}
+
+When responding:
+1. Start with proactive insights if relevant
+2. Use scenario modeling for forward-looking questions
+3. Segment analysis by persona when appropriate
+4. Provide actionable recommendations with impact estimates
+5. Alert on any critical patterns or anomalies detected
+
 You have full access to all data fields and can perform any analysis, aggregation, or visualization requested by the user.`;
 
     // Create initial history
@@ -297,7 +352,7 @@ You have full access to all data fields and can perform any analysis, aggregatio
       },
       {
         role: "model",
-        parts: [{ text: "I understand. I'm Rivue, your AI-powered Data Scientist, Business Intelligence Analyst, and Technical Expert. I have access to " + reviewData.length + " records with " + extractDataStructure(reviewData).fields.length + " data fields.\n\nI can help you with:\n📊 Advanced analytics and predictive modeling\n📈 Interactive visualizations and dashboards\n💡 Strategic business insights and recommendations\n🔧 Technical issue diagnosis and prioritization\n🎯 Customer experience optimization\n🔊 Audio responses for hands-free interaction\n\nWhat insights would you like to explore today?" }],
+        parts: [{ text: "I understand. I'm Rivue, your AI-powered Data Scientist, Business Intelligence Analyst, and Technical Expert. I have access to " + reviewData.length + " records with " + extractDataStructure(reviewData).fields.length + " data fields.\n\n" + (proactiveInsights ? "🚨 **Intelligence Brief:**\n" + proactiveInsights + "\n\n" : "") + "I can help you with:\n📊 Advanced analytics and predictive modeling\n📈 Interactive visualizations and dashboards\n💡 Strategic business insights and recommendations\n🔧 Technical issue diagnosis and prioritization\n🎯 Customer experience optimization\n📃 Scenario testing and forecasting\n👥 Persona-based analysis\n🔊 Audio responses for hands-free interaction\n\nWhat would you like to explore? I can also elaborate on any of the issues I've identified." }],
       },
     ];
 
@@ -669,6 +724,135 @@ function findRelevantReviews(query, reviews, maxReviews = 10) {
     .map(({ review }) => review);
 }
 
+// Generate proactive insights from review data
+function generateProactiveInsights(reviewData) {
+  if (!reviewData || reviewData.length === 0) return '';
+  
+  const insights = [];
+  const now = new Date();
+  const oneWeekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+  
+  // Analyze recent reviews
+  const recentReviews = reviewData.filter(r => {
+    const reviewDate = new Date(r.date || r.Date || r['Review Date']);
+    return reviewDate >= oneWeekAgo && !isNaN(reviewDate.getTime());
+  });
+  
+  // Calculate trends
+  const totalReviews = reviewData.length;
+  const recentCount = recentReviews.length;
+  const avgRating = reviewData.reduce((acc, r) => acc + (r.rating || r.Rating || 0), 0) / totalReviews;
+  const recentAvgRating = recentCount > 0 ? 
+    recentReviews.reduce((acc, r) => acc + (r.rating || r.Rating || 0), 0) / recentCount : 0;
+  
+  // Identify top issues
+  const issueKeywords = ['bug', 'crash', 'error', 'problem', 'issue', 'broken', 'fail', 'slow', 'freeze'];
+  const issues = {};
+  
+  reviewData.forEach(review => {
+    const content = (review.content || review.Review || review.Body || '').toLowerCase();
+    issueKeywords.forEach(keyword => {
+      if (content.includes(keyword)) {
+        if (!issues[keyword]) issues[keyword] = 0;
+        issues[keyword]++;
+      }
+    });
+  });
+  
+  // Sort issues by frequency
+  const topIssues = Object.entries(issues)
+    .sort(([,a], [,b]) => b - a)
+    .slice(0, 3);
+  
+  // Build insights
+  if (recentAvgRating < avgRating - 0.5) {
+    insights.push(`⚠️ Rating decline detected: ${recentAvgRating.toFixed(1)}★ this week vs ${avgRating.toFixed(1)}★ overall`);
+  }
+  
+  if (topIssues.length > 0) {
+    const issueList = topIssues.map(([issue, count]) => 
+      `${issue} (${count} mentions)`
+    ).join(', ');
+    insights.push(`🔍 Top issues: ${issueList}`);
+  }
+  
+  // Check for version-specific problems
+  const versionIssues = {};
+  reviewData.forEach(r => {
+    const version = r.version || r.Version || r['App Version'];
+    const rating = r.rating || r.Rating || 0;
+    if (version && rating <= 2) {
+      if (!versionIssues[version]) versionIssues[version] = 0;
+      versionIssues[version]++;
+    }
+  });
+  
+  const problematicVersion = Object.entries(versionIssues)
+    .sort(([,a], [,b]) => b - a)[0];
+  
+  if (problematicVersion && problematicVersion[1] > 5) {
+    insights.push(`📱 Version ${problematicVersion[0]} has ${problematicVersion[1]} negative reviews`);
+  }
+  
+  return insights.length > 0 ? insights.join('\\n') : '';
+}
+
+// Identify user personas from review data
+function identifyUserPersonas(reviewData) {
+  if (!reviewData || reviewData.length === 0) return '';
+  
+  const personas = {
+    powerUsers: [],
+    newUsers: [],
+    casualUsers: [],
+    enterpriseUsers: []
+  };
+  
+  reviewData.forEach(review => {
+    const content = (review.content || review.Review || review.Body || '').toLowerCase();
+    const rating = review.rating || review.Rating || 0;
+    
+    // Identify power users
+    if (content.includes('api') || content.includes('integration') || 
+        content.includes('workflow') || content.includes('advanced')) {
+      personas.powerUsers.push(review);
+    }
+    
+    // Identify new users
+    if (content.includes('setup') || content.includes('getting started') || 
+        content.includes('tutorial') || content.includes('confus')) {
+      personas.newUsers.push(review);
+    }
+    
+    // Identify enterprise users
+    if (content.includes('team') || content.includes('enterprise') || 
+        content.includes('security') || content.includes('sso') || 
+        content.includes('admin')) {
+      personas.enterpriseUsers.push(review);
+    }
+  });
+  
+  // Build persona summary
+  const personaSummary = [];
+  
+  if (personas.powerUsers.length > 0) {
+    const percent = ((personas.powerUsers.length / reviewData.length) * 100).toFixed(1);
+    personaSummary.push(`Power Users (${percent}%): Focus on API, integrations, advanced features`);
+  }
+  
+  if (personas.newUsers.length > 0) {
+    const percent = ((personas.newUsers.length / reviewData.length) * 100).toFixed(1);
+    personaSummary.push(`New Users (${percent}%): Struggle with setup, need better onboarding`);
+  }
+  
+  if (personas.enterpriseUsers.length > 0) {
+    const percent = ((personas.enterpriseUsers.length / reviewData.length) * 100).toFixed(1);
+    personaSummary.push(`Enterprise Users (${percent}%): Need security, team features, admin controls`);
+  }
+  
+  return personaSummary.join('\\n');
+}
+
 // Export additional utilities
 export function generateChatSuggestions(reviewData) {
   if (!reviewData || reviewData.length === 0) return [];
@@ -689,6 +873,20 @@ export function generateChatSuggestions(reviewData) {
   
   // Define question categories
   const categories = {
+    // Proactive Intelligence & Scenario Testing
+    proactiveIntelligence: [
+      "Give me this week's intelligence briefing on top issues and trends",
+      "What happens if our login issues double in the next release?",
+      "Simulate the impact if we don't fix the top 3 issues this month",
+      "What are power users complaining about vs new users?",
+      "Show me a forecast of our rating trajectory for next quarter",
+      "What's the business impact if current negative trends continue?",
+      "Which user personas are most at risk of churning?",
+      "Alert me to any emerging issues in the last 48 hours",
+      "What would happen if we removed the most complained about feature?",
+      "Generate a risk assessment for our next release based on current feedback"
+    ],
+    
     // Data Science & Analytics
     dataScience: [
       "Perform sentiment analysis and show the emotional distribution in a pie chart",
@@ -777,8 +975,10 @@ export function generateChatSuggestions(reviewData) {
   // Build contextual suggestions based on data characteristics
   const contextualSuggestions = [];
   
-  // Always include a data overview question
-  contextualSuggestions.push("Give me a comprehensive overview of all the data insights");
+  // Always include proactive intelligence questions
+  contextualSuggestions.push("Give me this week's intelligence briefing");
+  contextualSuggestions.push("What are the top 3 issues I should know about?");
+  contextualSuggestions.push("Compare feedback from different user personas");
   
   // Add rating-based suggestions
   if (avgRating < 3.0) {
