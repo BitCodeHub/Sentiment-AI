@@ -35,11 +35,11 @@ let lastRequestTime = 0;
 let requestCount = 0;
 let requestWindowStart = Date.now();
 
-// Model configuration with fallback
+// Model configuration with fallback - using models with grounding support
 const MODEL_CONFIGS = {
-  primary: 'models/gemini-2.5-flash',
-  experimental: 'models/gemini-1.5-flash-latest',
-  fallback: 'models/gemini-1.5-flash'
+  primary: 'gemini-2.0-flash-exp',  // Has built-in grounding
+  experimental: 'gemini-1.5-flash-latest',
+  fallback: 'gemini-1.5-flash'
 };
 
 // Track which model is being used
@@ -62,12 +62,12 @@ async function getModelWithFallback(forceIndex = null) {
       console.log(`Attempting to use ${modelKey} model:`, modelName);
       const model = genAI.getGenerativeModel({ 
         model: modelName,
-        tools: [{
-          googleSearchGrounding: {
-            enable: true,
-            fallback: true
-          }
-        }]
+        generationConfig: {
+          temperature: 0.7,
+          topP: 0.95,
+          topK: 40,
+          maxOutputTokens: 8192,
+        }
       });
       currentModelIndex = i; // Remember which model worked
       return { model, modelKey, modelName };
@@ -444,10 +444,11 @@ ${explainableAI.summary ? `- Total classified: ${explainableAI.summary.classific
 7. INFLUENCE DETECTION & WEB MONITORING:
 
 REAL-TIME WEB INFLUENCE:
+- You have built-in Google Search capabilities - USE THEM when users ask about current events, viral posts, or external influences
 - Monitor Reddit, HackerNews, Twitter for viral posts about your app
 - Detect when online discussions drive review spikes
 - Track influence with cosine similarity, n-gram overlap, rare terms
-- Use Google Search Grounding for real-time web answers
+- IMPORTANT: When asked about spikes or viral posts, SEARCH THE WEB DIRECTLY
 
 INFLUENCE ANALYSIS FEATURES:
 - URL attribution: Direct links from reviews to Reddit/HN threads
@@ -459,6 +460,12 @@ EXAMPLE INSIGHTS:
 - "Login complaints spiked 400% after Reddit r/technology thread (15K upvotes)"
 - "Battery drain mentions correlate with HN post 'Why App X drains your battery' (24h lag)"
 - "Negative reviews contain phrases from viral Twitter thread about pricing"
+
+GROUNDING INSTRUCTIONS:
+- When users ask "Alert me to viral posts", search for: "[app name] site:reddit.com OR site:news.ycombinator.com recent"
+- When users ask about "spike in reviews", search for: "[app name] review bomb OR complaints recent"
+- Always provide real search results, not simulated responses
+- If asked about real-time monitoring, explain you can search on-demand
 
 When responding:
 1. Start with proactive insights if relevant
