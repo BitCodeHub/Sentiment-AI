@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { detectInfluence, searchWebInfluence, monitorRealTimeInfluence } from './influenceDetectionService';
 
 // Get API key with multiple fallbacks
 let apiKey;
@@ -203,6 +204,28 @@ export async function initializeChatSession(sessionId, reviewData, metadata = {}
     const rootCauseAnalysis = extractRootCauses(reviewData);
     const causalLinks = analyzeCausalLinks(reviewData);
     const explainableAI = generateExplainableAI(reviewData);
+    
+    // Influence Detection (for recent spikes)
+    let influenceAnalysis = { summary: {}, timeline: [] };
+    const recentReviews = reviewData.filter(r => {
+      const date = new Date(r.date || r.Date || r['Review Date']);
+      const daysSince = (Date.now() - date) / (1000 * 60 * 60 * 24);
+      return daysSince <= 7; // Last 7 days
+    });
+    
+    if (recentReviews.length > 10) {
+      // Extract keywords from recent negative reviews
+      const negativeReviews = recentReviews.filter(r => (r.rating || r.Rating) <= 2);
+      const keywords = extractKeywordsFromReviews(negativeReviews);
+      const appName = metadata.appName || '';
+      
+      // Detect influence asynchronously (don't block initialization)
+      detectInfluence(reviewData, keywords.join(' '), appName)
+        .then(result => {
+          influenceAnalysis = result;
+        })
+        .catch(err => console.error('Influence detection error:', err));
+    }
     
     // Create system context from review data
     const context = `You are Rivue, an advanced AI assistant combining the expertise of a Data Scientist, Business Intelligence Analyst, and Technical Analyst. You specialize in analyzing customer reviews and app data with ${reviewData.length} records at your disposal.
@@ -409,6 +432,25 @@ EXPLAINABLE AI:
 - Show confidence levels and decision factors
 - Example: Tagged as "angry" due to: "absolutely furious!!!" (caps ratio: 40%, exclamations: 3)
 ${explainableAI.summary ? `- Total classified: ${explainableAI.summary.classificationCounts.negative || 0} negative, ${explainableAI.summary.classificationCounts.angry || 0} angry, ${explainableAI.summary.classificationCounts['churn-risk'] || 0} churn-risk` : ''}
+
+7. INFLUENCE DETECTION & WEB MONITORING:
+
+REAL-TIME WEB INFLUENCE:
+- Monitor Reddit, HackerNews, Twitter for viral posts about your app
+- Detect when online discussions drive review spikes
+- Track influence with cosine similarity, n-gram overlap, rare terms
+- Use Google Search Grounding for real-time web answers
+
+INFLUENCE ANALYSIS FEATURES:
+- URL attribution: Direct links from reviews to Reddit/HN threads
+- Phrase echo detection: Similar language patterns (>78% similarity)
+- Timing windows: Reviews within 2-72 hours of viral posts
+- Counterfactual analysis: Compare with baseline periods
+
+EXAMPLE INSIGHTS:
+- "Login complaints spiked 400% after Reddit r/technology thread (15K upvotes)"
+- "Battery drain mentions correlate with HN post 'Why App X drains your battery' (24h lag)"
+- "Negative reviews contain phrases from viral Twitter thread about pricing"
 
 When responding:
 1. Start with proactive insights if relevant
@@ -725,6 +767,13 @@ function enrichMessageWithContext(message, reviewData) {
     'graph', 'chart', 'table', 'show', 'display', 'visualize', 'plot',
     'device', 'version', 'platform', 'os', 'android', 'ios', 'distribution'
   ];
+  
+  // Keywords for influence detection
+  const influenceKeywords = [
+    'reddit', 'hackernews', 'hn', 'viral', 'influence', 'spike', 'surge',
+    'brigade', 'twitter', 'social', 'web', 'online', 'discussion', 'thread',
+    'post', 'forum', 'caused', 'driven', 'linked', 'echo', 'source'
+  ];
 
   const needsContext = analysisKeywords.some(keyword => 
     message.toLowerCase().includes(keyword)
@@ -759,6 +808,26 @@ function enrichMessageWithContext(message, reviewData) {
       context += `\n\nVersion statistics: ${JSON.stringify(versionStats)}`;
     }
 
+    return message + context;
+  }
+  
+  // Check for influence detection requests
+  const needsInfluence = influenceKeywords.some(keyword => 
+    message.toLowerCase().includes(keyword)
+  );
+  
+  if (needsInfluence) {
+    const context = `
+    \n\nIMPORTANT: The user is asking about web influence on reviews. Use the following approach:
+    1. If asking about specific spikes/surges, analyze timing patterns
+    2. Look for unusual clustering of similar complaints
+    3. Identify reviews that mention Reddit, HackerNews, or social media
+    4. Check for identical phrases across multiple reviews (potential brigading)
+    5. Note any reviews that link to external discussions
+    6. Consider using Google Search Grounding to find related web discussions
+    
+    For real-time web search, you can suggest running the influence detection analysis.`;
+    
     return message + context;
   }
 
@@ -1912,6 +1981,34 @@ function extractPhrase(content, keyword) {
   return '...' + content.substring(start, end) + '...';
 }
 
+// Extract keywords from reviews for influence detection
+function extractKeywordsFromReviews(reviews) {
+  const wordFreq = {};
+  const stopWords = new Set([
+    'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
+    'of', 'with', 'by', 'from', 'is', 'was', 'are', 'were', 'been', 'be',
+    'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could',
+    'should', 'may', 'might', 'must', 'shall', 'can', 'need', 'app', 'it'
+  ]);
+  
+  reviews.forEach(review => {
+    const content = (review.content || review.Review || '').toLowerCase();
+    const words = content.match(/\b\w+\b/g) || [];
+    
+    words.forEach(word => {
+      if (word.length > 3 && !stopWords.has(word)) {
+        wordFreq[word] = (wordFreq[word] || 0) + 1;
+      }
+    });
+  });
+  
+  // Return top keywords sorted by frequency
+  return Object.entries(wordFreq)
+    .sort(([,a], [,b]) => b - a)
+    .slice(0, 10)
+    .map(([word]) => word);
+}
+
 // Export additional utilities
 export function generateChatSuggestions(reviewData) {
   if (!reviewData || reviewData.length === 0) return [];
@@ -2089,6 +2186,25 @@ export function generateChatSuggestions(reviewData) {
       "Which temporal patterns affect negative reviews?",
       "Show correlation between issue mentions and future uninstalls",
       "Extract root causes for our top 3 critical issues"
+    ],
+    
+    // Influence Detection & Web Monitoring
+    influenceDetection: [
+      "Why did login complaints spike yesterday?",
+      "Check if any Reddit threads are driving our negative reviews",
+      "Are there viral HackerNews posts about our app?",
+      "Show me web discussions that influenced recent review spikes",
+      "Find Reddit/Twitter threads linked to our battery complaints",
+      "Did any online discussions cause today's review surge?",
+      "Track social media influence on our ratings this week",
+      "Which review phrases echo Reddit/HN discussions?",
+      "Show me reviews influenced by viral posts (with links)",
+      "Monitor real-time web mentions affecting our reputation",
+      "Analyze if recent 1-star reviews came from Reddit brigading",
+      "Find the original online source of pricing complaints",
+      "Show influence timeline: web posts → review spikes",
+      "Which tech forums are discussing our latest update?",
+      "Alert me to any viral posts about our app in real-time"
     ]
   };
   
