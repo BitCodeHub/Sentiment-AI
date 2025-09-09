@@ -539,7 +539,7 @@ export async function sendChatMessage(sessionId, message) {
       const { chat, reviewData, metadata, modelKey } = session;
 
       // Add review data context to the message if it's asking for analysis
-      const enrichedMessage = enrichMessageWithContext(message, reviewData);
+      const enrichedMessage = await enrichMessageWithContext(message, reviewData);
 
       let result, response, text;
       let retryCount = 0;
@@ -757,7 +757,7 @@ function getPlatformSummary(reviews) {
     .join(', ');
 }
 
-function enrichMessageWithContext(message, reviewData) {
+async function enrichMessageWithContext(message, reviewData) {
   // Keywords that suggest the user wants specific analysis or visualization
   const analysisKeywords = [
     'common', 'theme', 'pattern', 'issue', 'problem', 'pain point',
@@ -768,11 +768,13 @@ function enrichMessageWithContext(message, reviewData) {
     'device', 'version', 'platform', 'os', 'android', 'ios', 'distribution'
   ];
   
-  // Keywords for influence detection
+  // Keywords for influence detection - expanded list
   const influenceKeywords = [
     'reddit', 'hackernews', 'hn', 'viral', 'influence', 'spike', 'surge',
     'brigade', 'twitter', 'social', 'web', 'online', 'discussion', 'thread',
-    'post', 'forum', 'caused', 'driven', 'linked', 'echo', 'source'
+    'post', 'forum', 'caused', 'driven', 'linked', 'echo', 'source',
+    'sudden', 'jump', 'increase', 'exploded', 'flooded', 'bombarded',
+    'community', 'external', 'why did', 'what caused', 'reason for'
   ];
 
   const needsContext = analysisKeywords.some(keyword => 
@@ -816,17 +818,90 @@ function enrichMessageWithContext(message, reviewData) {
     message.toLowerCase().includes(keyword)
   );
   
-  if (needsInfluence) {
-    const context = `
-    \n\nIMPORTANT: The user is asking about web influence on reviews. Use the following approach:
-    1. If asking about specific spikes/surges, analyze timing patterns
-    2. Look for unusual clustering of similar complaints
-    3. Identify reviews that mention Reddit, HackerNews, or social media
-    4. Check for identical phrases across multiple reviews (potential brigading)
-    5. Note any reviews that link to external discussions
-    6. Consider using Google Search Grounding to find related web discussions
+  // Also check for spike-related patterns
+  const spikePatterns = [
+    /spike.*review/i,
+    /review.*spike/i,
+    /sudden.*increase/i,
+    /why.*negative/i,
+    /what.*caused/i,
+    /reason.*for.*review/i,
+    /review.*bomb/i,
+    /flooded.*review/i
+  ];
+  
+  const askingAboutSpike = spikePatterns.some(pattern => 
+    pattern.test(message)
+  );
+  
+  if (needsInfluence || askingAboutSpike) {
+    // Extract keywords from the user's message for influence search
+    const appName = reviewData[0]?.appName || reviewData[0]?.['App Name'] || 'app';
+    const keywords = message.toLowerCase()
+      .split(' ')
+      .filter(word => word.length > 3 && !['what', 'when', 'where', 'which', 'that', 'this', 'with', 'from', 'about'].includes(word))
+      .join(' ');
     
-    For real-time web search, you can suggest running the influence detection analysis.`;
+    // Try to run influence detection automatically
+    let influenceResults = '';
+    try {
+      console.log('Running automatic influence detection for spike inquiry...');
+      const influences = await detectInfluence(reviewData, keywords, appName);
+      
+      if (influences.summary.totalInfluencedReviews > 0) {
+        influenceResults = `\n\nINFLUENCE DETECTION RESULTS:
+Found ${influences.summary.totalInfluencedReviews} reviews potentially influenced by external discussions:
+- Reddit: ${influences.summary.redditInfluences} reviews
+- HackerNews: ${influences.summary.hackerNewsInfluences} reviews
+
+${influences.summary.strongestInfluence ? `Strongest influence detected:
+- Source: ${influences.summary.strongestInfluence.post.source}
+- Post: "${influences.summary.strongestInfluence.post.title}"
+- Link: ${influences.summary.strongestInfluence.post.link}
+- Influence Score: ${(influences.summary.strongestInfluence.score.total * 100).toFixed(1)}%
+- Timing: Review posted ${Math.round((new Date(influences.summary.strongestInfluence.timestamp) - new Date(influences.summary.strongestInfluence.post.publishedAt)) / (1000 * 60 * 60))} hours after the post` : ''}
+
+Timeline of influences:
+${influences.timeline.slice(0, 5).map(event => 
+  `- ${new Date(event.date).toLocaleDateString()}: ${event.source} post "${event.postTitle.substring(0, 50)}..." → Score: ${(event.influenceScore * 100).toFixed(1)}%`
+).join('\n')}`;
+      }
+      
+      // Also try Google Search Grounding for recent web discussions
+      if (askingAboutSpike && searchWebInfluence) {
+        try {
+          const webResults = await searchWebInfluence(
+            `${appName} ${keywords} complaints issues reddit hackernews`,
+            reviewData
+          );
+          if (webResults.analysis) {
+            influenceResults += `\n\nWEB SEARCH RESULTS:\n${webResults.analysis}`;
+          }
+        } catch (webError) {
+          console.log('Web search grounding not available:', webError.message);
+        }
+      }
+    } catch (error) {
+      console.error('Error running automatic influence detection:', error);
+    }
+    
+    const context = `
+    \n\nIMPORTANT: The user is asking about web influence or spikes in reviews. 
+    ${influenceResults || 'No direct web influence detected in the current dataset.'}
+    
+    Additional analysis approach:
+    1. Check for temporal clustering of similar complaints
+    2. Look for reviews mentioning Reddit, HackerNews, or social media
+    3. Identify identical phrases across multiple reviews (potential brigading)
+    4. Analyze timing patterns and unusual review volumes
+    5. Check for coordinated negative campaigns
+    
+    ${!influenceResults ? 'Note: Influence detection found no strong external sources. The spike may be due to:' : 'Other potential factors:'}
+    - App update issues
+    - Service outages
+    - Competitive campaigns
+    - Seasonal patterns
+    - Marketing campaigns bringing new user types`;
     
     return message + context;
   }
