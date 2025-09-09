@@ -63,11 +63,6 @@ const UploadPage = ({ onFileUpload, onAppleImport, isLoading, error }) => {
 
       {/* Hero Section */}
       <div className="upload-hero">
-        <div className="hero-badge">
-          <Sparkles size={16} />
-          <span>Powered by Gemini AI</span>
-        </div>
-        
         <h1 className="hero-title">
           Transform Your App Reviews Into
           <span className="gradient-text"> Actionable Intelligence</span>

@@ -87,25 +87,6 @@
   margin: 0 auto;
 }
 
-.hero-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 16px;
-  background: rgba(59, 130, 246, 0.1);
-  border: 1px solid rgba(59, 130, 246, 0.3);
-  border-radius: 20px;
-  color: #60a5fa;
-  font-size: 14px;
-  font-weight: 500;
-  margin-bottom: 24px;
-}
-
-.hero-badge svg {
-  width: 16px;
-  height: 16px;
-}
-
 .hero-title {
   font-size: 56px;
   font-weight: 800;
