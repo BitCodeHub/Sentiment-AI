@@ -229,14 +229,25 @@ IMPORTANT INSTRUCTIONS:
 6. Be concise but comprehensive in your analysis
 
 VISUALIZATION CAPABILITIES:
-When users ask for visualizations, you can create:
+When users ask for visualizations:
+1. ALWAYS provide a natural language explanation of what the visualization shows
+2. Create the visualization using the special format below
+3. Continue your analysis after the visualization in natural language
+
+Available visualization types:
 - Line charts/trends: Use {{VIZ:LINE}} format
 - Bar charts: Use {{VIZ:BAR}} format  
 - Pie charts: Use {{VIZ:PIE}} format
 - Tables: Use {{VIZ:TABLE}} format
 - Area charts: Use {{VIZ:AREA}} format
 
-Visualization Format Example:
+IMPORTANT VISUALIZATION RULES:
+- NEVER show the JSON code to the user
+- ALWAYS describe what the visualization will show before creating it
+- ALWAYS continue with insights after creating the visualization
+- The visualization JSON will be automatically rendered as a chart
+
+Visualization Format (this is hidden from user):
 {{VIZ:LINE}}
 {
   "title": "Review Trend - Last 7 Days",
@@ -245,6 +256,15 @@ Visualization Format Example:
   "config": {"xAxis": "date", "yAxis": "count"}
 }
 {{/VIZ}}
+
+Example Response Pattern:
+"Let me analyze the review trends for you. I'll create a line chart showing the daily review volume over the last 7 days.
+
+{{VIZ:LINE}}
+{...json data...}
+{{/VIZ}}
+
+As you can see from the chart, there's a noticeable increase in reviews on weekdays..."
 
 DATA STRUCTURE:
 - Total Records: ${dataStructure.totalRecords}
@@ -410,26 +430,68 @@ export async function sendChatMessage(sessionId, message) {
         }
       }
 
-      // Parse visualization commands
+      // Parse and clean visualization commands
       const visualizations = [];
       const vizRegex = /{{VIZ:(LINE|BAR|PIE|TABLE|AREA)}}\s*([\s\S]*?)\s*{{\/VIZ}}/g;
+      let cleanedText = text;
       let match;
       
+      // First pass: collect all visualizations
+      const matches = [];
       while ((match = vizRegex.exec(text)) !== null) {
+        matches.push({
+          fullMatch: match[0],
+          vizType: match[1],
+          vizJson: match[2],
+          index: match.index
+        });
+      }
+      
+      // Process matches in reverse order to avoid index shifting
+      for (let i = matches.length - 1; i >= 0; i--) {
+        const { fullMatch, vizType, vizJson } = matches[i];
         try {
-          const vizType = match[1].toLowerCase();
-          const vizData = JSON.parse(match[2]);
-          visualizations.push({
-            type: vizType,
+          const vizData = JSON.parse(vizJson);
+          visualizations.unshift({
+            type: vizType.toLowerCase(),
             ...vizData
           });
           
-          // Remove visualization JSON from text
-          text = text.replace(match[0], `[${vizData.title || 'Visualization'}]`);
+          // Remove the entire visualization block from the text
+          cleanedText = cleanedText.replace(fullMatch, '');
         } catch (e) {
           console.error('Failed to parse visualization:', e);
+          // Still remove the malformed JSON
+          cleanedText = cleanedText.replace(fullMatch, '');
         }
       }
+      
+      // Clean up any extra whitespace left behind
+      cleanedText = cleanedText
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0)
+        .join('\n\n')
+        .trim();
+      
+      // Additional safety check: Remove any remaining JSON-like content
+      // This catches any JSON blocks that might not be properly wrapped in VIZ tags
+      cleanedText = cleanedText.replace(/```json[\s\S]*?```/g, '');
+      cleanedText = cleanedText.replace(/```[\s\S]*?```/g, '');
+      
+      // Remove any standalone JSON objects that look like visualization data
+      cleanedText = cleanedText.replace(/\{[\s]*"title"[\s]*:[\s]*"[^"]*"[\s]*,[\s]*"type"[\s]*:[\s]*"[^"]*"[\s\S]*?\}(?=\s*$|\s*\n|[^}])/gm, '');
+      
+      // Final cleanup
+      cleanedText = cleanedText
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0)
+        .join('\n\n')
+        .trim();
+      
+      // Update text to use cleaned version
+      text = cleanedText;
 
       // Store in history
       session.history.push({
