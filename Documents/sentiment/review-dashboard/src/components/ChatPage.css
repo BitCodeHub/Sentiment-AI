@@ -532,6 +532,7 @@
   height: 300px; /* Increased height to ensure all 3 rows are visible */
   flex: 1;
   overflow: hidden; /* Prevent any overflow */
+  max-width: 100%; /* Ensure container doesn't exceed parent width */
 }
 
 .suggestion-scroll-btn {
@@ -624,14 +625,16 @@
 /* Each page contains 3x2 grid */
 .suggestions-page {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr)); /* Use minmax to prevent column overflow */
   grid-template-rows: repeat(3, minmax(0, 1fr)); /* Use minmax to prevent overflow */
   gap: 10px; /* Slightly reduced gap */
   min-width: 100%;
+  width: 100%; /* Ensure full width */
   height: calc(100% - 8px); /* Account for wrapper padding */
   flex-shrink: 0;
   scroll-snap-align: start;
-  padding: 0 2px; /* Small horizontal padding for visual breathing room */
+  padding: 0 4px; /* Increased padding to prevent edge cutoff */
+  box-sizing: border-box; /* Include padding in width calculation */
 }
 
 /* Pagination dots */
@@ -670,8 +673,8 @@
 .suggestion-card {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 14px; /* Slightly reduced padding */
+  gap: 8px; /* Reduced gap */
+  padding: 10px 12px; /* Slightly reduced padding */
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
@@ -684,6 +687,8 @@
   overflow: hidden;
   height: 100%; /* Use full available height in grid cell */
   max-height: 90px; /* Prevent cards from getting too tall */
+  box-sizing: border-box; /* Include padding in size calculation */
+  min-width: 0; /* Allow flex items to shrink */
 }
 
 .suggestion-card::before {
@@ -721,6 +726,7 @@
 .suggestion-icon {
   flex-shrink: 0;
   transition: all 0.3s ease;
+  min-width: 16px; /* Ensure icon doesn't shrink */
 }
 
 .suggestion-card:hover .suggestion-icon {
@@ -736,6 +742,8 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
+  min-width: 0; /* Allow text to shrink properly */
+  word-break: break-word; /* Allow word breaking if needed */
 }
 
 .suggestion-arrow {

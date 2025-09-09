@@ -495,38 +495,18 @@ const ChatPage = ({ reviewData = [] }) => {
   // Handle manual scroll
   const handleScroll = () => {
     if (suggestionsScrollRef.current) {
-      // Clear existing timeout
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-      }
+      const container = suggestionsScrollRef.current;
+      const pageWidth = container.offsetWidth;
+      const currentScroll = container.scrollLeft;
+      const newPage = Math.round(currentScroll / pageWidth);
+      const maxPages = Math.ceil(allSuggestions.length / 6);
       
-      // Set new timeout to detect when scrolling stops
-      scrollTimeoutRef.current = setTimeout(() => {
-        const container = suggestionsScrollRef.current;
-        if (!container) return;
-        
-        const pageWidth = container.offsetWidth;
-        const currentScroll = container.scrollLeft;
-        const newPage = Math.round(currentScroll / pageWidth);
-        const maxPages = Math.ceil(allSuggestions.length / 6);
-        
-        // Ensure page is within bounds
-        const validPage = Math.min(Math.max(0, newPage), maxPages - 1);
-        
-        if (validPage !== currentPage) {
-          setCurrentPage(validPage);
-          randomizeSuggestionsForPage(validPage);
-          
-          // Snap to exact position if needed
-          const exactPosition = validPage * pageWidth;
-          if (Math.abs(currentScroll - exactPosition) > 5) {
-            container.scrollTo({
-              left: exactPosition,
-              behavior: 'smooth'
-            });
-          }
-        }
-      }, 150);
+      // Ensure page is within bounds
+      const validPage = Math.min(Math.max(0, newPage), maxPages - 1);
+      
+      if (validPage !== currentPage) {
+        setCurrentPage(validPage);
+      }
     }
   };
 
@@ -723,7 +703,7 @@ const ChatPage = ({ reviewData = [] }) => {
           )}
 
           {/* Welcome & Suggestions */}
-          {suggestions.length > 0 && messages.length <= 1 && (
+          {allSuggestions.length > 0 && messages.length <= 1 && (
             <div className="chat-welcome-container">
               <div className="welcome-header">
                 <div className="welcome-icon">
@@ -772,44 +752,47 @@ const ChatPage = ({ reviewData = [] }) => {
                 </button>
                 
                 <div className="suggestions-scroll-wrapper" ref={suggestionsScrollRef} onScroll={handleScroll}>
-                  <div className="suggestions-page">
-                    {suggestions.map((suggestion, idx) => {
-                      // Determine icon based on suggestion content
-                      let Icon = Lightbulb;
-                      let categoryClass = 'recommendation';
-                      
-                      if (suggestion.toLowerCase().includes('chart') || 
-                          suggestion.toLowerCase().includes('graph') || 
-                          suggestion.toLowerCase().includes('show') ||
-                          suggestion.toLowerCase().includes('display')) {
-                        Icon = BarChart2;
-                        categoryClass = 'visualization';
-                      } else if (suggestion.toLowerCase().includes('trend') ||
-                                 suggestion.toLowerCase().includes('analysis') ||
-                                 suggestion.toLowerCase().includes('pattern')) {
-                        Icon = TrendingUp;
-                        categoryClass = 'analytics';
-                      } else if (suggestion.toLowerCase().includes('customer') ||
-                                 suggestion.toLowerCase().includes('user') ||
-                                 suggestion.toLowerCase().includes('feedback')) {
-                        Icon = Users;
-                        categoryClass = 'insights';
-                      }
-                      
-                      return (
-                        <button
-                          key={idx}
-                          className={`suggestion-card ${categoryClass}`}
-                          onClick={() => handleSuggestionClick(suggestion)}
-                          disabled={isLoading}
-                        >
-                          <Icon size={16} className="suggestion-icon" />
-                          <span className="suggestion-text">{suggestion}</span>
-                          <ChevronDown size={14} className="suggestion-arrow" />
-                        </button>
-                      );
-                    })}
-                  </div>
+                  {/* Create multiple pages based on allSuggestions */}
+                  {Array.from({ length: Math.ceil(allSuggestions.length / 6) }, (_, pageIndex) => (
+                    <div key={pageIndex} className="suggestions-page">
+                      {allSuggestions.slice(pageIndex * 6, (pageIndex + 1) * 6).map((suggestion, idx) => {
+                        // Determine icon based on suggestion content
+                        let Icon = Lightbulb;
+                        let categoryClass = 'recommendation';
+                        
+                        if (suggestion.toLowerCase().includes('chart') || 
+                            suggestion.toLowerCase().includes('graph') || 
+                            suggestion.toLowerCase().includes('show') ||
+                            suggestion.toLowerCase().includes('display')) {
+                          Icon = BarChart2;
+                          categoryClass = 'visualization';
+                        } else if (suggestion.toLowerCase().includes('trend') ||
+                                   suggestion.toLowerCase().includes('analysis') ||
+                                   suggestion.toLowerCase().includes('pattern')) {
+                          Icon = TrendingUp;
+                          categoryClass = 'analytics';
+                        } else if (suggestion.toLowerCase().includes('customer') ||
+                                   suggestion.toLowerCase().includes('user') ||
+                                   suggestion.toLowerCase().includes('feedback')) {
+                          Icon = Users;
+                          categoryClass = 'insights';
+                        }
+                        
+                        return (
+                          <button
+                            key={`${pageIndex}-${idx}`}
+                            className={`suggestion-card ${categoryClass}`}
+                            onClick={() => handleSuggestionClick(suggestion)}
+                            disabled={isLoading}
+                          >
+                            <Icon size={16} className="suggestion-icon" />
+                            <span className="suggestion-text">{suggestion}</span>
+                            <ChevronDown size={14} className="suggestion-arrow" />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ))}
                 </div>
                 
                 <button 
