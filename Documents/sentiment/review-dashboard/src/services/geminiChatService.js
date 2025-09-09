@@ -191,9 +191,11 @@ export async function initializeChatSession(sessionId, reviewData, metadata = {}
     // Extract comprehensive data structure
     const dataStructure = extractDataStructure(reviewData);
     
-    // Generate proactive insights
+    // Generate proactive insights and advanced analysis
     const proactiveInsights = generateProactiveInsights(reviewData);
     const userPersonas = identifyUserPersonas(reviewData);
+    const aspectAnalysis = performAspectBasedSentiment(reviewData);
+    const emotionAnalysis = detectEmotions(reviewData);
     
     // Create system context from review data
     const context = `You are Rivue, an advanced AI assistant combining the expertise of a Data Scientist, Business Intelligence Analyst, and Technical Analyst. You specialize in analyzing customer reviews and app data with ${reviewData.length} records at your disposal.
@@ -335,12 +337,38 @@ ${proactiveInsights}
 USER PERSONAS IDENTIFIED:
 ${userPersonas}
 
+ASPECT-BASED SENTIMENT ANALYSIS (ABSA):
+${Object.entries(aspectAnalysis).map(([aspect, data]) => 
+  `- ${aspect.toUpperCase()}: ${data.positive}% positive, ${data.negative}% negative, ${data.neutral}% neutral (${data.totalMentions} mentions)`
+).join('\n')}
+
+EMOTION DETECTION ANALYSIS:
+${Object.entries(emotionAnalysis).map(([emotion, data]) => 
+  `- ${emotion.toUpperCase()}: ${data.count} occurrences (${data.percentage}% of reviews), severity: ${data.avgSeverity}/3`
+).join('\n')}
+
+ADVANCED CAPABILITIES:
+
+1. ASPECT-BASED SENTIMENT (ABSA):
+- Split reviews into aspects (UI, performance, features, pricing, support, usability, reliability)
+- Analyze sentiment for each aspect independently
+- Example: "Review shows 2★ overall, but positive about UI design (85%), negative about subscription pricing (92%)"
+- Identify which aspects drive overall satisfaction
+
+2. EMOTION LAYER DETECTION:
+- Detect emotions beyond positive/negative: anger, sadness, joy, fear, surprise, disgust, frustration, sarcasm
+- Measure emotion severity (1-3 scale) for prioritization
+- Example: "15% of reviews show high-severity anger - requires immediate attention"
+- Use emotion data for triage and response strategy
+
 When responding:
 1. Start with proactive insights if relevant
-2. Use scenario modeling for forward-looking questions
-3. Segment analysis by persona when appropriate
-4. Provide actionable recommendations with impact estimates
-5. Alert on any critical patterns or anomalies detected
+2. Use ABSA to provide nuanced feedback analysis
+3. Include emotion detection for severity assessment
+4. Use scenario modeling for forward-looking questions
+5. Segment analysis by persona when appropriate
+6. Provide actionable recommendations with impact estimates
+7. Alert on any critical patterns or anomalies detected
 
 You have full access to all data fields and can perform any analysis, aggregation, or visualization requested by the user.`;
 
@@ -352,7 +380,7 @@ You have full access to all data fields and can perform any analysis, aggregatio
       },
       {
         role: "model",
-        parts: [{ text: "I understand. I'm Rivue, your AI-powered Data Scientist, Business Intelligence Analyst, and Technical Expert. I have access to " + reviewData.length + " records with " + extractDataStructure(reviewData).fields.length + " data fields.\n\n" + (proactiveInsights ? "🚨 **Intelligence Brief:**\n" + proactiveInsights + "\n\n" : "") + "I can help you with:\n📊 Advanced analytics and predictive modeling\n📈 Interactive visualizations and dashboards\n💡 Strategic business insights and recommendations\n🔧 Technical issue diagnosis and prioritization\n🎯 Customer experience optimization\n📃 Scenario testing and forecasting\n👥 Persona-based analysis\n🔊 Audio responses for hands-free interaction\n\nWhat would you like to explore? I can also elaborate on any of the issues I've identified." }],
+        parts: [{ text: "I understand. I'm Rivue, your AI-powered Data Scientist, Business Intelligence Analyst, and Technical Expert. I have access to " + reviewData.length + " records with " + extractDataStructure(reviewData).fields.length + " data fields.\n\n" + (proactiveInsights ? "🚨 **Intelligence Brief:**\n" + proactiveInsights + "\n\n" : "") + "I can help you with:\n📊 Advanced analytics and predictive modeling\n📈 Interactive visualizations and dashboards\n💡 Strategic business insights and recommendations\n🔧 Technical issue diagnosis and prioritization\n🎯 Customer experience optimization\n📃 Scenario testing and forecasting\n👥 Persona-based analysis\n🎨 Aspect-based sentiment analysis (UI, performance, features, pricing)\n😊 Emotion detection and severity assessment\n🔊 Audio responses for hands-free interaction\n\nWhat would you like to explore? I can also elaborate on any of the issues I've identified." }],
       },
     ];
 
@@ -797,6 +825,167 @@ function generateProactiveInsights(reviewData) {
   return insights.length > 0 ? insights.join('\\n') : '';
 }
 
+// Perform Aspect-Based Sentiment Analysis (ABSA)
+function performAspectBasedSentiment(reviewData) {
+  if (!reviewData || reviewData.length === 0) return {};
+  
+  const aspects = {
+    ui: { positive: 0, negative: 0, neutral: 0, keywords: ['ui', 'interface', 'design', 'layout', 'button', 'screen', 'visual', 'look'] },
+    performance: { positive: 0, negative: 0, neutral: 0, keywords: ['performance', 'speed', 'fast', 'slow', 'lag', 'crash', 'freeze', 'responsive'] },
+    features: { positive: 0, negative: 0, neutral: 0, keywords: ['feature', 'function', 'capability', 'option', 'tool', 'missing', 'need'] },
+    pricing: { positive: 0, negative: 0, neutral: 0, keywords: ['price', 'cost', 'subscription', 'expensive', 'cheap', 'value', 'money', 'free'] },
+    support: { positive: 0, negative: 0, neutral: 0, keywords: ['support', 'help', 'customer', 'service', 'response', 'team', 'contact'] },
+    usability: { positive: 0, negative: 0, neutral: 0, keywords: ['easy', 'hard', 'confusing', 'intuitive', 'simple', 'complex', 'user-friendly'] },
+    reliability: { positive: 0, negative: 0, neutral: 0, keywords: ['reliable', 'stable', 'buggy', 'error', 'issue', 'problem', 'work'] }
+  };
+  
+  const positiveWords = ['great', 'good', 'excellent', 'love', 'perfect', 'amazing', 'best', 'awesome', 'fantastic', 'wonderful'];
+  const negativeWords = ['bad', 'poor', 'terrible', 'hate', 'worst', 'awful', 'horrible', 'sucks', 'disappointing', 'frustrating'];
+  
+  reviewData.forEach(review => {
+    const content = (review.content || review.Review || review.Body || '').toLowerCase();
+    const rating = review.rating || review.Rating || 0;
+    const generalSentiment = rating >= 4 ? 'positive' : rating <= 2 ? 'negative' : 'neutral';
+    
+    // Analyze each aspect
+    Object.entries(aspects).forEach(([aspectName, aspectData]) => {
+      const { keywords } = aspectData;
+      let aspectFound = false;
+      let aspectSentiment = 'neutral';
+      
+      // Check if this review mentions the aspect
+      for (const keyword of keywords) {
+        if (content.includes(keyword)) {
+          aspectFound = true;
+          
+          // Look for sentiment words near the keyword
+          const wordIndex = content.indexOf(keyword);
+          const contextStart = Math.max(0, wordIndex - 50);
+          const contextEnd = Math.min(content.length, wordIndex + 50);
+          const context = content.substring(contextStart, contextEnd);
+          
+          // Check for positive/negative words in context
+          let hasPositive = positiveWords.some(word => context.includes(word));
+          let hasNegative = negativeWords.some(word => context.includes(word));
+          
+          if (hasPositive && !hasNegative) {
+            aspectSentiment = 'positive';
+          } else if (hasNegative && !hasPositive) {
+            aspectSentiment = 'negative';
+          } else {
+            // Use overall rating as fallback
+            aspectSentiment = generalSentiment;
+          }
+          
+          break;
+        }
+      }
+      
+      if (aspectFound) {
+        aspects[aspectName][aspectSentiment]++;
+      }
+    });
+  });
+  
+  // Calculate percentages and summaries
+  const aspectSummaries = {};
+  Object.entries(aspects).forEach(([aspectName, sentiments]) => {
+    const total = sentiments.positive + sentiments.negative + sentiments.neutral;
+    if (total > 0) {
+      aspectSummaries[aspectName] = {
+        positive: Math.round((sentiments.positive / total) * 100),
+        negative: Math.round((sentiments.negative / total) * 100),
+        neutral: Math.round((sentiments.neutral / total) * 100),
+        totalMentions: total
+      };
+    }
+  });
+  
+  return aspectSummaries;
+}
+
+// Detect emotions in reviews
+function detectEmotions(reviewData) {
+  if (!reviewData || reviewData.length === 0) return {};
+  
+  const emotions = {
+    anger: { count: 0, severity: 0, keywords: ['angry', 'furious', 'rage', 'mad', 'pissed', 'annoyed', 'irritated'] },
+    sadness: { count: 0, severity: 0, keywords: ['sad', 'disappointed', 'unhappy', 'depressed', 'upset', 'let down'] },
+    joy: { count: 0, severity: 0, keywords: ['happy', 'joy', 'delighted', 'pleased', 'excited', 'love', 'amazing'] },
+    fear: { count: 0, severity: 0, keywords: ['afraid', 'scared', 'worried', 'concern', 'anxious', 'nervous'] },
+    surprise: { count: 0, severity: 0, keywords: ['surprised', 'shocked', 'amazed', 'unexpected', 'wow', 'unbelievable'] },
+    disgust: { count: 0, severity: 0, keywords: ['disgusting', 'gross', 'terrible', 'awful', 'hate', 'horrible'] },
+    frustration: { count: 0, severity: 0, keywords: ['frustrated', 'annoying', 'irritating', 'infuriating', 'exasperating'] },
+    sarcasm: { count: 0, severity: 0, patterns: ['yeah right', 'sure thing', 'great job', 'thanks for nothing', 'wonderful'] }
+  };
+  
+  // Severity indicators
+  const severityWords = {
+    high: ['very', 'extremely', 'incredibly', 'absolutely', 'totally', 'completely'],
+    medium: ['quite', 'pretty', 'rather', 'fairly'],
+    low: ['slightly', 'a bit', 'somewhat', 'a little']
+  };
+  
+  reviewData.forEach(review => {
+    const content = (review.content || review.Review || review.Body || '').toLowerCase();
+    const rating = review.rating || review.Rating || 0;
+    
+    Object.entries(emotions).forEach(([emotionName, emotionData]) => {
+      let emotionDetected = false;
+      let severity = 1;
+      
+      // Check for emotion keywords
+      if (emotionData.keywords) {
+        for (const keyword of emotionData.keywords) {
+          if (content.includes(keyword)) {
+            emotionDetected = true;
+            
+            // Check severity
+            const wordIndex = content.indexOf(keyword);
+            const contextStart = Math.max(0, wordIndex - 30);
+            const context = content.substring(contextStart, wordIndex);
+            
+            if (severityWords.high.some(word => context.includes(word))) severity = 3;
+            else if (severityWords.medium.some(word => context.includes(word))) severity = 2;
+            
+            break;
+          }
+        }
+      }
+      
+      // Special handling for sarcasm
+      if (emotionName === 'sarcasm' && emotionData.patterns) {
+        for (const pattern of emotionData.patterns) {
+          if (content.includes(pattern) && rating <= 2) {
+            emotionDetected = true;
+            severity = 2;
+            break;
+          }
+        }
+      }
+      
+      if (emotionDetected) {
+        emotions[emotionName].count++;
+        emotions[emotionName].severity += severity;
+      }
+    });
+  });
+  
+  // Calculate average severity and create summary
+  const emotionSummary = {};
+  Object.entries(emotions).forEach(([emotionName, data]) => {
+    if (data.count > 0) {
+      emotionSummary[emotionName] = {
+        count: data.count,
+        avgSeverity: (data.severity / data.count).toFixed(1),
+        percentage: Math.round((data.count / reviewData.length) * 100)
+      };
+    }
+  });
+  
+  return emotionSummary;
+}
+
 // Identify user personas from review data
 function identifyUserPersonas(reviewData) {
   if (!reviewData || reviewData.length === 0) return '';
@@ -873,6 +1062,20 @@ export function generateChatSuggestions(reviewData) {
   
   // Define question categories
   const categories = {
+    // Aspect-Based Sentiment & Emotion Analysis
+    aspectAndEmotion: [
+      "Show me aspect-based sentiment analysis across all reviews",
+      "Which aspects of our app are users most positive/negative about?",
+      "Create a visualization showing emotion distribution in recent reviews",
+      "Which features trigger the most anger or frustration?",
+      "How does UI sentiment compare to performance sentiment?",
+      "Show me reviews with high-severity negative emotions for immediate action",
+      "What percentage of reviews contain sarcasm or disappointment?",
+      "Break down pricing sentiment by user persona",
+      "Which aspects correlate most strongly with 1-star vs 5-star reviews?",
+      "Create an emotion heatmap for the last 30 days"
+    ],
+    
     // Proactive Intelligence & Scenario Testing
     proactiveIntelligence: [
       "Give me this week's intelligence briefing on top issues and trends",
