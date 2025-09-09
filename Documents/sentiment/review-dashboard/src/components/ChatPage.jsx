@@ -14,6 +14,7 @@ import {
   clearChatSession,
   generateChatSuggestions 
 } from '../services/geminiChatService';
+import enhancedTTS from '../services/enhancedTTSService';
 import ChatVisualization from './ChatVisualization';
 import './ChatPage.css';
 
@@ -43,8 +44,9 @@ const ChatPage = ({ reviewData = [] }) => {
   const scrollTimeoutRef = useRef(null);
   const navigate = useNavigate();
   
-  // Check for speech synthesis support
-  const speechSynthesisSupported = 'speechSynthesis' in window;
+  // Check for speech synthesis support using enhanced TTS
+  const [ttsCapabilities, setTtsCapabilities] = useState(null);
+  const speechSynthesisSupported = ttsCapabilities?.speechSynthesis || false;
   
   // Placeholder examples that rotate
   const placeholderExamples = [
@@ -60,24 +62,33 @@ const ChatPage = ({ reviewData = [] }) => {
     "Try: \"Create an executive summary\"",
   ];
   
-  // Load voices when they become available
+  // Check TTS capabilities and preload voices
   useEffect(() => {
-    if (speechSynthesisSupported) {
-      // Chrome loads voices asynchronously
-      window.speechSynthesis.onvoiceschanged = () => {
-        window.speechSynthesis.getVoices();
-      };
-      // Initial load attempt
-      window.speechSynthesis.getVoices();
-    }
+    const initTTS = async () => {
+      // Check capabilities
+      const capabilities = enhancedTTS.checkCapabilities();
+      setTtsCapabilities(capabilities);
+      
+      // Preload voices for better quality selection
+      if (capabilities.speechSynthesis) {
+        try {
+          await enhancedTTS.preloadVoices();
+          const availableVoices = enhancedTTS.getAvailableVoices();
+          console.log('Available TTS voices:', availableVoices.length);
+          console.log('Enhanced voices:', availableVoices.filter(v => v.quality !== 'standard').length);
+        } catch (error) {
+          console.error('Failed to preload voices:', error);
+        }
+      }
+    };
+    
+    initTTS();
   }, []);
 
   // Stop speech when component unmounts or audio is disabled
   useEffect(() => {
     return () => {
-      if (speechSynthesisSupported) {
-        window.speechSynthesis.cancel();
-      }
+      enhancedTTS.stopSpeech();
     };
   }, []);
 
@@ -352,62 +363,52 @@ const ChatPage = ({ reviewData = [] }) => {
     setConversations(conversations.filter(c => c.id !== convId));
   };
 
-  const speakMessage = (text) => {
-    // Cancel any ongoing speech
-    window.speechSynthesis.cancel();
+  const speakMessage = async (text) => {
+    // Stop any ongoing speech
+    enhancedTTS.stopSpeech();
+    setIsSpeaking(false);
     
-    // Remove markdown formatting for better speech
-    const cleanText = text
-      .replace(/\*\*/g, '')
-      .replace(/\*/g, '')
-      .replace(/`/g, '')
-      .replace(/\n\n/g, '. ')
-      .replace(/\n/g, '. ')
-      .replace(/[•]/g, '')
-      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1'); // Remove markdown links
-    
-    const utterance = new SpeechSynthesisUtterance(cleanText);
-    
-    // Configure speech settings
-    utterance.rate = 0.9; // Slightly slower for better clarity
-    utterance.pitch = 1.0;
-    utterance.volume = 1.0;
-    
-    // Try to use a natural-sounding voice
-    const voices = window.speechSynthesis.getVoices();
-    const preferredVoice = voices.find(
-      voice => voice.lang.startsWith('en') && voice.name.includes('Natural')
-    ) || voices.find(
-      voice => voice.lang.startsWith('en-US')
-    );
-    
-    if (preferredVoice) {
-      utterance.voice = preferredVoice;
-    }
-    
-    utterance.onstart = () => {
+    try {
       setIsSpeaking(true);
-      setCurrentUtterance(utterance);
-    };
-    
-    utterance.onend = () => {
+      
+      // Use enhanced TTS with natural voice selection
+      await enhancedTTS.enhancedSpeak(text, {
+        gender: 'female', // Prefer female voices (often sound more natural)
+        rate: 0.95, // Optimal rate for clarity
+        pitch: 1.05, // Slightly higher pitch for warmth
+        volume: 1.0,
+        addPauses: true, // Add natural pauses
+        onStart: () => {
+          console.log('Started speaking with enhanced TTS');
+        },
+        onEnd: () => {
+          setIsSpeaking(false);
+          setCurrentUtterance(null);
+        },
+        onError: (error) => {
+          console.error('Enhanced TTS error:', error);
+          setIsSpeaking(false);
+          setCurrentUtterance(null);
+        },
+        onUtterance: (utterance) => {
+          setCurrentUtterance(utterance);
+        }
+      });
+    } catch (error) {
+      console.error('Failed to speak message:', error);
       setIsSpeaking(false);
       setCurrentUtterance(null);
-    };
-    
-    utterance.onerror = (event) => {
-      console.error('Speech synthesis error:', event);
-      setIsSpeaking(false);
-      setCurrentUtterance(null);
-    };
-    
-    window.speechSynthesis.speak(utterance);
+      
+      // Show user-friendly error
+      setError('Unable to play audio. Please check your browser settings.');
+      setTimeout(() => setError(null), 3000);
+    }
   };
   
   const toggleAudio = () => {
     if (isSpeaking) {
       // Stop current speech
-      window.speechSynthesis.cancel();
+      enhancedTTS.stopSpeech();
       setIsSpeaking(false);
       setCurrentUtterance(null);
     }
@@ -415,11 +416,9 @@ const ChatPage = ({ reviewData = [] }) => {
   };
   
   const stopSpeaking = () => {
-    if (speechSynthesisSupported) {
-      window.speechSynthesis.cancel();
-      setIsSpeaking(false);
-      setCurrentUtterance(null);
-    }
+    enhancedTTS.stopSpeech();
+    setIsSpeaking(false);
+    setCurrentUtterance(null);
   };
 
   const scrollSuggestions = (direction) => {
