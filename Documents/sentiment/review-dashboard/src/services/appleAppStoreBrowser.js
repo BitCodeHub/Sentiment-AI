@@ -4,6 +4,7 @@ class AppleAppStoreBrowserService {
   constructor() {
     // Use backend API endpoint from environment or default
     this.backendURL = import.meta.env.VITE_APPLE_API_ENDPOINT || 'http://localhost:3001/api/apple-reviews';
+    console.log('Apple Backend URL:', this.backendURL);
     this.isBackendAvailable = false;
     this.checkBackendAvailability();
   }
@@ -14,11 +15,12 @@ class AppleAppStoreBrowserService {
   async checkBackendAvailability() {
     try {
       const healthEndpoint = this.backendURL.replace('/apple-reviews', '/health');
+      console.log('Checking backend at:', healthEndpoint);
       const response = await axios.get(healthEndpoint, { timeout: 5000 });
       this.isBackendAvailable = response.data.status === 'ok';
       console.log('Apple backend service available:', this.isBackendAvailable);
     } catch (error) {
-      console.warn('Apple backend service not available, using mock data');
+      console.warn('Apple backend service not available, using mock data', error.message);
       this.isBackendAvailable = false;
     }
   }
