@@ -7,7 +7,7 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const fs = require('fs');
 const path = require('path');
-const { getAppleCredentials, validateCredentials } = require('./config/apple-credentials');
+const { getAppleCredentials, validateCredentials, getAppleApps } = require('./config/apple-credentials');
 require('dotenv').config({ 
   path: process.env.NODE_ENV === 'production' ? '.env.production' : '.env' 
 });
@@ -91,8 +91,10 @@ const APPLE_API_BASE = 'https://api.appstoreconnect.apple.com/v1';
 
 // Load stored credentials if available
 const storedCredentials = getAppleCredentials();
+const configuredApps = getAppleApps();
 if (storedCredentials && validateCredentials(storedCredentials)) {
-  console.log('Loaded stored Apple credentials for app:', storedCredentials.appId);
+  console.log('Loaded stored Apple shared credentials');
+  console.log(`Configured apps: ${configuredApps.map(app => `${app.name} (${app.id})`).join(', ')}`);
 } else if (storedCredentials) {
   console.error('Invalid stored credentials format');
 }
@@ -204,13 +206,20 @@ app.post('/api/apple-reviews', upload.single('privateKey'), async (req, res) => 
   try {
     let credentials;
     
+    // Check if appId is provided in the request
+    const requestedAppId = req.body.appId;
+    
     // Priority 1: Use server-stored credentials if available and valid
     if (storedCredentials && validateCredentials(storedCredentials)) {
       console.log('Using server-stored Apple credentials');
-      credentials = storedCredentials;
+      // If server has credentials but no specific appId, use the requested one
+      credentials = { ...storedCredentials };
+      if (requestedAppId && !credentials.appId) {
+        credentials.appId = requestedAppId;
+      }
     } 
     // Priority 2: Use uploaded credentials
-    else if (req.body.appId && req.body.issuerId) {
+    else if (requestedAppId && req.body.issuerId) {
       console.log('Using uploaded Apple credentials');
       
       // Handle private key from file upload or text field
@@ -227,7 +236,7 @@ app.post('/api/apple-reviews', upload.single('privateKey'), async (req, res) => 
       }
       
       credentials = {
-        appId: req.body.appId,
+        appId: requestedAppId,
         issuerId: req.body.issuerId,
         keyId: req.body.keyId,
         privateKey: privateKey
@@ -319,12 +328,23 @@ app.post('/api/apple-reviews', upload.single('privateKey'), async (req, res) => 
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
+  const apps = getAppleApps();
   res.json({ 
     status: 'ok', 
     service: 'Apple App Store Review API',
     environment: process.env.NODE_ENV || 'development',
     timestamp: new Date().toISOString(),
-    uptime: process.uptime()
+    uptime: process.uptime(),
+    configuredApps: apps.length
+  });
+});
+
+// Get configured apps endpoint
+app.get('/api/apple-apps', (req, res) => {
+  const apps = getAppleApps();
+  res.json({ 
+    apps: apps,
+    hasServerCredentials: !!storedCredentials
   });
 });
 

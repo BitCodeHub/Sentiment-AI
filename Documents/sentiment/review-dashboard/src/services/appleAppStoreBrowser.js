@@ -158,7 +158,7 @@ class AppleAppStoreBrowserService {
    * Main method to import reviews from Apple App Store
    * Calls backend API if available, otherwise returns mock data
    */
-  async importReviews(appId, issuerId, privateKeyContent) {
+  async importReviews(appId, issuerId, privateKeyContent, useServerCredentials = false) {
     try {
       console.log('Importing Apple App Store reviews...');
       console.log('App ID:', appId);
@@ -175,14 +175,18 @@ class AppleAppStoreBrowserService {
           // Call backend API with credentials
           const formData = new FormData();
           formData.append('appId', appId);
-          formData.append('issuerId', issuerId);
           
-          // If privateKeyContent is a File object, append as file
-          if (privateKeyContent instanceof File) {
-            formData.append('privateKey', privateKeyContent);
-          } else {
-            // Otherwise send as text
-            formData.append('privateKey', privateKeyContent);
+          // Only send credentials if not using server credentials
+          if (!useServerCredentials) {
+            formData.append('issuerId', issuerId);
+            
+            // If privateKeyContent is a File object, append as file
+            if (privateKeyContent instanceof File) {
+              formData.append('privateKey', privateKeyContent);
+            } else {
+              // Otherwise send as text
+              formData.append('privateKey', privateKeyContent);
+            }
           }
           
           const response = await axios.post(this.backendURL, formData, {

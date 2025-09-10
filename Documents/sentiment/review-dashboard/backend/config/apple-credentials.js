@@ -2,16 +2,55 @@ const fs = require('fs');
 const path = require('path');
 
 /**
+ * Get Apple apps configuration from environment variables
+ */
+function getAppleApps() {
+  const apps = [];
+  
+  // Check for multiple apps configuration
+  if (process.env.APPLE_APP1_ID) {
+    // Multiple apps configuration
+    let appIndex = 1;
+    while (process.env[`APPLE_APP${appIndex}_ID`]) {
+      apps.push({
+        id: process.env[`APPLE_APP${appIndex}_ID`],
+        name: process.env[`APPLE_APP${appIndex}_NAME`] || `App ${appIndex}`
+      });
+      appIndex++;
+    }
+  } else if (process.env.APPLE_APP_IDS) {
+    // Comma-separated list of app IDs
+    const appIds = process.env.APPLE_APP_IDS.split(',').map(id => id.trim());
+    const appNames = process.env.APPLE_APP_NAMES?.split(',').map(name => name.trim()) || [];
+    
+    appIds.forEach((id, index) => {
+      apps.push({
+        id: id,
+        name: appNames[index] || `App ${index + 1}`
+      });
+    });
+  } else if (process.env.APPLE_APP_ID) {
+    // Single app configuration (legacy)
+    apps.push({
+      id: process.env.APPLE_APP_ID,
+      name: process.env.APPLE_APP_NAME || 'Default App'
+    });
+  }
+  
+  return apps;
+}
+
+/**
  * Get Apple credentials from environment variables
  * Supports both base64-encoded private key (for Render) and file path
  */
-function getAppleCredentials() {
-  // Check if all required environment variables exist
-  const requiredVars = ['APPLE_APP_ID', 'APPLE_ISSUER_ID', 'APPLE_KEY_ID'];
+function getAppleCredentials(appId = null) {
+  // Check shared credentials
+  const requiredVars = ['APPLE_ISSUER_ID', 'APPLE_KEY_ID'];
   const missingVars = requiredVars.filter(varName => !process.env[varName]);
   
   if (missingVars.length > 0) {
-    console.log('Apple credentials not configured on server');
+    console.log('Apple shared credentials not configured on server');
     return null;
   }
   
@@ -29,12 +68,18 @@ function getAppleCredentials() {
         return null;
       }
       
-      return {
-        appId: process.env.APPLE_APP_ID,
+      // If appId is provided, use it; otherwise return credentials without appId
+      const credentials = {
         issuerId: process.env.APPLE_ISSUER_ID,
         keyId: process.env.APPLE_KEY_ID,
         privateKey: privateKey
       };
+      
+      if (appId) {
+        credentials.appId = appId;
+      }
+      
+      return credentials;
     } catch (error) {
       console.error('Error decoding base64 private key:', error.message);
       return null;
@@ -53,12 +98,18 @@ function getAppleCredentials() {
       
       const privateKey = fs.readFileSync(privateKeyPath, 'utf8');
       
-      return {
-        appId: process.env.APPLE_APP_ID,
+      // If appId is provided, use it; otherwise return credentials without appId
+      const credentials = {
         issuerId: process.env.APPLE_ISSUER_ID,
         keyId: process.env.APPLE_KEY_ID,
         privateKey: privateKey
       };
+      
+      if (appId) {
+        credentials.appId = appId;
+      }
+      
+      return credentials;
     } catch (error) {
       console.error('Error reading private key file:', error.message);
       return null;
@@ -105,5 +156,6 @@ function validateCredentials(credentials) {
 
 module.exports = {
   getAppleCredentials,
-  validateCredentials
+  validateCredentials,
+  getAppleApps
 };
