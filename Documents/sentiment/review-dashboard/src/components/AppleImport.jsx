@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Apple, Key, Hash, Upload, AlertCircle, CheckCircle, Loader, Info, Database, RefreshCw, Calendar } from 'lucide-react';
+import { Apple, Key, Hash, Upload, AlertCircle, CheckCircle, Loader, Info, Calendar } from 'lucide-react';
 import appleAppStoreBrowserService from '../services/appleAppStoreBrowser';
 import CacheStatus from './CacheStatus';
 import DateRangeCalendar from './DateRangeCalendar';
@@ -13,16 +13,14 @@ const AppleImport = ({ onImport }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
-  const [showInstructions, setShowInstructions] = useState(false);
   const [backendAvailable, setBackendAvailable] = useState(null);
   const [importProgress, setImportProgress] = useState(null);
   const [isMockData, setIsMockData] = useState(false);
   const [availableApps, setAvailableApps] = useState([]);
   const [hasServerCredentials, setHasServerCredentials] = useState(false);
-  const [useServerCredentials, setUseServerCredentials] = useState(true);
-  const [showCacheOptions, setShowCacheOptions] = useState(false);
-  const [useCache, setUseCache] = useState(true);
-  const [forceRefresh, setForceRefresh] = useState(false);
+  const useServerCredentials = true; // Always use server credentials
+  const useCache = true; // Always use cache when available
+  const forceRefresh = false; // Don't force refresh by default
   const [metadata, setMetadata] = useState(null);
   const [fetchingMetadata, setFetchingMetadata] = useState(false);
   const [selectedStartDate, setSelectedStartDate] = useState(null);
@@ -287,20 +285,6 @@ const AppleImport = ({ onImport }) => {
           </div>
         )}
 
-        {/* Toggle for using server credentials */}
-        {hasServerCredentials && (
-          <div className="form-group">
-            <label className="checkbox-label">
-              <input
-                type="checkbox"
-                checked={useServerCredentials}
-                onChange={(e) => setUseServerCredentials(e.target.checked)}
-                disabled={isLoading}
-              />
-              Use server-configured credentials
-            </label>
-          </div>
-        )}
 
         {/* Date Range Selector */}
         {showDateRange && appId && (
@@ -322,51 +306,6 @@ const AppleImport = ({ onImport }) => {
           </div>
         )}
 
-        {/* Cache Options */}
-        <div className="form-group">
-          <button
-            type="button"
-            className="toggle-cache-options"
-            onClick={() => setShowCacheOptions(!showCacheOptions)}
-          >
-            {showCacheOptions ? 'Hide' : 'Show'} Cache Options
-          </button>
-          
-          {showCacheOptions && (
-            <div className="cache-options-panel">
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  checked={useCache}
-                  onChange={(e) => {
-                    setUseCache(e.target.checked);
-                    if (!e.target.checked) setForceRefresh(false);
-                  }}
-                  disabled={isLoading}
-                />
-                Use cached reviews if available
-              </label>
-              
-              {useCache && (
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={forceRefresh}
-                    onChange={(e) => setForceRefresh(e.target.checked)}
-                    disabled={isLoading}
-                  />
-                  Force refresh (fetch new reviews since last update)
-                </label>
-              )}
-              
-              <small className="cache-hint">
-                {useCache && !forceRefresh && 'Will use cached reviews if available, otherwise fetch all'}
-                {useCache && forceRefresh && 'Will fetch only new reviews since last update'}
-                {!useCache && 'Will fetch all reviews from Apple (may take longer)'}
-              </small>
-            </div>
-          )}
-        </div>
         
         {/* Show manual app ID input if no server credentials or user wants to use different credentials */}
         {(!hasServerCredentials || !useServerCredentials || availableApps.length === 0) && (
@@ -472,71 +411,27 @@ const AppleImport = ({ onImport }) => {
           </div>
         )}
 
-        <div className="import-actions">
-          <button
-            className="import-btn primary"
-            onClick={handleEnterApp}
-            disabled={!appId}
-          >
-            Enter Dashboard
-          </button>
-
-          <button
-            className="import-btn secondary"
-            onClick={() => setShowInstructions(!showInstructions)}
-          >
-            {showInstructions ? 'Hide' : 'Show'} Instructions
-          </button>
-          
-          <details className="advanced-options">
-            <summary>Advanced Options</summary>
-            <div className="advanced-buttons">
-              <button
-                className="import-btn secondary"
-                onClick={handleImport}
-                disabled={isLoading || !appId || (!hasServerCredentials || !useServerCredentials) && (!issuerId || !privateKey)}
-              >
-                {isLoading ? 'Importing...' : 'Import Reviews Now'}
-              </button>
-            </div>
-          </details>
-        </div>
-
-
-        {showInstructions && (
-          <div className="instructions">
-            <h4>How to get your Apple App Store credentials:</h4>
-            <ol>
-              <li>
-                <strong>App ID:</strong> Log in to App Store Connect → My Apps → Select your app → App Information → General Information → Apple ID
-              </li>
-              <li>
-                <strong>Issuer ID:</strong> App Store Connect → Users and Access → Keys → Copy your Issuer ID (top of the page)
-              </li>
-              <li>
-                <strong>Private Key:</strong> App Store Connect → Users and Access → Keys → Create a new key with "App Store Connect API" access → Download the .p8 file
-              </li>
-            </ol>
-            <div className="note">
-              <strong>Note:</strong> 
-              {backendAvailable 
-                ? 'Your credentials will be securely sent to the backend service for API authentication.'
-                : 'Backend service not detected. Using demo mode with sample data. To fetch real reviews, start the backend service (see documentation).'}
-            </div>
-            
-            {!backendAvailable && (
-              <div className="backend-setup">
-                <h5>Quick Backend Setup:</h5>
-                <ol>
-                  <li>Navigate to the <code>backend</code> folder</li>
-                  <li>Run <code>npm install</code></li>
-                  <li>Run <code>npm start</code></li>
-                  <li>Refresh this page to connect</li>
-                </ol>
-              </div>
-            )}
+        {/* Analyze Now Button */}
+        {appId && (
+          <div className="analyze-actions">
+            <button
+              className="analyze-btn"
+              onClick={handleEnterApp}
+              disabled={!appId || isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Loader className="spinner" size={20} />
+                  Analyzing...
+                </>
+              ) : (
+                <>Analyze Now</>  
+              )}
+            </button>
           </div>
         )}
+
+
       </div>
     </div>
   );
