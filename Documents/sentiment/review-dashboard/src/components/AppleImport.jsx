@@ -119,33 +119,47 @@ const AppleImport = ({ onImport }) => {
       
       setImportProgress({ status: 'Authenticating...', percentage: 30 });
       
-      const reviews = await appleAppStoreBrowserService.importReviews(
-        appId.trim(),
-        issuerId.trim(),
-        keyContent,
-        useServerCredentials && hasServerCredentials
-      );
+      // Set up progress monitoring
+      const progressInterval = setInterval(() => {
+        setImportProgress(prev => ({
+          status: 'Fetching reviews... This may take a minute for apps with many reviews',
+          percentage: Math.min(prev.percentage + 2, 75) // Gradually increase to 75%
+        }));
+      }, 1000);
+      
+      try {
+        const reviews = await appleAppStoreBrowserService.importReviews(
+          appId.trim(),
+          issuerId.trim(),
+          keyContent,
+          useServerCredentials && hasServerCredentials
+        );
 
-      setImportProgress({ status: 'Processing reviews...', percentage: 80 });
+        clearInterval(progressInterval);
+        setImportProgress({ status: 'Processing reviews...', percentage: 80 });
 
-      if (reviews && reviews.length > 0) {
-        // Check if this is mock data
-        const firstReview = reviews[0];
-        if (firstReview.hasOwnProperty('isMockData') && firstReview.isMockData) {
-          setIsMockData(true);
-        }
-        
-        onImport(reviews);
-        setSuccess(true);
-        setImportProgress({ status: 'Import complete!', percentage: 100 });
-        
-        // Clear progress after success
-        setTimeout(() => {
+        if (reviews && reviews.length > 0) {
+          // Check if this is mock data
+          const firstReview = reviews[0];
+          if (firstReview.hasOwnProperty('isMockData') && firstReview.isMockData) {
+            setIsMockData(true);
+          }
+          
+          onImport(reviews);
+          setSuccess(true);
+          setImportProgress({ status: `Import complete! Fetched ${reviews.length} reviews`, percentage: 100 });
+          
+          // Clear progress after success
+          setTimeout(() => {
+            setImportProgress(null);
+          }, 5000);
+        } else {
+          setError('No reviews found for the specified app');
           setImportProgress(null);
-        }, 5000);
-      } else {
-        setError('No reviews found for the specified app');
-        setImportProgress(null);
+        }
+      } catch (importError) {
+        clearInterval(progressInterval);
+        throw importError;
       }
     } catch (err) {
       setError(err.message || 'Failed to import reviews from Apple App Store');
