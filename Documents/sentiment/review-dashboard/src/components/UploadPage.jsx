@@ -101,7 +101,7 @@ const UploadPage = ({ onFileUpload, onAppleImport, isLoading, error }) => {
               onClick={() => setActiveTab('apple')}
             >
               <Database size={18} />
-              Import from App Store
+              Apple App Store
             </button>
           </div>
 
