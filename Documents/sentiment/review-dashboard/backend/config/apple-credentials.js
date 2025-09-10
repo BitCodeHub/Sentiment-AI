@@ -126,8 +126,8 @@ function getAppleCredentials(appId = null) {
 function validateCredentials(credentials) {
   if (!credentials) return false;
   
-  // Validate App ID (should be numeric)
-  if (!/^\d+$/.test(credentials.appId)) {
+  // Validate App ID (should be numeric) - but only if appId is provided
+  if (credentials.appId && !/^\d+$/.test(credentials.appId)) {
     console.error('Invalid App ID format - should be numeric');
     return false;
   }
