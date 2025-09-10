@@ -175,7 +175,7 @@ class AppleAppStoreService {
         'App Version': attributes.appVersionString || '',
         'Device Model': 'iPhone', // Apple doesn't provide specific device model
         'Platform': 'iOS',
-        'OS': '', // Not provided by Apple API
+        'OS': attributes.osVersion || '',
         'Country': attributes.territory || 'U.S.',
         'Language': 'English', // Apple API doesn't provide language info directly
         'Developer Response': developerResponse

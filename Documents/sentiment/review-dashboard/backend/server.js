@@ -172,6 +172,21 @@ async function fetchAllReviews(token, appId, territory = 'USA', sinceDate = null
   return allReviews;
 }
 
+// Helper function to map territory codes to languages
+function getLanguageFromTerritory(territory) {
+  // Map common territory codes to language codes
+  const territoryToLanguage = {
+    'USA': 'en', 'GBR': 'en', 'CAN': 'en', 'AUS': 'en', 'NZL': 'en',
+    'FRA': 'fr', 'DEU': 'de', 'ESP': 'es', 'ITA': 'it', 'PRT': 'pt',
+    'BRA': 'pt', 'MEX': 'es', 'ARG': 'es', 'CHL': 'es', 'COL': 'es',
+    'JPN': 'ja', 'KOR': 'ko', 'CHN': 'zh', 'TWN': 'zh', 'HKG': 'zh',
+    'IND': 'hi', 'RUS': 'ru', 'NLD': 'nl', 'BEL': 'nl', 'SWE': 'sv',
+    'NOR': 'no', 'DNK': 'da', 'FIN': 'fi', 'POL': 'pl', 'TUR': 'tr'
+  };
+  
+  return territoryToLanguage[territory] || 'en';
+}
+
 // Transform Apple review format to our format
 function transformReview(review) {
   const attributes = review.attributes || {};
@@ -188,8 +203,9 @@ function transformReview(review) {
     'App Version': attributes.appVersionString || '',
     'Device Model': 'iPhone', // Apple doesn't provide specific model
     'Platform': 'iOS',
+    'OS': attributes.osVersion || '',
     'Country': attributes.territory || 'USA',
-    'Language': 'en',
+    'Language': attributes.territory ? getLanguageFromTerritory(attributes.territory) : 'en',
     'Developer Response': response ? 'Yes' : ''
   };
 }
