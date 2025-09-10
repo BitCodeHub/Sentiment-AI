@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Apple, Key, Hash, Upload, AlertCircle, CheckCircle, Loader, Info, Database, RefreshCw } from 'lucide-react';
+import { Apple, Key, Hash, Upload, AlertCircle, CheckCircle, Loader, Info, Database, RefreshCw, Calendar } from 'lucide-react';
 import appleAppStoreBrowserService from '../services/appleAppStoreBrowser';
 import CacheStatus from './CacheStatus';
 import DateRangeCalendar from './DateRangeCalendar';
@@ -302,16 +302,23 @@ const AppleImport = ({ onImport }) => {
           </div>
         )}
 
-        {/* Date Range Calendar */}
+        {/* Date Range Selector */}
         {showDateRange && appId && (
-          <div className="form-group date-selector-section">
-            <DateRangeCalendar
-              reviews={[]} 
-              onDateRangeChange={handleDateRangeChange}
-              initialRange={{ start: selectedStartDate, end: selectedEndDate }}
-              showDisplay={false}
-              inline={true}
-            />
+          <div className="form-group">
+            <label>
+              <Calendar size={16} />
+              Date Range
+            </label>
+            <div className="date-range-selector">
+              <DateRangeCalendar
+                reviews={[]} 
+                onDateRangeChange={handleDateRangeChange}
+                initialRange={{ start: selectedStartDate, end: selectedEndDate }}
+                showDisplay={true}
+                inline={false}
+              />
+            </div>
+            <small>Select a date range to fetch reviews from Apple App Store</small>
           </div>
         )}
 
@@ -495,45 +502,6 @@ const AppleImport = ({ onImport }) => {
           </details>
         </div>
 
-        {/* Cache Options */}
-        <div className="cache-options-toggle">
-          <button
-            className="toggle-cache-btn"
-            onClick={() => setShowCacheOptions(!showCacheOptions)}
-            type="button"
-          >
-            <Database size={16} />
-            {showCacheOptions ? 'Hide' : 'Show'} Cache Options
-          </button>
-        </div>
-
-        {showCacheOptions && (
-          <div className="cache-options-panel">
-            <div className="cache-controls">
-              <label className="cache-option">
-                <input
-                  type="checkbox"
-                  checked={useCache}
-                  onChange={(e) => setUseCache(e.target.checked)}
-                  disabled={isLoading}
-                />
-                <span>Use cached data when available</span>
-              </label>
-              
-              <label className="cache-option">
-                <input
-                  type="checkbox"
-                  checked={forceRefresh}
-                  onChange={(e) => setForceRefresh(e.target.checked)}
-                  disabled={isLoading || !useCache}
-                />
-                <span>Force refresh (fetch new reviews only)</span>
-              </label>
-            </div>
-            
-            {appId && <CacheStatus appId={appId} onRefresh={() => setForceRefresh(true)} />}
-          </div>
-        )}
 
         {showInstructions && (
           <div className="instructions">

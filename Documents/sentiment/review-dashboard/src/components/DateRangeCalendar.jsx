@@ -110,7 +110,7 @@ const DateRangeCalendar = ({ reviews, onDateRangeChange, initialRange, showDispl
 
   const formatDateRange = () => {
     if (!selectedRange.start && !selectedRange.end) {
-      return 'Select date range';
+      return 'Please select a date range';
     }
     
     const start = selectedRange.start || dataDateRange.min;
