@@ -324,4 +324,3 @@ export const reviewCache = {
 };
 
 export default cacheService;
-export { reviewCache };
