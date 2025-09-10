@@ -348,6 +348,22 @@ app.get('/api/apple-apps', (req, res) => {
   });
 });
 
+// Diagnostic endpoint (remove in production after testing)
+app.get('/api/apple-config-check', (req, res) => {
+  const diagnostics = {
+    apps: getAppleApps(),
+    credentials: {
+      hasIssuerId: !!process.env.APPLE_ISSUER_ID,
+      hasKeyId: !!process.env.APPLE_KEY_ID,
+      hasPrivateKey: !!process.env.APPLE_PRIVATE_KEY_BASE64 || !!process.env.APPLE_PRIVATE_KEY_PATH,
+      keyType: process.env.APPLE_PRIVATE_KEY_BASE64 ? 'base64' : (process.env.APPLE_PRIVATE_KEY_PATH ? 'file' : 'none')
+    },
+    storedCredentialsValid: !!storedCredentials && validateCredentials(storedCredentials),
+    environment: process.env.NODE_ENV
+  };
+  res.json(diagnostics);
+});
+
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({ error: 'Not found' });
