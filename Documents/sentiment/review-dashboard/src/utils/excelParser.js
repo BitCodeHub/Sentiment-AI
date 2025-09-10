@@ -563,6 +563,8 @@ const categorizeReview = (text) => {
   return 'General';
 };
 
+export const parseAndTransformData = processReviewData;
+
 export const aggregateData = (reviews) => {
   if (!reviews || reviews.length === 0) {
     console.error('No reviews to aggregate');
