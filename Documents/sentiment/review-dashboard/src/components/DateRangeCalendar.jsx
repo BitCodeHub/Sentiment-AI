@@ -20,8 +20,9 @@ const DateRangeCalendar = ({ reviews, onDateRangeChange, initialRange, showDispl
   const dataDateRange = useMemo(() => {
     if (!reviews || reviews.length === 0) {
       const now = new Date();
-      const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
-      return { min: threeMonthsAgo, max: now };
+      // For empty reviews (like in Apple import), allow selection from 5 years ago to today
+      const fiveYearsAgo = new Date(now.getFullYear() - 5, now.getMonth(), now.getDate());
+      return { min: fiveYearsAgo, max: now };
     }
 
     const dates = reviews.map(review => {
@@ -35,8 +36,9 @@ const DateRangeCalendar = ({ reviews, onDateRangeChange, initialRange, showDispl
     
     if (dates.length === 0) {
       const now = new Date();
-      const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
-      return { min: threeMonthsAgo, max: now };
+      // If no valid dates found, allow 5 years range
+      const fiveYearsAgo = new Date(now.getFullYear() - 5, now.getMonth(), now.getDate());
+      return { min: fiveYearsAgo, max: now };
     }
     
     const minDate = new Date(Math.min(...dates));
