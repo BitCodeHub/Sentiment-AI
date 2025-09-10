@@ -124,7 +124,11 @@ function App() {
               />
             ) : (
               <ErrorBoundary>
-                <EnhancedDashboard data={data} />
+                <EnhancedDashboard 
+                  data={data} 
+                  onUpdateData={setData}
+                  onFetchReviews={handleAppleImport}
+                />
               </ErrorBoundary>
             )
           } />
