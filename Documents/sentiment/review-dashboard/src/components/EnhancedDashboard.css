@@ -1,6 +1,80 @@
 /* Tableau-Inspired Dashboard Styles */
 @import './TopicDetailView.css';  /* Import redesigned review card styles */
 
+/* Apple Data Banner */
+.apple-data-banner {
+  background: linear-gradient(135deg, rgba(0, 122, 255, 0.1) 0%, rgba(88, 86, 214, 0.1) 100%);
+  border: 1px solid rgba(0, 122, 255, 0.3);
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin: 20px 0;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.banner-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.banner-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.banner-info svg {
+  color: #007aff;
+  flex-shrink: 0;
+}
+
+.banner-text {
+  color: #e2e8f0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.banner-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.fetch-reviews-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #007aff 0%, #5856d6 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.fetch-reviews-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #0066d6 0%, #4a49c5 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 122, 255, 0.4);
+}
+
+.fetch-reviews-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.fetch-reviews-btn .spinner {
+  animation: spin 1s linear infinite;
+}
+
 /* Base Container */
 .modern-dashboard {
   min-height: 100vh;

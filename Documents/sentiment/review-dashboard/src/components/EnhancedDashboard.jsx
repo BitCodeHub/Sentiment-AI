@@ -16,7 +16,7 @@ import {
   ChevronDown, ChevronUp, X, Download, RefreshCw, Calendar,
   Smartphone, Package, Layers, Globe, Monitor,
   Share2, Printer, Save, Settings, HelpCircle, Undo, Redo,
-  CheckCircle, MessageSquare
+  CheckCircle, MessageSquare, Apple
 } from 'lucide-react';
 import { analyzeReviews, generateInsights } from '../services/geminiAIAnalysis';
 import { performDeepAnalysis } from '../services/geminiDeepAnalysis';
@@ -35,7 +35,7 @@ import './EnhancedDashboard.css';
 const TABLEAU_COLORS = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'];
 const COLORS = TABLEAU_COLORS.slice(0, 5); // Use first 5 Tableau colors
 
-const EnhancedDashboard = ({ data, isLoading }) => {
+const EnhancedDashboard = ({ data, isLoading, onFetchReviews }) => {
   const navigate = useNavigate();
   const [aiInsights, setAiInsights] = useState(null);
   const [deepInsights, setDeepInsights] = useState(null);
@@ -72,11 +72,59 @@ const EnhancedDashboard = ({ data, isLoading }) => {
   const [currentView, setCurrentView] = useState('dashboard');
   // Add state for sentiment analysis modal
   const [showSentimentAnalysis, setShowSentimentAnalysis] = useState(false);
+  // Add state for Apple data fetching
+  const [isFetchingAppleData, setIsFetchingAppleData] = useState(false);
   
   // Debug logging
   useEffect(() => {
     console.log('Current View:', currentView);
   }, [currentView]);
+
+  // Handle Apple data fetching
+  const handleFetchAppleReviews = async () => {
+    if (!onFetchReviews || isFetchingAppleData) return;
+    
+    try {
+      setIsFetchingAppleData(true);
+      
+      // Get Apple app config from session storage
+      const configStr = sessionStorage.getItem('appleAppConfig');
+      const privateKey = sessionStorage.getItem('applePrivateKey');
+      
+      if (!configStr) {
+        setError('Apple app configuration not found. Please go back and select an app.');
+        return;
+      }
+      
+      const config = JSON.parse(configStr);
+      
+      // Import the Apple service
+      const appleAppStoreBrowserService = (await import('../services/appleAppStoreBrowser')).default;
+      
+      // Fetch reviews with date range
+      const reviews = await appleAppStoreBrowserService.importReviews(
+        config.appId,
+        config.issuerId,
+        privateKey,
+        config.useServerCredentials,
+        {
+          useCache: true,
+          forceRefresh: false,
+          startDate: selectedDateRange.start,
+          endDate: selectedDateRange.end
+        }
+      );
+      
+      // Call the onFetchReviews callback with the fetched reviews
+      await onFetchReviews(reviews);
+      
+    } catch (err) {
+      console.error('Error fetching Apple reviews:', err);
+      setError('Failed to fetch Apple reviews: ' + err.message);
+    } finally {
+      setIsFetchingAppleData(false);
+    }
+  };
 
   // Count active filters
   const activeFilterCount = useMemo(() => {
@@ -552,6 +600,43 @@ const EnhancedDashboard = ({ data, isLoading }) => {
             Comprehensive insights from {summary.totalReviews.toLocaleString()} reviews
           </p>
         </div>
+        
+        {/* Apple Data Banner */}
+        {data?.isAppleData && (
+          <div className="apple-data-banner">
+            <div className="banner-content">
+              <div className="banner-info">
+                <Apple size={20} />
+                <span className="banner-text">
+                  {data?.isEmpty ? (
+                    <>No Apple reviews loaded. Select a date range and click "Fetch Reviews" to load data.</>   
+                  ) : (
+                    <>Apple App Store data mode. You can fetch additional reviews by selecting a different date range.</>
+                  )}
+                </span>
+              </div>
+              <div className="banner-actions">
+                <button 
+                  className="fetch-reviews-btn"
+                  onClick={handleFetchAppleReviews}
+                  disabled={isFetchingAppleData || (!selectedDateRange.start && !selectedDateRange.end)}
+                >
+                  {isFetchingAppleData ? (
+                    <>
+                      <RefreshCw className="spinner" size={16} />
+                      Fetching Reviews...
+                    </>
+                  ) : (
+                    <>
+                      <Download size={16} />
+                      Fetch Reviews
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         
         {/* Search Section */}
         <div className="search-section">

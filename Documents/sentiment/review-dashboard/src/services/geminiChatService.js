@@ -581,7 +581,7 @@ export async function sendChatMessage(sessionId, message) {
       const { chat, reviewData, metadata, modelKey } = session;
 
       // Check if this query needs web grounding
-      const needsGrounding = checkIfNeedsGrounding(message);
+      let needsGrounding = checkIfNeedsGrounding(message);
       
       // Add review data context to the message if it's asking for analysis
       const enrichedMessage = await enrichMessageWithContext(message, reviewData);
