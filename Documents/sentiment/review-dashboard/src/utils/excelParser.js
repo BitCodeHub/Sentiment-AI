@@ -650,7 +650,35 @@ export const aggregateData = (reviews) => {
   const timeSeriesData = {};
   reviews.forEach(r => {
     try {
-      const reviewDate = r.date instanceof Date ? r.date : new Date(r.date);
+      // Handle both 'date' and 'Date' fields for Apple imports
+      const dateField = r.date || r.Date;
+      if (!dateField) {
+        console.warn('No date field found for review:', r);
+        return;
+      }
+      
+      // Parse the date - handle various formats
+      let reviewDate;
+      if (dateField instanceof Date) {
+        reviewDate = dateField;
+      } else if (typeof dateField === 'string') {
+        // Try to parse the date string
+        reviewDate = new Date(dateField);
+        // If parsing failed, try adding time component
+        if (isNaN(reviewDate.getTime()) && dateField.match(/^\d{4}-\d{2}-\d{2}$/)) {
+          reviewDate = new Date(dateField + 'T00:00:00');
+        }
+      } else {
+        console.warn('Invalid date format:', dateField);
+        return;
+      }
+      
+      // Check if date is valid
+      if (isNaN(reviewDate.getTime())) {
+        console.warn('Invalid date:', dateField);
+        return;
+      }
+      
       const dateKey = reviewDate.toISOString().split('T')[0];
       if (!timeSeriesData[dateKey]) {
         timeSeriesData[dateKey] = {

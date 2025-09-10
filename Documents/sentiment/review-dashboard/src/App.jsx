@@ -7,7 +7,7 @@ import TopicDetailView from './components/TopicDetailView';
 import ChatPage from './components/ChatPage';
 import ErrorBoundary from './components/ErrorBoundary';
 import RateLimitNotification from './components/RateLimitNotification';
-import { parseExcelFile, aggregateData } from './utils/excelParser';
+import { parseExcelFile, aggregateData, parseAndTransformData } from './utils/excelParser';
 import { downloadSampleExcel } from './utils/sampleDataGenerator';
 import './App.css';
 
@@ -51,7 +51,12 @@ function App() {
     try {
       console.log('Processing Apple reviews:', reviews?.length, 'reviews');
       console.log('First review sample:', reviews?.[0]);
-      const aggregatedData = aggregateData(reviews);
+      
+      // Transform Apple reviews through parseAndTransformData first
+      const transformedReviews = parseAndTransformData(reviews);
+      console.log('Transformed reviews:', transformedReviews.length);
+      
+      const aggregatedData = aggregateData(transformedReviews);
       console.log('Aggregated data:', aggregatedData);
       
       // Ensure we have the proper structure
