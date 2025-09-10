@@ -45,12 +45,14 @@ const DateRangeCalendar = ({ reviews, onDateRangeChange, initialRange, showDispl
     return { min: minDate, max: maxDate };
   }, [reviews]);
 
-  // Set initial current month to the start of the data range
+  // Set initial current month to current date when opening
   useEffect(() => {
-    if (dataDateRange.min) {
-      setCurrentMonth(new Date(dataDateRange.min.getFullYear(), dataDateRange.min.getMonth(), 1));
+    if (isOpen) {
+      // When opening the calendar, always show current month
+      const now = new Date();
+      setCurrentMonth(new Date(now.getFullYear(), now.getMonth(), 1));
     }
-  }, [dataDateRange]);
+  }, [isOpen]);
 
   // Update selectedRange when initialRange changes
   useEffect(() => {
