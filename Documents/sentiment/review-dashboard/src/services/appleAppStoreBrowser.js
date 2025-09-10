@@ -158,6 +158,65 @@ class AppleAppStoreBrowserService {
   }
 
   /**
+   * Get review metadata (date range and count) without fetching all reviews
+   */
+  async getReviewMetadata(appId, issuerId, privateKeyContent, useServerCredentials = false) {
+    try {
+      console.log('Fetching review metadata for app:', appId);
+      
+      if (!this.isBackendAvailable) {
+        await this.checkBackendAvailability();
+      }
+      
+      if (this.isBackendAvailable) {
+        const formData = new FormData();
+        formData.append('appId', appId);
+        
+        if (!useServerCredentials) {
+          formData.append('issuerId', issuerId);
+          
+          if (privateKeyContent instanceof File) {
+            formData.append('privateKey', privateKeyContent);
+          } else {
+            formData.append('privateKey', privateKeyContent);
+          }
+        }
+        
+        const response = await axios.post(
+          this.backendURL.replace('/apple-reviews', '/apple-reviews/metadata'),
+          formData,
+          {
+            headers: {
+              'Content-Type': 'multipart/form-data'
+            },
+            timeout: 30000 // 30 second timeout for metadata
+          }
+        );
+        
+        if (response.data.success) {
+          return response.data.metadata;
+        } else {
+          throw new Error(response.data.error || 'Failed to fetch metadata');
+        }
+      }
+      
+      // Mock metadata for demo mode
+      return {
+        appId,
+        dateRange: {
+          oldest: '2024-01-01T00:00:00Z',
+          newest: '2024-01-15T00:00:00Z'
+        },
+        estimatedCount: 5,
+        hasReviews: true
+      };
+    } catch (error) {
+      console.error('Error fetching review metadata:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Get cache status for an app
    */
   async getCacheStatus(appId) {
@@ -206,16 +265,17 @@ class AppleAppStoreBrowserService {
    * Calls backend API if available, otherwise returns mock data
    */
   async importReviews(appId, issuerId, privateKeyContent, useServerCredentials = false, options = {}) {
-    const { useCache = true, forceRefresh = false } = options;
+    const { useCache = true, forceRefresh = false, startDate = null, endDate = null } = options;
     
     try {
       console.log('Importing Apple App Store reviews...');
       console.log('App ID:', appId);
       console.log('Backend available:', this.isBackendAvailable);
       console.log('Use cache:', useCache, 'Force refresh:', forceRefresh);
+      console.log('Date range:', startDate, 'to', endDate);
       
-      // Check frontend cache first if not forcing refresh
-      if (useCache && !forceRefresh) {
+      // Check frontend cache first if not forcing refresh and no date range
+      if (useCache && !forceRefresh && !startDate && !endDate) {
         const cachedData = await reviewCache.getReviews(appId);
         if (cachedData) {
           console.log(`Serving ${cachedData.reviews.length} reviews from ${cachedData.cacheType} cache`);
@@ -236,6 +296,14 @@ class AppleAppStoreBrowserService {
           formData.append('appId', appId);
           formData.append('useCache', useCache.toString());
           formData.append('forceRefresh', forceRefresh.toString());
+          
+          // Add date range parameters if provided
+          if (startDate) {
+            formData.append('startDate', startDate);
+          }
+          if (endDate) {
+            formData.append('endDate', endDate);
+          }
           
           // Only send credentials if not using server credentials
           if (!useServerCredentials) {

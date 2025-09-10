@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Apple, Key, Hash, Upload, AlertCircle, CheckCircle, Loader, Info, Database, RefreshCw } from 'lucide-react';
 import appleAppStoreBrowserService from '../services/appleAppStoreBrowser';
 import CacheStatus from './CacheStatus';
+import DateRangePicker from './DateRangePicker';
 import './AppleImport.css';
 
 const AppleImport = ({ onImport }) => {
@@ -22,6 +23,11 @@ const AppleImport = ({ onImport }) => {
   const [showCacheOptions, setShowCacheOptions] = useState(false);
   const [useCache, setUseCache] = useState(true);
   const [forceRefresh, setForceRefresh] = useState(false);
+  const [metadata, setMetadata] = useState(null);
+  const [fetchingMetadata, setFetchingMetadata] = useState(false);
+  const [selectedStartDate, setSelectedStartDate] = useState(null);
+  const [selectedEndDate, setSelectedEndDate] = useState(null);
+  const [showDateRange, setShowDateRange] = useState(false);
 
   // Check backend availability and configured apps on mount
   useEffect(() => {
@@ -89,6 +95,40 @@ const AppleImport = ({ onImport }) => {
     return errors;
   };
 
+  // Fetch metadata when credentials are complete
+  const fetchMetadata = async () => {
+    if (!appId) return;
+    
+    // Check if we have necessary credentials
+    if (!hasServerCredentials || !useServerCredentials) {
+      if (!issuerId || !privateKey) return;
+    }
+    
+    setFetchingMetadata(true);
+    setError('');
+    
+    try {
+      const keyContent = privateKeyFile || privateKey;
+      const metadata = await appleAppStoreBrowserService.getReviewMetadata(
+        appId.trim(),
+        issuerId.trim(),
+        keyContent,
+        useServerCredentials && hasServerCredentials
+      );
+      setMetadata(metadata);
+      setShowDateRange(true);
+    } catch (err) {
+      setError('Failed to fetch review metadata: ' + err.message);
+    } finally {
+      setFetchingMetadata(false);
+    }
+  };
+
+  const handleDateRangeChange = (start, end) => {
+    setSelectedStartDate(start);
+    setSelectedEndDate(end);
+  };
+
   const handleImport = async () => {
     // If using server credentials, only need app ID
     if (hasServerCredentials && useServerCredentials) {
@@ -137,7 +177,12 @@ const AppleImport = ({ onImport }) => {
           issuerId.trim(),
           keyContent,
           useServerCredentials && hasServerCredentials,
-          { useCache, forceRefresh }
+          { 
+            useCache, 
+            forceRefresh,
+            startDate: selectedStartDate,
+            endDate: selectedEndDate
+          }
         );
 
         clearInterval(progressInterval);
@@ -219,6 +264,40 @@ const AppleImport = ({ onImport }) => {
               Use server-configured credentials
             </label>
           </div>
+        )}
+
+        {/* Fetch Metadata Button */}
+        {appId && (hasServerCredentials && useServerCredentials || (issuerId && privateKey)) && !metadata && (
+          <div className="form-group">
+            <button
+              type="button"
+              className="fetch-metadata-btn"
+              onClick={fetchMetadata}
+              disabled={fetchingMetadata || isLoading}
+            >
+              {fetchingMetadata ? (
+                <>
+                  <Loader className="spinner" size={16} />
+                  Fetching review info...
+                </>
+              ) : (
+                <>
+                  <Info size={16} />
+                  Check Available Reviews
+                </>
+              )}
+            </button>
+            <small>Fetch review date range and count before importing</small>
+          </div>
+        )}
+
+        {/* Date Range Picker */}
+        {showDateRange && metadata && (
+          <DateRangePicker
+            metadata={metadata}
+            onRangeChange={handleDateRangeChange}
+            disabled={isLoading}
+          />
         )}
 
         {/* Cache Options */}
