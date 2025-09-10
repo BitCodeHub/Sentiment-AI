@@ -195,7 +195,7 @@ class AppleAppStoreBrowserService {
             headers: {
               'Content-Type': 'multipart/form-data'
             },
-            timeout: 30000 // 30 second timeout for API calls
+            timeout: 120000 // 2 minute timeout for API calls with pagination
           });
           
           if (response.data.success) {

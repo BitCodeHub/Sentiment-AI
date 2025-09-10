@@ -145,38 +145,84 @@ async function getAppleToken(keyId, issuerId, privateKey) {
   return token;
 }
 
-// Fetch reviews from Apple API with retries
+// Fetch reviews from Apple API with pagination and retries
 async function fetchAppleReviews(token, appId, territory = 'USA', limit = 200, retries = 3) {
-  for (let i = 0; i < retries; i++) {
-    try {
-      const response = await axios.get(
-        `${APPLE_API_BASE}/apps/${appId}/customerReviews`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/json'
-          },
-          params: {
-            'filter[territory]': territory,
-            'limit': limit,
-            'sort': '-createdDate',
-            'include': 'response'
-          },
-          timeout: 30000
-        }
-      );
+  const allReviews = [];
+  let nextUrl = null;
+  let pageCount = 0;
+  const maxPages = 50; // Safety limit to prevent infinite loops
+  
+  // Initial URL
+  let url = `${APPLE_API_BASE}/apps/${appId}/customerReviews`;
+  
+  while ((url || nextUrl) && pageCount < maxPages) {
+    pageCount++;
+    console.log(`Fetching page ${pageCount} of reviews for app ${appId}...`);
+    
+    for (let i = 0; i < retries; i++) {
+      try {
+        const response = await axios.get(
+          nextUrl || url,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Accept': 'application/json'
+            },
+            params: nextUrl ? {} : { // Only add params for initial request
+              'filter[territory]': territory,
+              'limit': limit,
+              'sort': '-createdDate',
+              'include': 'response'
+            },
+            timeout: 30000
+          }
+        );
 
-      return response.data;
-    } catch (error) {
-      if (i === retries - 1) {
-        console.error('Apple API Error after retries:', error.response?.data || error.message);
-        throw new Error(error.response?.data?.errors?.[0]?.detail || 'Failed to fetch reviews');
+        // Add reviews from this page
+        if (response.data && response.data.data) {
+          allReviews.push(...response.data.data);
+          console.log(`Added ${response.data.data.length} reviews from page ${pageCount}. Total: ${allReviews.length}`);
+        }
+        
+        // Check for next page
+        nextUrl = response.data?.links?.next || null;
+        url = null; // Clear initial URL after first request
+        
+        if (!nextUrl) {
+          console.log(`No more pages. Total reviews fetched: ${allReviews.length}`);
+        }
+        
+        // Small delay between pages to avoid rate limiting
+        if (nextUrl && pageCount > 1) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        
+        break; // Success, exit retry loop
+      } catch (error) {
+        if (i === retries - 1) {
+          console.error('Apple API Error after retries:', error.response?.data || error.message);
+          // If we've already fetched some reviews, return what we have
+          if (allReviews.length > 0) {
+            console.warn(`Returning ${allReviews.length} reviews fetched before error`);
+            return { data: allReviews };
+          }
+          throw new Error(error.response?.data?.errors?.[0]?.detail || 'Failed to fetch reviews');
+        }
+        
+        // Wait before retry
+        await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
       }
-      
-      // Wait before retry
-      await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
     }
+    
+    // If no next URL, we're done
+    if (!nextUrl) break;
   }
+  
+  if (pageCount >= maxPages) {
+    console.warn(`Reached maximum page limit of ${maxPages}. Some reviews may not have been fetched.`);
+  }
+  
+  return { data: allReviews };
 }
 
 // Transform Apple review format to our format
