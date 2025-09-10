@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Apple, Key, Hash, Upload, AlertCircle, CheckCircle, Loader, Info, Calendar } from 'lucide-react';
 import appleAppStoreBrowserService from '../services/appleAppStoreBrowser';
-import CacheStatus from './CacheStatus';
 import DateRangeCalendar from './DateRangeCalendar';
 import './AppleImport.css';
 
