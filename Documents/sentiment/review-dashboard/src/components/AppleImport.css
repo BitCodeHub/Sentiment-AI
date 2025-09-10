@@ -38,6 +38,21 @@
   gap: 24px;
 }
 
+/* Date selector section */
+.date-selector-section {
+  margin-top: 20px;
+  margin-bottom: 20px;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid rgba(51, 65, 85, 0.5);
+  border-radius: 12px;
+}
+
+.date-selector-section .date-range-content {
+  width: 100%;
+  max-width: none;
+}
+
 .form-group {
   display: flex;
   flex-direction: column;

@@ -75,6 +75,27 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews }) => {
   // Add state for Apple data fetching
   const [isFetchingAppleData, setIsFetchingAppleData] = useState(false);
   
+  // Initialize date range from Apple app config on mount and auto-fetch
+  useEffect(() => {
+    if (data?.isAppleData) {
+      const configStr = sessionStorage.getItem('appleAppConfig');
+      if (configStr) {
+        const config = JSON.parse(configStr);
+        if (config.startDate || config.endDate) {
+          setSelectedDateRange({
+            start: config.startDate ? new Date(config.startDate) : null,
+            end: config.endDate ? new Date(config.endDate) : null
+          });
+          
+          // Auto-fetch reviews with the selected date range
+          if (data?.isEmpty && onFetchReviews) {
+            handleFetchAppleReviews();
+          }
+        }
+      }
+    }
+  }, [data?.isAppleData, data?.isEmpty]);
+  
   // Debug logging
   useEffect(() => {
     console.log('Current View:', currentView);

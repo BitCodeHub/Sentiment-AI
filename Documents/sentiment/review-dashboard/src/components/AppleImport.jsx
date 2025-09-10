@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Apple, Key, Hash, Upload, AlertCircle, CheckCircle, Loader, Info, Database, RefreshCw } from 'lucide-react';
 import appleAppStoreBrowserService from '../services/appleAppStoreBrowser';
 import CacheStatus from './CacheStatus';
-import DateRangePicker from './DateRangePicker';
+import DateRangeCalendar from './DateRangeCalendar';
 import './AppleImport.css';
 
 const AppleImport = ({ onImport }) => {
@@ -27,7 +27,7 @@ const AppleImport = ({ onImport }) => {
   const [fetchingMetadata, setFetchingMetadata] = useState(false);
   const [selectedStartDate, setSelectedStartDate] = useState(null);
   const [selectedEndDate, setSelectedEndDate] = useState(null);
-  const [showDateRange, setShowDateRange] = useState(false);
+  const [showDateRange, setShowDateRange] = useState(true);
 
   // Check backend availability and configured apps on mount
   useEffect(() => {
@@ -124,9 +124,9 @@ const AppleImport = ({ onImport }) => {
     }
   };
 
-  const handleDateRangeChange = (start, end) => {
-    setSelectedStartDate(start);
-    setSelectedEndDate(end);
+  const handleDateRangeChange = (range) => {
+    setSelectedStartDate(range.start);
+    setSelectedEndDate(range.end);
   };
 
   const handleEnterApp = async () => {
@@ -146,7 +146,9 @@ const AppleImport = ({ onImport }) => {
       const config = {
         appId: appId.trim(),
         issuerId: issuerId?.trim(),
-        useServerCredentials: useServerCredentials && hasServerCredentials
+        useServerCredentials: useServerCredentials && hasServerCredentials,
+        startDate: selectedStartDate,
+        endDate: selectedEndDate
       };
       
       // Store private key separately if not using server credentials
@@ -300,38 +302,17 @@ const AppleImport = ({ onImport }) => {
           </div>
         )}
 
-        {/* Fetch Metadata Button - Temporarily hidden */}
-        {false && appId && (hasServerCredentials && useServerCredentials || (issuerId && privateKey)) && !metadata && (
-          <div className="form-group">
-            <button
-              type="button"
-              className="fetch-metadata-btn"
-              onClick={fetchMetadata}
-              disabled={fetchingMetadata || isLoading}
-            >
-              {fetchingMetadata ? (
-                <>
-                  <Loader className="spinner" size={16} />
-                  Fetching review info...
-                </>
-              ) : (
-                <>
-                  <Info size={16} />
-                  Check Available Reviews
-                </>
-              )}
-            </button>
-            <small>Fetch review date range and count before importing</small>
+        {/* Date Range Calendar */}
+        {showDateRange && appId && (
+          <div className="form-group date-selector-section">
+            <DateRangeCalendar
+              reviews={[]} 
+              onDateRangeChange={handleDateRangeChange}
+              initialRange={{ start: selectedStartDate, end: selectedEndDate }}
+              showDisplay={false}
+              inline={true}
+            />
           </div>
-        )}
-
-        {/* Date Range Picker - Will be shown in dashboard */}
-        {false && showDateRange && metadata && (
-          <DateRangePicker
-            metadata={metadata}
-            onRangeChange={handleDateRangeChange}
-            disabled={isLoading}
-          />
         )}
 
         {/* Cache Options */}
