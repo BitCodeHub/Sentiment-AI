@@ -50,6 +50,7 @@ function App() {
     
     try {
       console.log('Processing Apple reviews:', reviews?.length, 'reviews');
+      console.log('First review sample:', reviews?.[0]);
       const aggregatedData = aggregateData(reviews);
       console.log('Aggregated data:', aggregatedData);
       
@@ -64,6 +65,7 @@ function App() {
       setData(aggregatedData);
     } catch (err) {
       console.error('Error processing Apple reviews:', err);
+      console.error('Stack trace:', err.stack);
       setError('Error processing Apple reviews. Please try again.');
     } finally {
       setIsLoading(false);
