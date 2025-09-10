@@ -129,6 +129,40 @@ const AppleImport = ({ onImport }) => {
     setSelectedEndDate(end);
   };
 
+  const handleEnterApp = async () => {
+    // Validate minimum requirements
+    if (!appId) {
+      setError('Please select an app');
+      return;
+    }
+    
+    // Enter app with empty data - reviews will be fetched on-demand
+    onImport([]);
+    setSuccess(true);
+    setImportProgress({ status: 'Entering dashboard...', percentage: 100 });
+    
+    // Store app credentials in session for later use
+    if (typeof window !== 'undefined') {
+      const config = {
+        appId: appId.trim(),
+        issuerId: issuerId?.trim(),
+        useServerCredentials: useServerCredentials && hasServerCredentials
+      };
+      
+      // Store private key separately if not using server credentials
+      if (!useServerCredentials && privateKey) {
+        sessionStorage.setItem('applePrivateKey', privateKey);
+      }
+      
+      sessionStorage.setItem('appleAppConfig', JSON.stringify(config));
+    }
+    
+    // Clear progress after a short delay
+    setTimeout(() => {
+      setImportProgress(null);
+    }, 1000);
+  };
+
   const handleImport = async () => {
     // If using server credentials, only need app ID
     if (hasServerCredentials && useServerCredentials) {
@@ -266,8 +300,8 @@ const AppleImport = ({ onImport }) => {
           </div>
         )}
 
-        {/* Fetch Metadata Button */}
-        {appId && (hasServerCredentials && useServerCredentials || (issuerId && privateKey)) && !metadata && (
+        {/* Fetch Metadata Button - Temporarily hidden */}
+        {false && appId && (hasServerCredentials && useServerCredentials || (issuerId && privateKey)) && !metadata && (
           <div className="form-group">
             <button
               type="button"
@@ -291,8 +325,8 @@ const AppleImport = ({ onImport }) => {
           </div>
         )}
 
-        {/* Date Range Picker */}
-        {showDateRange && metadata && (
+        {/* Date Range Picker - Will be shown in dashboard */}
+        {false && showDateRange && metadata && (
           <DateRangePicker
             metadata={metadata}
             onRangeChange={handleDateRangeChange}
@@ -453,10 +487,10 @@ const AppleImport = ({ onImport }) => {
         <div className="import-actions">
           <button
             className="import-btn primary"
-            onClick={handleImport}
-            disabled={isLoading || !appId || (!hasServerCredentials || !useServerCredentials) && (!issuerId || !privateKey)}
+            onClick={handleEnterApp}
+            disabled={!appId}
           >
-            {isLoading ? 'Importing...' : 'Import Reviews'}
+            Enter Dashboard
           </button>
 
           <button
@@ -465,6 +499,19 @@ const AppleImport = ({ onImport }) => {
           >
             {showInstructions ? 'Hide' : 'Show'} Instructions
           </button>
+          
+          <details className="advanced-options">
+            <summary>Advanced Options</summary>
+            <div className="advanced-buttons">
+              <button
+                className="import-btn secondary"
+                onClick={handleImport}
+                disabled={isLoading || !appId || (!hasServerCredentials || !useServerCredentials) && (!issuerId || !privateKey)}
+              >
+                {isLoading ? 'Importing...' : 'Import Reviews Now'}
+              </button>
+            </div>
+          </details>
         </div>
 
         {/* Cache Options */}

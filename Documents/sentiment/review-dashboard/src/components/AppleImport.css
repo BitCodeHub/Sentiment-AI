@@ -582,6 +582,39 @@ input[type="file"] {
   font-style: italic;
 }
 
+/* Advanced Options */
+.advanced-options {
+  margin-top: 15px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.advanced-options summary {
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+  padding: 5px;
+  user-select: none;
+}
+
+.advanced-options summary:hover {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.advanced-options[open] summary {
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.advanced-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 /* Responsive */
 @media (max-width: 640px) {
   .import-header h3 {

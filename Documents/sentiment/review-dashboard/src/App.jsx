@@ -50,6 +50,34 @@ function App() {
     
     try {
       console.log('Processing Apple reviews:', reviews?.length, 'reviews');
+      
+      // Handle empty reviews array (entering dashboard without data)
+      if (!reviews || reviews.length === 0) {
+        console.log('Entering dashboard with no initial data');
+        const emptyData = {
+          summary: { 
+            totalReviews: 0, 
+            avgRating: 0, 
+            distribution: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0},
+            lastUpdated: new Date().toISOString()
+          },
+          reviews: [],
+          sentimentBreakdown: { positive: 0, neutral: 0, negative: 0 },
+          ratingDistribution: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0},
+          sentimentDistribution: { Positive: 0, Neutral: 0, Negative: 0 },
+          categoryDistribution: {},
+          platformDistribution: { iOS: 0 },
+          timeSeriesData: [],
+          topKeywords: [],
+          responseRate: 0,
+          isAppleData: true, // Flag to indicate this is Apple data mode
+          isEmpty: true // Flag to show data needs to be loaded
+        };
+        setData(emptyData);
+        setIsLoading(false);
+        return;
+      }
+      
       console.log('First review sample:', reviews?.[0]);
       
       // Transform Apple reviews through parseAndTransformData first
@@ -66,6 +94,9 @@ function App() {
       if (!aggregatedData.sentimentBreakdown) {
         aggregatedData.sentimentBreakdown = aggregatedData.sentimentDistribution || {};
       }
+      
+      aggregatedData.isAppleData = true; // Flag to indicate this is Apple data
+      aggregatedData.isEmpty = false;
       
       setData(aggregatedData);
     } catch (err) {
