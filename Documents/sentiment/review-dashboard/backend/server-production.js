@@ -350,6 +350,22 @@ app.get('/api/apple-apps', (req, res) => {
 
 // Diagnostic endpoint (remove in production after testing)
 app.get('/api/apple-config-check', (req, res) => {
+  // More detailed diagnostics
+  const envVars = {
+    APPLE_ISSUER_ID: process.env.APPLE_ISSUER_ID ? `Set (${process.env.APPLE_ISSUER_ID.length} chars)` : 'Not set',
+    APPLE_KEY_ID: process.env.APPLE_KEY_ID ? `Set (${process.env.APPLE_KEY_ID.length} chars)` : 'Not set',
+    APPLE_PRIVATE_KEY_BASE64: process.env.APPLE_PRIVATE_KEY_BASE64 ? `Set (${process.env.APPLE_PRIVATE_KEY_BASE64.length} chars)` : 'Not set'
+  };
+  
+  // Check for common issues
+  const issues = [];
+  if (process.env.APPLE_KEY_ID && process.env.APPLE_KEY_ID.includes(' ')) {
+    issues.push('APPLE_KEY_ID contains spaces');
+  }
+  if (process.env.APPLE_KEY_ID && (process.env.APPLE_KEY_ID.includes('"') || process.env.APPLE_KEY_ID.includes("'"))) {
+    issues.push('APPLE_KEY_ID contains quotes');
+  }
+  
   const diagnostics = {
     apps: getAppleApps(),
     credentials: {
@@ -359,7 +375,10 @@ app.get('/api/apple-config-check', (req, res) => {
       keyType: process.env.APPLE_PRIVATE_KEY_BASE64 ? 'base64' : (process.env.APPLE_PRIVATE_KEY_PATH ? 'file' : 'none')
     },
     storedCredentialsValid: !!storedCredentials && validateCredentials(storedCredentials),
-    environment: process.env.NODE_ENV
+    environment: process.env.NODE_ENV,
+    envVars: envVars,
+    issues: issues,
+    credentialLoadAttempt: storedCredentials ? 'Success' : 'Failed'
   };
   res.json(diagnostics);
 });
