@@ -1,0 +1,39 @@
+services:
+  # Backend API Service
+  - type: web
+    name: sentiment-review-backend
+    env: node
+    buildCommand: cd Documents/sentiment/review-dashboard/backend && npm install
+    startCommand: cd Documents/sentiment/review-dashboard/backend && npm run start:production
+    envVars:
+      - key: NODE_VERSION
+        value: 22.16.0
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        generateValue: true
+      - key: FRONTEND_URL
+        value: https://sentiment-review-dashboard.onrender.com
+      # Apple credentials - you'll add these in Render dashboard
+      - key: APPLE_APP_ID
+        sync: false
+      - key: APPLE_ISSUER_ID
+        sync: false
+      - key: APPLE_KEY_ID
+        sync: false
+      - key: APPLE_PRIVATE_KEY_BASE64
+        sync: false
+
+  # Frontend Service (your existing one)
+  - type: web
+    name: sentiment-review-dashboard
+    env: node
+    buildCommand: cd Documents/sentiment/review-dashboard && npm install && npm run build
+    startCommand: cd Documents/sentiment/review-dashboard && npx serve -s dist -p $PORT
+    envVars:
+      - key: NODE_VERSION
+        value: 22.16.0
+      - key: VITE_OPENAI_API_KEY
+        sync: false
+      - key: VITE_APPLE_API_ENDPOINT
+        value: https://sentiment-review-backend.onrender.com/api/apple-reviews

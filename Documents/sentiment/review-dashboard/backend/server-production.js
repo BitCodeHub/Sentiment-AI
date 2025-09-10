@@ -7,6 +7,7 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const fs = require('fs');
 const path = require('path');
+const { getAppleCredentials, validateCredentials } = require('./config/apple-credentials');
 require('dotenv').config({ 
   path: process.env.NODE_ENV === 'production' ? '.env.production' : '.env' 
 });
@@ -89,20 +90,11 @@ app.use((req, res, next) => {
 const APPLE_API_BASE = 'https://api.appstoreconnect.apple.com/v1';
 
 // Load stored credentials if available
-let storedCredentials = null;
-if (process.env.APPLE_APP_ID && process.env.APPLE_ISSUER_ID && process.env.APPLE_PRIVATE_KEY_PATH) {
-  try {
-    const privateKey = fs.readFileSync(process.env.APPLE_PRIVATE_KEY_PATH, 'utf8');
-    storedCredentials = {
-      appId: process.env.APPLE_APP_ID,
-      issuerId: process.env.APPLE_ISSUER_ID,
-      keyId: process.env.APPLE_KEY_ID,
-      privateKey: privateKey
-    };
-    console.log('Loaded stored Apple credentials');
-  } catch (error) {
-    console.error('Failed to load stored credentials:', error.message);
-  }
+const storedCredentials = getAppleCredentials();
+if (storedCredentials && validateCredentials(storedCredentials)) {
+  console.log('Loaded stored Apple credentials for app:', storedCredentials.appId);
+} else if (storedCredentials) {
+  console.error('Invalid stored credentials format');
 }
 
 // Generate JWT token for Apple API
@@ -210,66 +202,83 @@ function transformReview(review) {
 // API endpoint for fetching Apple reviews
 app.post('/api/apple-reviews', upload.single('privateKey'), async (req, res) => {
   try {
-    let { appId, issuerId, keyId } = req.body;
-    let privateKey = req.body.privateKey;
-
-    // Use stored credentials if available and not provided in request
-    if (storedCredentials && !appId) {
-      appId = storedCredentials.appId;
-      issuerId = storedCredentials.issuerId;
-      keyId = storedCredentials.keyId;
-      privateKey = storedCredentials.privateKey;
-    }
-
-    // Validate required fields
-    if (!appId || !issuerId) {
-      return res.status(400).json({ 
-        error: 'Missing required fields', 
-        details: 'App ID and Issuer ID are required' 
-      });
-    }
-
-    // Handle private key from file upload or text field
-    if (req.file) {
-      privateKey = req.file.buffer.toString('utf8');
-    }
-
-    if (!privateKey) {
-      return res.status(400).json({ 
-        error: 'Missing private key', 
-        details: 'Private key (.p8 file) is required' 
-      });
-    }
-
-    // Extract key ID from private key filename or use provided keyId
-    const extractedKeyId = keyId || privateKey.match(/AuthKey_([A-Z0-9]+)\.p8/)?.[1];
+    let credentials;
     
-    if (!extractedKeyId) {
-      // Try to extract from the private key content if it's in the filename
-      const keyMatch = req.file?.originalname?.match(/AuthKey_([A-Z0-9]+)\.p8/);
+    // Priority 1: Use server-stored credentials if available and valid
+    if (storedCredentials && validateCredentials(storedCredentials)) {
+      console.log('Using server-stored Apple credentials');
+      credentials = storedCredentials;
+    } 
+    // Priority 2: Use uploaded credentials
+    else if (req.body.appId && req.body.issuerId) {
+      console.log('Using uploaded Apple credentials');
+      
+      // Handle private key from file upload or text field
+      let privateKey = req.body.privateKey;
+      if (req.file) {
+        privateKey = req.file.buffer.toString('utf8');
+      }
+      
+      if (!privateKey) {
+        return res.status(400).json({ 
+          error: 'Missing private key', 
+          details: 'Private key (.p8 file) is required' 
+        });
+      }
+      
+      credentials = {
+        appId: req.body.appId,
+        issuerId: req.body.issuerId,
+        keyId: req.body.keyId,
+        privateKey: privateKey
+      };
+      
+      if (!validateCredentials(credentials)) {
+        return res.status(400).json({ 
+          error: 'Invalid credential format',
+          details: 'Please check your App ID (numeric), Issuer ID (UUID), and private key format' 
+        });
+      }
+    } 
+    // No credentials provided
+    else {
+      return res.status(400).json({ 
+        error: 'No credentials provided',
+        details: 'Either configure server credentials or provide them in the request' 
+      });
+    }
+
+    // Extract key ID if not provided
+    if (!credentials.keyId && req.file?.originalname) {
+      const keyMatch = req.file.originalname.match(/AuthKey_([A-Z0-9]+)\.p8/);
       if (keyMatch) {
-        keyId = keyMatch[1];
+        credentials.keyId = keyMatch[1];
       } else {
         return res.status(400).json({ 
           error: 'Invalid key format', 
           details: 'Could not determine Key ID. Please ensure your file is named AuthKey_KEYID.p8' 
         });
       }
-    } else {
-      keyId = extractedKeyId;
+    }
+    
+    if (!credentials.keyId) {
+      return res.status(400).json({ 
+        error: 'Missing Key ID',
+        details: 'Key ID is required (from .p8 filename or explicitly provided)' 
+      });
     }
 
     // Generate JWT token with caching
-    const token = await getAppleToken(keyId, issuerId, privateKey);
+    const token = await getAppleToken(credentials.keyId, credentials.issuerId, credentials.privateKey);
 
     // Fetch reviews from Apple
-    const reviewData = await fetchAppleReviews(token, appId);
+    const reviewData = await fetchAppleReviews(token, credentials.appId);
     
     // Transform reviews to our format
     const reviews = reviewData.data.map(transformReview);
 
     // Log success for monitoring
-    console.log(`Successfully fetched ${reviews.length} reviews for app ${appId}`);
+    console.log(`Successfully fetched ${reviews.length} reviews for app ${credentials.appId}`);
 
     // Send response
     res.json({
@@ -277,7 +286,7 @@ app.post('/api/apple-reviews', upload.single('privateKey'), async (req, res) => 
       reviews: reviews,
       meta: {
         total: reviews.length,
-        appId: appId,
+        appId: credentials.appId,
         territory: 'USA',
         fetchedAt: new Date().toISOString()
       }
@@ -346,7 +355,9 @@ const server = app.listen(PORT, () => {
   console.log(`Apple App Store API server running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`CORS enabled for: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
-  if (storedCredentials) {
-    console.log('Using stored credentials for app:', storedCredentials.appId);
+  if (storedCredentials && validateCredentials(storedCredentials)) {
+    console.log('Server configured with stored credentials for app:', storedCredentials.appId);
+  } else {
+    console.log('No server credentials configured - will require upload');
   }
 });
