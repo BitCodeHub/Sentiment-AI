@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import FileUpload from './FileUpload';
 import AppleImport from './AppleImport';
+import CacheStatus from './CacheStatus';
 import './UploadPage.css';
 
 const features = [
@@ -161,6 +162,7 @@ const UploadPage = ({ onFileUpload, onAppleImport, isLoading, error }) => {
                   onImport={onAppleImport}
                   className="styled-apple-import"
                 />
+                <CacheStatus />
               </div>
             )}
 

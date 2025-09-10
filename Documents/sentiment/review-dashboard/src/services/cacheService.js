@@ -1,8 +1,23 @@
-// Simple in-memory cache with TTL (Time To Live)
+import indexedDBService from './indexedDBService';
+
+// Enhanced cache service with memory cache and IndexedDB persistence
 class CacheService {
   constructor() {
     this.cache = new Map();
     this.DEFAULT_TTL = 3600000; // 1 hour in milliseconds
+    this.useIndexedDB = true;
+    this.checkIndexedDBSupport();
+  }
+
+  // Check if IndexedDB is supported and available
+  async checkIndexedDBSupport() {
+    try {
+      await indexedDBService.init();
+      this.useIndexedDB = true;
+    } catch (error) {
+      console.warn('IndexedDB not available, using memory cache only');
+      this.useIndexedDB = false;
+    }
   }
 
   // Generate a unique key for the cache based on function name and arguments
@@ -163,10 +178,150 @@ export const aiAnalysisCache = {
   },
 
   // Clear all AI-related cache
-  clearAll() {
-    // In a real implementation, we might want to clear only AI-related keys
+  async clearAll() {
+    // Clear memory cache
     cacheService.clear();
+    
+    // Clear IndexedDB if available
+    if (cacheService.useIndexedDB) {
+      try {
+        await indexedDBService.clearAll();
+      } catch (error) {
+        console.error('Error clearing IndexedDB:', error);
+      }
+    }
+  }
+};
+
+// Review-specific cache methods
+export const reviewCache = {
+  // Store reviews in both memory and IndexedDB
+  async setReviews(appId, reviews, territory = 'USA') {
+    const key = cacheService.generateKey('reviews', appId, territory);
+    
+    // Store in memory cache
+    cacheService.set(key, reviews, 7200000); // 2 hours
+    
+    // Store in IndexedDB if available
+    if (cacheService.useIndexedDB) {
+      try {
+        await indexedDBService.storeReviews(appId, reviews, territory);
+      } catch (error) {
+        console.error('Error storing in IndexedDB:', error);
+      }
+    }
+    
+    return true;
+  },
+  
+  // Get reviews from cache (memory first, then IndexedDB)
+  async getReviews(appId, territory = 'USA') {
+    const key = cacheService.generateKey('reviews', appId, territory);
+    
+    // Check memory cache first
+    const memoryResult = cacheService.get(key);
+    if (memoryResult) {
+      return {
+        reviews: memoryResult,
+        fromCache: true,
+        cacheType: 'memory'
+      };
+    }
+    
+    // Check IndexedDB if available
+    if (cacheService.useIndexedDB) {
+      try {
+        const dbResult = await indexedDBService.getReviews(appId, territory);
+        if (dbResult) {
+          // Restore to memory cache for faster subsequent access
+          cacheService.set(key, dbResult.reviews, 3600000); // 1 hour
+          
+          return {
+            reviews: dbResult.reviews,
+            fromCache: true,
+            cacheType: 'indexedDB',
+            metadata: dbResult.metadata
+          };
+        }
+      } catch (error) {
+        console.error('Error reading from IndexedDB:', error);
+      }
+    }
+    
+    return null;
+  },
+  
+  // Get cache metadata
+  async getMetadata(appId) {
+    if (cacheService.useIndexedDB) {
+      try {
+        return await indexedDBService.getMetadata(appId);
+      } catch (error) {
+        console.error('Error getting metadata:', error);
+      }
+    }
+    return null;
+  },
+  
+  // Clear reviews for specific app
+  async clearApp(appId) {
+    // Clear from memory cache
+    const keys = Array.from(cacheService.cache.keys());
+    keys.forEach(key => {
+      if (key.includes(`"${appId}"`)) {
+        cacheService.cache.delete(key);
+      }
+    });
+    
+    // Clear from IndexedDB
+    if (cacheService.useIndexedDB) {
+      try {
+        await indexedDBService.clearAppData(appId);
+      } catch (error) {
+        console.error('Error clearing app data from IndexedDB:', error);
+      }
+    }
+  },
+  
+  // Get all cached apps
+  async getCachedApps() {
+    if (cacheService.useIndexedDB) {
+      try {
+        return await indexedDBService.getAllCachedApps();
+      } catch (error) {
+        console.error('Error getting cached apps:', error);
+      }
+    }
+    return [];
+  },
+  
+  // Get storage info
+  async getStorageInfo() {
+    if (cacheService.useIndexedDB) {
+      try {
+        return await indexedDBService.getStorageInfo();
+      } catch (error) {
+        console.error('Error getting storage info:', error);
+      }
+    }
+    return { usage: 0, quota: 0, percentage: 0 };
+  },
+  
+  // Clean up old data
+  async cleanup(daysToKeep = 30) {
+    // Clean expired memory cache
+    cacheService.clearExpired();
+    
+    // Clean IndexedDB
+    if (cacheService.useIndexedDB) {
+      try {
+        await indexedDBService.cleanupOldData(daysToKeep);
+      } catch (error) {
+        console.error('Error cleaning up IndexedDB:', error);
+      }
+    }
   }
 };
 
 export default cacheService;
+export { reviewCache };

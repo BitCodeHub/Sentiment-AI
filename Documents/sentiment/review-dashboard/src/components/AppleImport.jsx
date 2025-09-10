@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Apple, Key, Hash, Upload, AlertCircle, CheckCircle, Loader, Info } from 'lucide-react';
+import { Apple, Key, Hash, Upload, AlertCircle, CheckCircle, Loader, Info, Database, RefreshCw } from 'lucide-react';
 import appleAppStoreBrowserService from '../services/appleAppStoreBrowser';
+import CacheStatus from './CacheStatus';
 import './AppleImport.css';
 
 const AppleImport = ({ onImport }) => {
@@ -18,6 +19,9 @@ const AppleImport = ({ onImport }) => {
   const [availableApps, setAvailableApps] = useState([]);
   const [hasServerCredentials, setHasServerCredentials] = useState(false);
   const [useServerCredentials, setUseServerCredentials] = useState(true);
+  const [showCacheOptions, setShowCacheOptions] = useState(false);
+  const [useCache, setUseCache] = useState(true);
+  const [forceRefresh, setForceRefresh] = useState(false);
 
   // Check backend availability and configured apps on mount
   useEffect(() => {
@@ -132,7 +136,8 @@ const AppleImport = ({ onImport }) => {
           appId.trim(),
           issuerId.trim(),
           keyContent,
-          useServerCredentials && hasServerCredentials
+          useServerCredentials && hasServerCredentials,
+          { useCache, forceRefresh }
         );
 
         clearInterval(progressInterval);
@@ -215,6 +220,52 @@ const AppleImport = ({ onImport }) => {
             </label>
           </div>
         )}
+
+        {/* Cache Options */}
+        <div className="form-group">
+          <button
+            type="button"
+            className="toggle-cache-options"
+            onClick={() => setShowCacheOptions(!showCacheOptions)}
+          >
+            {showCacheOptions ? 'Hide' : 'Show'} Cache Options
+          </button>
+          
+          {showCacheOptions && (
+            <div className="cache-options-panel">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={useCache}
+                  onChange={(e) => {
+                    setUseCache(e.target.checked);
+                    if (!e.target.checked) setForceRefresh(false);
+                  }}
+                  disabled={isLoading}
+                />
+                Use cached reviews if available
+              </label>
+              
+              {useCache && (
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={forceRefresh}
+                    onChange={(e) => setForceRefresh(e.target.checked)}
+                    disabled={isLoading}
+                  />
+                  Force refresh (fetch new reviews since last update)
+                </label>
+              )}
+              
+              <small className="cache-hint">
+                {useCache && !forceRefresh && 'Will use cached reviews if available, otherwise fetch all'}
+                {useCache && forceRefresh && 'Will fetch only new reviews since last update'}
+                {!useCache && 'Will fetch all reviews from Apple (may take longer)'}
+              </small>
+            </div>
+          )}
+        </div>
         
         {/* Show manual app ID input if no server credentials or user wants to use different credentials */}
         {(!hasServerCredentials || !useServerCredentials || availableApps.length === 0) && (
@@ -336,6 +387,46 @@ const AppleImport = ({ onImport }) => {
             {showInstructions ? 'Hide' : 'Show'} Instructions
           </button>
         </div>
+
+        {/* Cache Options */}
+        <div className="cache-options-toggle">
+          <button
+            className="toggle-cache-btn"
+            onClick={() => setShowCacheOptions(!showCacheOptions)}
+            type="button"
+          >
+            <Database size={16} />
+            {showCacheOptions ? 'Hide' : 'Show'} Cache Options
+          </button>
+        </div>
+
+        {showCacheOptions && (
+          <div className="cache-options-panel">
+            <div className="cache-controls">
+              <label className="cache-option">
+                <input
+                  type="checkbox"
+                  checked={useCache}
+                  onChange={(e) => setUseCache(e.target.checked)}
+                  disabled={isLoading}
+                />
+                <span>Use cached data when available</span>
+              </label>
+              
+              <label className="cache-option">
+                <input
+                  type="checkbox"
+                  checked={forceRefresh}
+                  onChange={(e) => setForceRefresh(e.target.checked)}
+                  disabled={isLoading || !useCache}
+                />
+                <span>Force refresh (fetch new reviews only)</span>
+              </label>
+            </div>
+            
+            {appId && <CacheStatus appId={appId} onRefresh={() => setForceRefresh(true)} />}
+          </div>
+        )}
 
         {showInstructions && (
           <div className="instructions">

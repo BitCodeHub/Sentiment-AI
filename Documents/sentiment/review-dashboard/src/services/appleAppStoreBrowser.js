@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { reviewCache } from './cacheService';
 
 class AppleAppStoreBrowserService {
   constructor() {
@@ -157,14 +158,70 @@ class AppleAppStoreBrowserService {
   }
 
   /**
+   * Get cache status for an app
+   */
+  async getCacheStatus(appId) {
+    if (this.isBackendAvailable) {
+      try {
+        const cacheStatusUrl = this.backendURL.replace('/apple-reviews', `/cache/status/${appId}`);
+        const response = await axios.get(cacheStatusUrl);
+        return response.data;
+      } catch (error) {
+        console.error('Error getting cache status:', error);
+      }
+    }
+    
+    // Frontend cache status
+    const metadata = await reviewCache.getMetadata(appId);
+    const storageInfo = await reviewCache.getStorageInfo();
+    
+    return {
+      appId,
+      hasCache: !!metadata,
+      metadata,
+      storageInfo
+    };
+  }
+
+  /**
+   * Clear cache for an app
+   */
+  async clearCache(appId) {
+    // Clear frontend cache
+    await reviewCache.clearApp(appId);
+    
+    // Clear backend cache if available
+    if (this.isBackendAvailable) {
+      try {
+        const clearCacheUrl = this.backendURL.replace('/apple-reviews', `/cache/${appId}`);
+        await axios.delete(clearCacheUrl);
+      } catch (error) {
+        console.error('Error clearing backend cache:', error);
+      }
+    }
+  }
+
+  /**
    * Main method to import reviews from Apple App Store
    * Calls backend API if available, otherwise returns mock data
    */
-  async importReviews(appId, issuerId, privateKeyContent, useServerCredentials = false) {
+  async importReviews(appId, issuerId, privateKeyContent, useServerCredentials = false, options = {}) {
+    const { useCache = true, forceRefresh = false } = options;
+    
     try {
       console.log('Importing Apple App Store reviews...');
       console.log('App ID:', appId);
       console.log('Backend available:', this.isBackendAvailable);
+      console.log('Use cache:', useCache, 'Force refresh:', forceRefresh);
+      
+      // Check frontend cache first if not forcing refresh
+      if (useCache && !forceRefresh) {
+        const cachedData = await reviewCache.getReviews(appId);
+        if (cachedData) {
+          console.log(`Serving ${cachedData.reviews.length} reviews from ${cachedData.cacheType} cache`);
+          return cachedData.reviews;
+        }
+      }
       
       // Check if backend is available
       if (!this.isBackendAvailable) {
@@ -177,6 +234,8 @@ class AppleAppStoreBrowserService {
           // Always use FormData because backend has multer middleware
           const formData = new FormData();
           formData.append('appId', appId);
+          formData.append('useCache', useCache.toString());
+          formData.append('forceRefresh', forceRefresh.toString());
           
           // Only send credentials if not using server credentials
           if (!useServerCredentials) {
@@ -199,8 +258,16 @@ class AppleAppStoreBrowserService {
           });
           
           if (response.data.success) {
-            console.log(`Successfully fetched ${response.data.reviews.length} reviews from Apple App Store`);
-            return response.data.reviews;
+            const reviews = response.data.reviews;
+            console.log(`Successfully fetched ${reviews.length} reviews from Apple App Store`);
+            console.log(`From cache: ${response.data.fromCache}, Incremental update: ${response.data.incrementalUpdate}`);
+            
+            // Cache the reviews in frontend if not from backend cache
+            if (!response.data.fromCache) {
+              await reviewCache.setReviews(appId, reviews);
+            }
+            
+            return reviews;
           } else {
             throw new Error(response.data.error || 'Failed to fetch reviews');
           }
