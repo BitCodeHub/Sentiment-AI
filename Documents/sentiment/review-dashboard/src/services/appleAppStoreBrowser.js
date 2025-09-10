@@ -174,23 +174,12 @@ class AppleAppStoreBrowserService {
       
       if (this.isBackendAvailable) {
         try {
-          let response;
+          // Always use FormData because backend has multer middleware
+          const formData = new FormData();
+          formData.append('appId', appId);
           
-          if (useServerCredentials) {
-            // When using server credentials, send JSON
-            response = await axios.post(this.backendURL, {
-              appId: appId,
-              useServerCredentials: true
-            }, {
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              timeout: 30000 // 30 second timeout for API calls
-            });
-          } else {
-            // When providing credentials, use FormData
-            const formData = new FormData();
-            formData.append('appId', appId);
+          // Only send credentials if not using server credentials
+          if (!useServerCredentials) {
             formData.append('issuerId', issuerId);
             
             // If privateKeyContent is a File object, append as file
@@ -200,14 +189,14 @@ class AppleAppStoreBrowserService {
               // Otherwise send as text
               formData.append('privateKey', privateKeyContent);
             }
-            
-            response = await axios.post(this.backendURL, formData, {
-              headers: {
-                'Content-Type': 'multipart/form-data'
-              },
-              timeout: 30000 // 30 second timeout for API calls
-            });
           }
+          
+          const response = await axios.post(this.backendURL, formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data'
+            },
+            timeout: 30000 // 30 second timeout for API calls
+          });
           
           if (response.data.success) {
             console.log(`Successfully fetched ${response.data.reviews.length} reviews from Apple App Store`);
