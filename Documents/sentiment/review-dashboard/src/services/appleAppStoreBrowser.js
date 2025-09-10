@@ -2,8 +2,25 @@ import axios from 'axios';
 
 class AppleAppStoreBrowserService {
   constructor() {
-    this.baseURL = 'https://api.appstoreconnect.apple.com/v1';
-    this.keyId = 'K6C3OE75Z8CA';
+    // Use backend API endpoint from environment or default
+    this.backendURL = import.meta.env.VITE_APPLE_API_ENDPOINT || 'http://localhost:3001/api/apple-reviews';
+    this.isBackendAvailable = false;
+    this.checkBackendAvailability();
+  }
+
+  /**
+   * Check if backend service is available
+   */
+  async checkBackendAvailability() {
+    try {
+      const healthEndpoint = this.backendURL.replace('/apple-reviews', '/health');
+      const response = await axios.get(healthEndpoint, { timeout: 5000 });
+      this.isBackendAvailable = response.data.status === 'ok';
+      console.log('Apple backend service available:', this.isBackendAvailable);
+    } catch (error) {
+      console.warn('Apple backend service not available, using mock data');
+      this.isBackendAvailable = false;
+    }
   }
 
   /**
@@ -139,22 +156,80 @@ class AppleAppStoreBrowserService {
 
   /**
    * Main method to import reviews from Apple App Store
-   * This would typically call a backend API in production
+   * Calls backend API if available, otherwise returns mock data
    */
   async importReviews(appId, issuerId, privateKeyContent) {
     try {
-      // In production, this would make an API call to your backend
-      // which would handle the Apple API authentication and requests
-      
-      // For now, return mock data
       console.log('Importing Apple App Store reviews...');
       console.log('App ID:', appId);
-      console.log('Issuer ID:', issuerId);
+      console.log('Backend available:', this.isBackendAvailable);
       
-      // Simulate API delay
+      // Check if backend is available
+      if (!this.isBackendAvailable) {
+        // Re-check availability in case it came online
+        await this.checkBackendAvailability();
+      }
+      
+      if (this.isBackendAvailable) {
+        try {
+          // Call backend API with credentials
+          const formData = new FormData();
+          formData.append('appId', appId);
+          formData.append('issuerId', issuerId);
+          
+          // If privateKeyContent is a File object, append as file
+          if (privateKeyContent instanceof File) {
+            formData.append('privateKey', privateKeyContent);
+          } else {
+            // Otherwise send as text
+            formData.append('privateKey', privateKeyContent);
+          }
+          
+          const response = await axios.post(this.backendURL, formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data'
+            },
+            timeout: 30000 // 30 second timeout for API calls
+          });
+          
+          if (response.data.success) {
+            console.log(`Successfully fetched ${response.data.reviews.length} reviews from Apple App Store`);
+            return response.data.reviews;
+          } else {
+            throw new Error(response.data.error || 'Failed to fetch reviews');
+          }
+        } catch (backendError) {
+          console.error('Backend API error:', backendError);
+          
+          // If backend fails, inform user but fall back to mock data
+          if (backendError.response?.status === 400) {
+            throw new Error(backendError.response.data.details || 'Invalid credentials provided');
+          } else if (backendError.response?.status === 401) {
+            throw new Error('Authentication failed. Please check your Apple credentials.');
+          } else if (backendError.code === 'ECONNABORTED') {
+            throw new Error('Request timed out. Please try again.');
+          } else {
+            console.warn('Backend unavailable, using mock data as fallback');
+            this.isBackendAvailable = false;
+          }
+        }
+      }
+      
+      // Fallback to mock data with warning
+      console.warn('Using mock data. To fetch real reviews, please ensure the backend service is running.');
+      
+      // Simulate API delay for mock data
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      return this.getMockReviews();
+      // Return mock data with a warning flag
+      const mockReviews = this.getMockReviews();
+      
+      // Add a flag to indicate this is mock data
+      if (mockReviews.length > 0) {
+        mockReviews[0]._isMockData = true;
+      }
+      
+      return mockReviews;
     } catch (error) {
       console.error('Error importing Apple reviews:', error);
       throw error;

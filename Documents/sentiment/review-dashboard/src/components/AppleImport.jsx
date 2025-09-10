@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Apple, Key, Hash, Upload, AlertCircle, CheckCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Apple, Key, Hash, Upload, AlertCircle, CheckCircle, Loader, Info } from 'lucide-react';
 import appleAppStoreBrowserService from '../services/appleAppStoreBrowser';
 import './AppleImport.css';
 
@@ -7,14 +7,28 @@ const AppleImport = ({ onImport }) => {
   const [appId, setAppId] = useState('');
   const [issuerId, setIssuerId] = useState('');
   const [privateKey, setPrivateKey] = useState('');
+  const [privateKeyFile, setPrivateKeyFile] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [showInstructions, setShowInstructions] = useState(false);
+  const [backendAvailable, setBackendAvailable] = useState(null);
+  const [importProgress, setImportProgress] = useState(null);
+  const [isMockData, setIsMockData] = useState(false);
+
+  // Check backend availability on mount
+  useEffect(() => {
+    const checkBackend = async () => {
+      await appleAppStoreBrowserService.checkBackendAvailability();
+      setBackendAvailable(appleAppStoreBrowserService.isBackendAvailable);
+    };
+    checkBackend();
+  }, []);
 
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (file && file.name.endsWith('.p8')) {
+      setPrivateKeyFile(file);
       const reader = new FileReader();
       reader.onload = (event) => {
         setPrivateKey(event.target.result);
@@ -26,34 +40,91 @@ const AppleImport = ({ onImport }) => {
     }
   };
 
+  // Validate credentials format
+  const validateCredentials = () => {
+    const errors = [];
+    
+    // Validate App ID (should be numeric)
+    if (!/^\d+$/.test(appId.trim())) {
+      errors.push('App ID should contain only numbers');
+    }
+    
+    // Validate Issuer ID (UUID format)
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(issuerId.trim())) {
+      errors.push('Issuer ID should be in UUID format (e.g., xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)');
+    }
+    
+    // Validate private key
+    if (!privateKey || !privateKey.includes('BEGIN PRIVATE KEY')) {
+      errors.push('Invalid private key format');
+    }
+    
+    return errors;
+  };
+
   const handleImport = async () => {
     if (!appId || !issuerId || !privateKey) {
       setError('Please fill in all required fields');
       return;
     }
 
+    // Validate credentials
+    const validationErrors = validateCredentials();
+    if (validationErrors.length > 0) {
+      setError(validationErrors.join('. '));
+      return;
+    }
+
     setIsLoading(true);
     setError('');
     setSuccess(false);
+    setIsMockData(false);
+    setImportProgress({ status: 'Connecting to Apple App Store...', percentage: 10 });
 
     try {
+      // Use file if available, otherwise use text content
+      const keyContent = privateKeyFile || privateKey;
+      
+      setImportProgress({ status: 'Authenticating...', percentage: 30 });
+      
       const reviews = await appleAppStoreBrowserService.importReviews(
-        appId,
-        issuerId,
-        privateKey
+        appId.trim(),
+        issuerId.trim(),
+        keyContent
       );
 
+      setImportProgress({ status: 'Processing reviews...', percentage: 80 });
+
       if (reviews && reviews.length > 0) {
+        // Check if this is mock data
+        if (reviews[0]._isMockData) {
+          setIsMockData(true);
+          delete reviews[0]._isMockData;
+        }
+        
+        setImportProgress({ status: `Imported ${reviews.length} reviews`, percentage: 100 });
         onImport(reviews);
         setSuccess(true);
+        
+        // Clear form after successful import
         setTimeout(() => {
           setSuccess(false);
-        }, 3000);
+          setImportProgress(null);
+          if (!isMockData) {
+            setAppId('');
+            setIssuerId('');
+            setPrivateKey('');
+            setPrivateKeyFile(null);
+          }
+        }, 5000);
       } else {
         setError('No reviews found for the specified app');
+        setImportProgress(null);
       }
     } catch (err) {
       setError(err.message || 'Failed to import reviews from Apple App Store');
+      setImportProgress(null);
     } finally {
       setIsLoading(false);
     }
@@ -121,6 +192,16 @@ const AppleImport = ({ onImport }) => {
           <small>Download from App Store Connect API Keys</small>
         </div>
 
+        {/* Backend availability indicator */}
+        {backendAvailable !== null && (
+          <div className={`backend-status ${backendAvailable ? 'available' : 'unavailable'}`}>
+            <Info size={16} />
+            {backendAvailable 
+              ? 'Connected to Apple API service' 
+              : 'Using demo mode (backend service not available)'}
+          </div>
+        )}
+
         {error && (
           <div className="error-message">
             <AlertCircle size={16} />
@@ -131,7 +212,25 @@ const AppleImport = ({ onImport }) => {
         {success && (
           <div className="success-message">
             <CheckCircle size={16} />
-            Successfully imported reviews from Apple App Store!
+            {isMockData 
+              ? 'Successfully loaded demo reviews. Connect backend service for real data.'
+              : 'Successfully imported reviews from Apple App Store!'}
+          </div>
+        )}
+
+        {/* Progress indicator */}
+        {importProgress && (
+          <div className="import-progress">
+            <div className="progress-status">
+              <Loader className="spinner" size={16} />
+              {importProgress.status}
+            </div>
+            <div className="progress-bar">
+              <div 
+                className="progress-fill" 
+                style={{ width: `${importProgress.percentage}%` }}
+              />
+            </div>
           </div>
         )}
 
@@ -166,10 +265,24 @@ const AppleImport = ({ onImport }) => {
                 <strong>Private Key:</strong> App Store Connect → Users and Access → Keys → Create a new key with "App Store Connect API" access → Download the .p8 file
               </li>
             </ol>
-            <p className="note">
-              <strong>Note:</strong> Due to browser security restrictions, the actual API integration requires a backend server. 
-              This demo shows mock data to demonstrate the functionality.
-            </p>
+            <div className="note">
+              <strong>Note:</strong> 
+              {backendAvailable 
+                ? 'Your credentials will be securely sent to the backend service for API authentication.'
+                : 'Backend service not detected. Using demo mode with sample data. To fetch real reviews, start the backend service (see documentation).'}
+            </div>
+            
+            {!backendAvailable && (
+              <div className="backend-setup">
+                <h5>Quick Backend Setup:</h5>
+                <ol>
+                  <li>Navigate to the <code>backend</code> folder</li>
+                  <li>Run <code>npm install</code></li>
+                  <li>Run <code>npm start</code></li>
+                  <li>Refresh this page to connect</li>
+                </ol>
+              </div>
+            )}
           </div>
         )}
       </div>
