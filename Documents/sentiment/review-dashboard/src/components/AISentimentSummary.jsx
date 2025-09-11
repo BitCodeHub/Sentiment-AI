@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Brain, TrendingUp, TrendingDown, Minus, Calendar, Loader2, AlertCircle, RefreshCw, Info } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { processMessage } from '../services/geminiChatService';
 import { aiSummaryCache } from '../services/aiSummaryCacheService';
-import { geminiQuotaTracker } from '../utils/geminiQuotaTracker';
 import './AISentimentSummary.css';
 
 const AISentimentSummary = ({ reviews, dateRange, onRefresh }) => {
@@ -52,67 +51,7 @@ const AISentimentSummary = ({ reviews, dateRange, onRefresh }) => {
     setFromCache(false);
 
     try {
-      // Get API key and log status
-      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-      console.log('[AISentimentSummary] API Key status:', {
-        hasApiKey: !!apiKey,
-        apiKeyLength: apiKey?.length || 0,
-        apiKeyPrefix: apiKey ? apiKey.substring(0, 8) + '...' : 'missing'
-      });
-
-      if (!apiKey || apiKey === 'your-gemini-api-key-here') {
-        throw new Error('Gemini API key is not configured. Please add VITE_GEMINI_API_KEY to your .env file.');
-      }
-
-      const genAI = new GoogleGenerativeAI(apiKey);
-      
-      // Try different models with fallback logic
-      let model;
-      let selectedModel = null;
-      const modelsToTry = [
-        'gemini-2.0-flash-exp',  // Start with experimental (working in chat)
-        'gemini-1.5-flash',      // Standard model
-        'gemini-1.5-pro'         // Pro model fallback
-      ];
-      
-      // Add generation config like the working chat service
-      const generationConfig = {
-        temperature: 0.7,
-        topP: 0.95,
-        topK: 40,
-        maxOutputTokens: 8192,
-      };
-      
-      for (const modelName of modelsToTry) {
-        // Check quota before trying
-        const quotaCheck = geminiQuotaTracker.isQuotaExceeded(modelName);
-        if (quotaCheck.exceeded) {
-          console.warn(`[AISentimentSummary] Skipping ${modelName} due to quota: ${geminiQuotaTracker.getQuotaMessage(modelName)}`);
-          continue;
-        }
-        
-        try {
-          console.log(`[AISentimentSummary] Trying model: ${modelName}`);
-          model = genAI.getGenerativeModel({ 
-            model: modelName,
-            generationConfig: generationConfig
-          });
-          selectedModel = modelName;
-          // If we get here, model initialization succeeded
-          console.log(`[AISentimentSummary] Successfully initialized model: ${modelName}`);
-          break;
-        } catch (err) {
-          console.warn(`[AISentimentSummary] Failed to initialize ${modelName}:`, err.message);
-          geminiQuotaTracker.trackCall(modelName, false);
-          if (modelName === modelsToTry[modelsToTry.length - 1]) {
-            throw new Error('All Gemini models failed to initialize');
-          }
-        }
-      }
-      
-      if (!model) {
-        throw new Error('Could not initialize any Gemini model');
-      }
+      console.log('[AISentimentSummary] Using geminiChatService for AI summary generation');
 
       // Calculate sentiment metrics
       const totalReviews = reviews.length;
@@ -166,20 +105,20 @@ const AISentimentSummary = ({ reviews, dateRange, onRefresh }) => {
         IMPORTANT: Return only valid JSON without any markdown formatting.
       `;
 
-      console.log(`[AISentimentSummary] Sending prompt to Gemini (${selectedModel})...`);
+      console.log('[AISentimentSummary] Sending prompt to Gemini via chat service...');
       console.log('[AISentimentSummary] Prompt length:', prompt.length, 'characters');
       
-      let result;
+      let responseText;
       try {
-        result = await model.generateContent(prompt);
+        // Use processMessage from the working chat service
+        const result = await processMessage(prompt, []);
         console.log('[AISentimentSummary] API call succeeded');
+        responseText = result.text;
       } catch (apiError) {
         console.error('[AISentimentSummary] API call failed:', {
           error: apiError,
           message: apiError.message,
-          status: apiError.status,
-          statusText: apiError.statusText,
-          details: apiError.details || 'No details'
+          stack: apiError.stack
         });
         
         // Check if it's a specific error type
@@ -187,18 +126,18 @@ const AISentimentSummary = ({ reviews, dateRange, onRefresh }) => {
           throw new Error('Invalid API key. Please check your Gemini API key configuration.');
         } else if (apiError.message?.includes('PERMISSION_DENIED')) {
           throw new Error('Permission denied. Please ensure the Gemini API is enabled for your project.');
-        } else if (apiError.message?.includes('models/gemini')) {
-          throw new Error(`Model ${selectedModel} is not available. ${apiError.message}`);
+        } else if (apiError.message?.includes('RATE_LIMIT_EXCEEDED') || apiError.message?.includes('Resource has been exhausted')) {
+          throw new Error('API quota exceeded. The system will use cached data when available.');
+        } else if (apiError.message?.includes('503') || apiError.message?.includes('Service Unavailable')) {
+          throw new Error('Gemini API service is temporarily unavailable. Please try again later.');
+        } else if (apiError.message?.includes('All Gemini models failed')) {
+          throw new Error('Unable to access Gemini AI. Please check your API key and try again.');
         }
         
-        throw apiError;
+        throw new Error(`Failed to generate summary: ${apiError.message || 'Unknown error'}`);
       }
       
-      // Track successful API call
-      geminiQuotaTracker.trackCall(selectedModel, true);
-      
       console.log('[AISentimentSummary] Received response from Gemini');
-      const responseText = result.response.text();
       console.log('[AISentimentSummary] Raw response:', responseText.substring(0, 200) + '...');
       
       // Clean the response
@@ -213,12 +152,6 @@ const AISentimentSummary = ({ reviews, dateRange, onRefresh }) => {
       // Cache the successful result
       aiSummaryCache.set(reviews, dateRange, summaryData);
       setQuotaWarning(false);
-      
-      // Check if we're close to quota limit
-      const quotaMessage = geminiQuotaTracker.getQuotaMessage(selectedModel);
-      if (quotaMessage && quotaMessage.includes('Warning')) {
-        console.warn(`[AISentimentSummary] ${quotaMessage}`);
-      }
     } catch (err) {
       console.error('[AISentimentSummary] Error generating AI summary:', {
         error: err,
@@ -226,11 +159,6 @@ const AISentimentSummary = ({ reviews, dateRange, onRefresh }) => {
         stack: err.stack,
         name: err.name
       });
-      
-      // Track failed API call if we had a model selected
-      if (selectedModel) {
-        geminiQuotaTracker.trackCall(selectedModel, false);
-      }
       
       // Provide more specific error messages
       let errorMessage = 'Failed to generate AI summary. ';
