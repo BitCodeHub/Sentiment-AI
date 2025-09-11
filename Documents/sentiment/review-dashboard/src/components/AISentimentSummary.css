@@ -49,6 +49,24 @@
   flex-shrink: 0;
 }
 
+/* Cache and Quota Indicators */
+.ai-sentiment-summary-card .cache-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-top: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  background-color: #f3f4f6;
+  border-radius: 4px;
+  width: fit-content;
+}
+
+.ai-sentiment-summary-card .cache-indicator svg {
+  color: #3b82f6;
+}
+
 .ai-sentiment-summary-card .summary-header h3 {
   margin: 0;
   font-size: 1rem;
