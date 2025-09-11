@@ -110,6 +110,13 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews }) => {
   // Fetch all ratings data when Apple data is available
   useEffect(() => {
     const fetchAllRatingsData = async () => {
+      console.log('[EnhancedDashboard] fetchAllRatingsData triggered with:', {
+        isAppleData: data?.isAppleData,
+        isFetchingAllRatings,
+        hasAllRatingsData: !!allRatingsData,
+        reviewsLength: data?.reviews?.length
+      });
+      
       if (data?.isAppleData && !isFetchingAllRatings && !allRatingsData && data?.reviews?.length > 0) {
         setIsFetchingAllRatings(true);
         
@@ -117,15 +124,38 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews }) => {
           const configStr = sessionStorage.getItem('appleAppConfig');
           const privateKey = sessionStorage.getItem('applePrivateKey');
           
+          console.log('[EnhancedDashboard] Retrieved from sessionStorage:', {
+            hasConfig: !!configStr,
+            hasPrivateKey: !!privateKey,
+            privateKeyLength: privateKey?.length
+          });
+          
           if (configStr) {
             const config = JSON.parse(configStr);
+            console.log('[EnhancedDashboard] Parsed config:', {
+              appId: config.appId,
+              issuerId: config.issuerId,
+              keyId: config.keyId,
+              useServerCredentials: config.useServerCredentials
+            });
+            
             const appId = config.appId;
             const issuerId = config.issuerId;
             const keyId = config.keyId;
             const useServerCredentials = config.useServerCredentials;
             
+            console.log('[EnhancedDashboard] Key ID specifically:', keyId);
+            
             // Import the service
             const appleService = (await import('../services/appleAppStoreBrowser')).default;
+            
+            console.log('[EnhancedDashboard] Calling getReviewSummarizations with:', {
+              appId,
+              issuerId,
+              keyId,
+              hasPrivateKey: !!privateKey,
+              useServerCredentials
+            });
             
             // Fetch summarizations
             const summarizations = await appleService.getReviewSummarizations(
@@ -136,10 +166,18 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews }) => {
               useServerCredentials
             );
             
+            console.log('[EnhancedDashboard] Received summarizations:', summarizations);
+            
             setAllRatingsData(summarizations);
+          } else {
+            console.log('[EnhancedDashboard] No config found in sessionStorage');
           }
         } catch (error) {
-          console.error('Failed to fetch all ratings data:', error);
+          console.error('[EnhancedDashboard] Failed to fetch all ratings data:', {
+            error: error.message,
+            stack: error.stack,
+            response: error.response?.data
+          });
           // Reset the fetching state to allow retry
           setIsFetchingAllRatings(false);
         } finally {
@@ -1147,6 +1185,12 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews }) => {
         )}
 
         {/* All Ratings Distribution (Apple Store Overall Rating) */}
+        {console.log('[EnhancedDashboard] All Ratings section conditions:', {
+          isAppleData: data?.isAppleData,
+          hasAllRatingsData: !!allRatingsData,
+          allRatingsData: allRatingsData,
+          expandedSection: expandedSections.allRatings
+        })}
         {data?.isAppleData && allRatingsData && expandedSections.allRatings && (
           <div className="analytics-card col-span-6">
             <div className="analytics-header" style={{ cursor: 'pointer' }} onClick={() => toggleSection('allRatings')}>

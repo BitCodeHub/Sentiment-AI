@@ -5,7 +5,8 @@ class AppleAppStoreBrowserService {
   constructor() {
     // Use backend API endpoint from environment or default
     this.backendURL = import.meta.env.VITE_APPLE_API_ENDPOINT || 'http://localhost:3001/api/apple-reviews';
-    console.log('Apple Backend URL:', this.backendURL);
+    console.log('[appleAppStoreBrowser] Constructor - Backend URL:', this.backendURL);
+    console.log('[appleAppStoreBrowser] Constructor - Environment variable:', import.meta.env.VITE_APPLE_API_ENDPOINT);
     this.isBackendAvailable = false;
     this.checkBackendAvailability();
   }
@@ -16,12 +17,17 @@ class AppleAppStoreBrowserService {
   async checkBackendAvailability() {
     try {
       const healthEndpoint = this.backendURL.replace('/apple-reviews', '/health');
-      console.log('Checking backend at:', healthEndpoint);
+      console.log('[appleAppStoreBrowser] Checking backend at:', healthEndpoint);
       const response = await axios.get(healthEndpoint, { timeout: 5000 });
       this.isBackendAvailable = response.data.status === 'ok';
-      console.log('Apple backend service available:', this.isBackendAvailable);
+      console.log('[appleAppStoreBrowser] Backend service available:', this.isBackendAvailable);
+      console.log('[appleAppStoreBrowser] Health check response:', response.data);
     } catch (error) {
-      console.warn('Apple backend service not available, using mock data', error.message);
+      console.warn('[appleAppStoreBrowser] Backend service not available:', {
+        message: error.message,
+        code: error.code,
+        endpoint: healthEndpoint
+      });
       this.isBackendAvailable = false;
     }
   }
@@ -222,7 +228,18 @@ class AppleAppStoreBrowserService {
    * This provides the same overall rating users see on the App Store
    */
   async getReviewSummarizations(appId, issuerId, keyId, privateKeyContent, useServerCredentials = false) {
+    console.log('[appleAppStoreBrowser] getReviewSummarizations called with:', {
+      appId,
+      issuerId,
+      keyId,
+      hasPrivateKey: !!privateKeyContent,
+      privateKeyLength: privateKeyContent?.length,
+      useServerCredentials,
+      isBackendAvailable: this.isBackendAvailable
+    });
+    
     if (!this.isBackendAvailable) {
+      console.log('[appleAppStoreBrowser] Backend not available, returning mock data');
       // Return mock data for demo
       return {
         averageRating: 4.5,
@@ -239,6 +256,8 @@ class AppleAppStoreBrowserService {
 
     try {
       const summarizationsUrl = this.backendURL.replace('/apple-reviews', '/apple-reviews/summarizations');
+      console.log('[appleAppStoreBrowser] Backend URL:', summarizationsUrl);
+      
       const formData = new FormData();
       formData.append('appId', appId);
       formData.append('useServerCredentials', useServerCredentials);
@@ -247,17 +266,37 @@ class AppleAppStoreBrowserService {
         formData.append('issuerId', issuerId);
         formData.append('keyId', keyId);
         formData.append('privateKey', privateKeyContent);
+        
+        console.log('[appleAppStoreBrowser] FormData entries (non-credentials):');
+        console.log('  - appId:', appId);
+        console.log('  - useServerCredentials:', useServerCredentials);
+        console.log('  - issuerId:', issuerId);
+        console.log('  - keyId:', keyId);
+        console.log('  - privateKey included:', !!privateKeyContent);
+      } else {
+        console.log('[appleAppStoreBrowser] Using server credentials, only appId sent');
       }
 
+      console.log('[appleAppStoreBrowser] Sending POST request to:', summarizationsUrl);
       const response = await axios.post(summarizationsUrl, formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
       });
 
+      console.log('[appleAppStoreBrowser] Backend response:', {
+        status: response.status,
+        data: response.data
+      });
+      
       return response.data.data;
     } catch (error) {
-      console.error('Error fetching review summarizations:', error);
+      console.error('[appleAppStoreBrowser] Error fetching review summarizations:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        stack: error.stack
+      });
       
       // Return default values on error
       return {
