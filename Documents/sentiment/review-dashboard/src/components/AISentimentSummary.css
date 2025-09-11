@@ -354,6 +354,17 @@
   color: #7f1d1d;
 }
 
+/* Specific colors for positive and negative theme text */
+.ai-sentiment-summary-card .positive-theme .theme-text {
+  color: #064e3b;
+  font-weight: 600;
+}
+
+.ai-sentiment-summary-card .negative-theme .theme-text {
+  color: #7f1d1d;
+  font-weight: 600;
+}
+
 /* Action Section */
 .ai-sentiment-summary-card .action-section {
   display: flex;
