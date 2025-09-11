@@ -15,6 +15,7 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
+  const [dateRange, setDateRange] = useState({ start: null, end: null });
 
   const handleFileUpload = async (file) => {
     setIsLoading(true);
@@ -42,6 +43,30 @@ function App() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Filter reviews by date range
+  const filterReviewsByDateRange = (reviews, dateRange) => {
+    if (!reviews || reviews.length === 0) return [];
+    if (!dateRange.start && !dateRange.end) return reviews;
+    
+    return reviews.filter(review => {
+      const reviewDate = new Date(review.date || review.Date || review['Review Date']);
+      if (isNaN(reviewDate.getTime())) return true; // Include reviews with invalid dates
+      
+      const startDate = dateRange.start ? new Date(dateRange.start) : null;
+      const endDate = dateRange.end ? new Date(dateRange.end) : null;
+      
+      if (startDate && endDate) {
+        return reviewDate >= startDate && reviewDate <= endDate;
+      } else if (startDate) {
+        return reviewDate >= startDate;
+      } else if (endDate) {
+        return reviewDate <= endDate;
+      }
+      
+      return true;
+    });
   };
 
   const handleAppleImport = async (reviews) => {
@@ -128,6 +153,7 @@ function App() {
                   data={data} 
                   onUpdateData={setData}
                   onFetchReviews={handleAppleImport}
+                  onDateRangeChange={setDateRange}
                 />
               </ErrorBoundary>
             )
@@ -138,7 +164,7 @@ function App() {
           } />
           
           <Route path="/chat" element={
-            data ? <ChatPage reviewData={data.reviews || []} /> : <Navigate to="/" />
+            data ? <ChatPage reviewData={filterReviewsByDateRange(data.reviews || [], dateRange)} /> : <Navigate to="/" />
           } />
         </Routes>
       </div>

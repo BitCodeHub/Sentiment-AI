@@ -36,7 +36,7 @@ import './EnhancedDashboard.css';
 const TABLEAU_COLORS = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'];
 const COLORS = TABLEAU_COLORS.slice(0, 5); // Use first 5 Tableau colors
 
-const EnhancedDashboard = ({ data, isLoading, onFetchReviews }) => {
+const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange }) => {
   const navigate = useNavigate();
   const [aiInsights, setAiInsights] = useState(null);
   const [deepInsights, setDeepInsights] = useState(null);
@@ -107,6 +107,13 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews }) => {
   useEffect(() => {
     console.log('Current View:', currentView);
   }, [currentView]);
+  
+  // Notify parent component when date range changes
+  useEffect(() => {
+    if (onDateRangeChange) {
+      onDateRangeChange(selectedDateRange);
+    }
+  }, [selectedDateRange, onDateRangeChange]);
 
   // Fetch all ratings data when Apple data is available
   useEffect(() => {
