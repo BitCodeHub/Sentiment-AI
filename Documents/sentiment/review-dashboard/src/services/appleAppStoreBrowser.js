@@ -217,6 +217,63 @@ class AppleAppStoreBrowserService {
   }
 
   /**
+   * Get review summarizations (includes all ratings, not just written reviews)
+   * This provides the same overall rating users see on the App Store
+   */
+  async getReviewSummarizations(appId, issuerId, privateKeyContent, useServerCredentials = false) {
+    if (!this.isBackendAvailable) {
+      // Return mock data for demo
+      return {
+        averageRating: 4.5,
+        totalRatings: 12543,
+        ratingCounts: {
+          1: 523,
+          2: 892,
+          3: 1843,
+          4: 3285,
+          5: 6000
+        }
+      };
+    }
+
+    try {
+      const summarizationsUrl = this.backendURL.replace('/apple-reviews', '/apple-reviews/summarizations');
+      const formData = new FormData();
+      formData.append('appId', appId);
+      formData.append('useServerCredentials', useServerCredentials);
+      
+      if (!useServerCredentials) {
+        formData.append('issuerId', issuerId);
+        formData.append('keyId', privateKeyContent.keyId || '');
+        formData.append('privateKey', privateKeyContent.content || privateKeyContent);
+      }
+
+      const response = await axios.post(summarizationsUrl, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      return response.data.data;
+    } catch (error) {
+      console.error('Error fetching review summarizations:', error);
+      
+      // Return default values on error
+      return {
+        averageRating: 0,
+        totalRatings: 0,
+        ratingCounts: {
+          1: 0,
+          2: 0,
+          3: 0,
+          4: 0,
+          5: 0
+        }
+      };
+    }
+  }
+
+  /**
    * Get cache status for an app
    */
   async getCacheStatus(appId) {

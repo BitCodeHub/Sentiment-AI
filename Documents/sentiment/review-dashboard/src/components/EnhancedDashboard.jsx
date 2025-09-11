@@ -60,6 +60,7 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews }) => {
   const [expandedSections, setExpandedSections] = useState({
     summary: true,
     distribution: true,
+    allRatings: true,
     sentiment: true,
     trends: true,
     ai: true,
@@ -76,6 +77,9 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews }) => {
   const [showSentimentAnalysis, setShowSentimentAnalysis] = useState(false);
   // Add state for Apple data fetching
   const [isFetchingAppleData, setIsFetchingAppleData] = useState(false);
+  // Add state for Apple review summarizations (all ratings)
+  const [allRatingsData, setAllRatingsData] = useState(null);
+  const [isFetchingAllRatings, setIsFetchingAllRatings] = useState(false);
   
   // Initialize date range from Apple app config on mount and auto-fetch
   useEffect(() => {
@@ -102,6 +106,46 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews }) => {
   useEffect(() => {
     console.log('Current View:', currentView);
   }, [currentView]);
+
+  // Fetch all ratings data when Apple data is available
+  useEffect(() => {
+    const fetchAllRatingsData = async () => {
+      if (data?.isAppleData && !isFetchingAllRatings && !allRatingsData) {
+        setIsFetchingAllRatings(true);
+        
+        try {
+          const configStr = sessionStorage.getItem('appleAppConfig');
+          const privateKey = sessionStorage.getItem('applePrivateKey');
+          
+          if (configStr) {
+            const config = JSON.parse(configStr);
+            const appId = config.appId;
+            const issuerId = config.issuerId;
+            const useServerCredentials = config.useServerCredentials;
+            
+            // Import the service
+            const appleService = (await import('../services/appleAppStoreBrowser')).default;
+            
+            // Fetch summarizations
+            const summarizations = await appleService.getReviewSummarizations(
+              appId,
+              issuerId,
+              privateKey,
+              useServerCredentials
+            );
+            
+            setAllRatingsData(summarizations);
+          }
+        } catch (error) {
+          console.error('Failed to fetch all ratings data:', error);
+        } finally {
+          setIsFetchingAllRatings(false);
+        }
+      }
+    };
+    
+    fetchAllRatingsData();
+  }, [data?.isAppleData]);
 
   // Handle Apple data fetching
   const handleFetchAppleReviews = async () => {
@@ -1064,7 +1108,7 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews }) => {
               {/* Rating Summary */}
               <div className="rating-summary">
                 <div className="average-rating">
-                  <span className="average-label">Average Rating</span>
+                  <span className="average-label">Average Rating (Written Reviews)</span>
                   <div className="average-value">
                     <span className="average-number">
                       {filteredReviews.length > 0 ? 
@@ -1091,6 +1135,98 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews }) => {
                 <div className="total-reviews">
                   <span>{filteredReviews.length.toLocaleString()}</span>
                   <span>Total Reviews</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* All Ratings Distribution (Apple Store Overall Rating) */}
+        {data?.isAppleData && allRatingsData && expandedSections.allRatings && (
+          <div className="analytics-card col-span-6">
+            <div className="analytics-header" style={{ cursor: 'pointer' }} onClick={() => toggleSection('allRatings')}>
+              <h3 className="analytics-title">
+                All Ratings (App Store Overall)
+                <span className="info-tooltip" title="Includes all star ratings, not just written reviews">
+                  <HelpCircle size={14} className="inline-block ml-2" style={{ opacity: 0.6 }} />
+                </span>
+                <ChevronUp className="inline-block ml-auto" style={{ width: '16px', height: '16px' }} />
+              </h3>
+            </div>
+            <div className="all-ratings-container">
+              <div className="overall-rating-summary">
+                <div className="overall-rating-value">
+                  <span className="overall-number">{allRatingsData.averageRating.toFixed(1)}</span>
+                  <div className="overall-stars">
+                    {[1,2,3,4,5].map(star => (
+                      <span 
+                        key={star}
+                        className={`star ${star <= Math.round(allRatingsData.averageRating) ? 'filled' : 'empty'}`}
+                      >
+                        ★
+                      </span>
+                    ))}
+                  </div>
+                  <span className="total-ratings-count">
+                    {allRatingsData.totalRatings.toLocaleString()} total ratings
+                  </span>
+                </div>
+              </div>
+              
+              <div className="all-ratings-bars">
+                {[5, 4, 3, 2, 1].map((rating) => {
+                  const count = allRatingsData.ratingCounts[rating] || 0;
+                  const percentage = allRatingsData.totalRatings > 0 ? 
+                    ((count / allRatingsData.totalRatings) * 100) : 0;
+                  const maxCount = Math.max(...Object.values(allRatingsData.ratingCounts));
+                  const barWidth = maxCount > 0 ? (count / maxCount) * 100 : 0;
+                  const colors = {
+                    5: '#10b981',
+                    4: '#22c55e', 
+                    3: '#f59e0b',
+                    2: '#f97316',
+                    1: '#ef4444'
+                  };
+                  
+                  return (
+                    <div key={rating} className="all-rating-bar-row">
+                      <span className="rating-label">{rating}★</span>
+                      <div className="rating-bar-container">
+                        <div 
+                          className="rating-bar"
+                          style={{ 
+                            width: `${barWidth}%`,
+                            backgroundColor: colors[rating],
+                            opacity: 0.8
+                          }}
+                        />
+                      </div>
+                      <div className="rating-stats">
+                        <span className="rating-count">{count.toLocaleString()}</span>
+                        <span className="rating-percentage">({percentage.toFixed(1)}%)</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              
+              <div className="ratings-comparison">
+                <div className="comparison-item">
+                  <span className="comparison-label">Written Reviews Avg:</span>
+                  <span className="comparison-value">
+                    {filteredReviews.length > 0 ? 
+                      ((filteredRatingDistribution[5] * 5 + 
+                        filteredRatingDistribution[4] * 4 + 
+                        filteredRatingDistribution[3] * 3 + 
+                        filteredRatingDistribution[2] * 2 + 
+                        filteredRatingDistribution[1] * 1) / filteredReviews.length).toFixed(1)
+                      : '0.0'
+                    }
+                  </span>
+                </div>
+                <div className="comparison-item">
+                  <span className="comparison-label">All Ratings Avg:</span>
+                  <span className="comparison-value highlight">{allRatingsData.averageRating.toFixed(1)}</span>
                 </div>
               </div>
             </div>

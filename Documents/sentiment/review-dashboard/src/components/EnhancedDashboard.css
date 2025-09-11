@@ -3535,6 +3535,109 @@ html {
   display: none;
 }
 
+/* All Ratings (App Store Overall) Styles */
+.all-ratings-container {
+  padding: 1.5rem;
+}
+
+.overall-rating-summary {
+  text-align: center;
+  padding: 2rem 1rem;
+  background: #f9fafb;
+  border-radius: 12px;
+  margin-bottom: 2rem;
+}
+
+.overall-rating-value {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.overall-number {
+  font-size: 3.5rem;
+  font-weight: 700;
+  color: #1f2937;
+  line-height: 1;
+}
+
+.overall-stars {
+  display: flex;
+  gap: 0.25rem;
+  font-size: 1.5rem;
+}
+
+.overall-stars .star.filled {
+  color: #fbbf24;
+}
+
+.overall-stars .star.empty {
+  color: #e5e7eb;
+}
+
+.total-ratings-count {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.all-ratings-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+}
+
+.all-rating-bar-row {
+  display: grid;
+  grid-template-columns: 3rem 1fr auto;
+  align-items: center;
+  gap: 1rem;
+}
+
+.ratings-comparison {
+  display: flex;
+  justify-content: space-around;
+  padding: 1rem;
+  background: #f3f4f6;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.comparison-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.comparison-label {
+  font-size: 0.75rem;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.comparison-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #374151;
+}
+
+.comparison-value.highlight {
+  color: #10b981;
+}
+
+.info-tooltip {
+  cursor: help;
+  transition: opacity 0.2s;
+}
+
+.info-tooltip:hover {
+  opacity: 1 !important;
+}
+
 /* Responsive Design */
 @media (max-width: 1024px) {
   .dashboard-content {

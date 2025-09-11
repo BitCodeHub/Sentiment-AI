@@ -103,6 +103,27 @@ async function fetchAppleReviews(token, appId, territory = 'USA', limit = 200, n
   }
 }
 
+// Fetch customer review summarizations (includes all ratings, not just written reviews)
+async function fetchAppleReviewSummarizations(token, appId, territory = 'USA') {
+  try {
+    const url = `${APPLE_API_BASE}/apps/${appId}/customerReviewSummarizations`;
+    const response = await axios.get(url, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json'
+      },
+      params: {
+        'filter[territory]': territory
+      }
+    });
+
+    return response.data;
+  } catch (error) {
+    console.error('Apple Summarizations API Error:', error.response?.data || error.message);
+    throw new Error(error.response?.data?.errors?.[0]?.detail || 'Failed to fetch review summarizations');
+  }
+}
+
 // Fetch all reviews with pagination
 async function fetchAllReviews(token, appId, territory = 'USA', sinceDate = null, dateRange = null) {
   const allReviews = [];
@@ -520,6 +541,100 @@ app.post('/api/apple-reviews/metadata', upload.single('privateKey'), async (req,
       error: 'Failed to fetch review metadata',
       details: error.message,
       timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// API endpoint for fetching Apple review summarizations (all ratings)
+app.post('/api/apple-reviews/summarizations', upload.single('privateKey'), async (req, res) => {
+  try {
+    const { appId, issuerId, keyId, territory, useServerCredentials } = req.body;
+    let privateKey = req.body.privateKey;
+
+    // Validate required fields
+    if (!appId) {
+      return res.status(400).json({ 
+        error: 'Missing required fields', 
+        details: 'App ID is required' 
+      });
+    }
+
+    let token;
+    
+    // Check if we should use server-configured credentials
+    const hasServerCredentials = configuredApps.some(app => app.id === appId);
+    
+    if (useServerCredentials && hasServerCredentials) {
+      // Use server credentials
+      const config = configuredApps.find(app => app.id === appId);
+      if (!config || !config.keyId) {
+        return res.status(400).json({
+          error: 'Server credentials not properly configured',
+          details: 'Please contact administrator'
+        });
+      }
+      
+      token = generateAppleToken(config.keyId, config.issuerId, config.privateKey);
+    } else {
+      // Use provided credentials
+      if (!issuerId || !keyId || !privateKey) {
+        return res.status(400).json({ 
+          error: 'Missing credentials',
+          details: 'Please provide issuer ID, key ID, and private key' 
+        });
+      }
+
+      // Handle base64 encoded key
+      if (privateKey.includes('LS0tLS1CRUdJTi')) {
+        privateKey = Buffer.from(privateKey, 'base64').toString();
+      }
+      
+      token = generateAppleToken(keyId, issuerId, privateKey);
+    }
+
+    // Fetch review summarizations
+    const summarizationsData = await fetchAppleReviewSummarizations(token, appId, territory || 'USA');
+    
+    // Extract the summarization data
+    const summarization = summarizationsData.data?.[0];
+    if (!summarization) {
+      return res.json({
+        success: true,
+        data: {
+          averageRating: 0,
+          totalRatings: 0,
+          ratingCounts: {
+            1: 0,
+            2: 0,
+            3: 0,
+            4: 0,
+            5: 0
+          }
+        }
+      });
+    }
+
+    const attributes = summarization.attributes || {};
+    
+    res.json({
+      success: true,
+      data: {
+        averageRating: attributes.averageRating || 0,
+        totalRatings: attributes.totalRatings || 0,
+        ratingCounts: {
+          1: attributes.ratingCountList?.[0] || 0,
+          2: attributes.ratingCountList?.[1] || 0,
+          3: attributes.ratingCountList?.[2] || 0,
+          4: attributes.ratingCountList?.[3] || 0,
+          5: attributes.ratingCountList?.[4] || 0
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching review summarizations:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch review summarizations',
+      details: error.message 
     });
   }
 });
