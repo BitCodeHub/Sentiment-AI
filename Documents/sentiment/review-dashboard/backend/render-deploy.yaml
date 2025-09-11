@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: sentiment-review-backend
+    env: node
+    runtime: node
+    buildCommand: npm install
+    startCommand: npm run start:production
+    region: oregon
+    plan: free
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      - key: FRONTEND_URL
+        value: https://review-dashboard.onrender.com,http://localhost:5173
+      - key: RATE_LIMIT_WINDOW_MS
+        value: 900000
+      - key: RATE_LIMIT_MAX_REQUESTS
+        value: 100
+      # Apple App Store Connect API credentials
+      # These need to be configured in Render dashboard
+      # - key: APPLE_ISSUER_ID
+      #   value: your-issuer-id-here
+      # - key: APPLE_KEY_ID  
+      #   value: your-key-id-here
+      # - key: APPLE_PRIVATE_KEY_BASE64
+      #   value: your-base64-encoded-private-key
+      # Redis configuration (optional for caching)
+      # - key: REDIS_URL
+      #   value: your-redis-url-here

@@ -4,8 +4,11 @@ import { reviewCache } from './cacheService';
 class AppleAppStoreBrowserService {
   constructor() {
     // Use backend API endpoint from environment or default
-    this.backendURL = import.meta.env.VITE_APPLE_API_ENDPOINT || 'http://localhost:3001/api/apple-reviews';
-    console.log('[appleAppStoreBrowser] Constructor - Backend URL:', this.backendURL);
+    this.primaryBackendURL = import.meta.env.VITE_APPLE_API_ENDPOINT || 'https://sentiment-review-backend.onrender.com/api/apple-reviews';
+    this.fallbackBackendURL = 'http://localhost:3001/api/apple-reviews';
+    this.backendURL = this.primaryBackendURL;
+    console.log('[appleAppStoreBrowser] Constructor - Primary Backend URL:', this.primaryBackendURL);
+    console.log('[appleAppStoreBrowser] Constructor - Fallback Backend URL:', this.fallbackBackendURL);
     console.log('[appleAppStoreBrowser] Constructor - Environment variable:', import.meta.env.VITE_APPLE_API_ENDPOINT);
     this.isBackendAvailable = false;
     this.checkBackendAvailability();
@@ -15,46 +18,51 @@ class AppleAppStoreBrowserService {
    * Check if backend service is available
    */
   async checkBackendAvailability() {
+    // Try primary backend first
     try {
-      const healthEndpoint = this.backendURL.replace('/apple-reviews', '/health');
-      console.log('[appleAppStoreBrowser] Checking backend at:', healthEndpoint);
-      
-      // First try a simple test endpoint
-      try {
-        const testEndpoint = this.backendURL.replace('/apple-reviews', '/test');
-        console.log('[appleAppStoreBrowser] Testing connectivity at:', testEndpoint);
-        const testResponse = await axios.get(testEndpoint, { timeout: 5000 });
-        console.log('[appleAppStoreBrowser] Test endpoint response:', testResponse.data);
-      } catch (testError) {
-        console.error('[appleAppStoreBrowser] Test endpoint failed:', testError.message);
-      }
+      const healthEndpoint = this.primaryBackendURL.replace('/apple-reviews', '/health');
+      console.log('[appleAppStoreBrowser] Checking primary backend at:', healthEndpoint);
       
       const response = await axios.get(healthEndpoint, { timeout: 5000 });
-      this.isBackendAvailable = response.data.status === 'ok';
-      console.log('[appleAppStoreBrowser] Backend service available:', this.isBackendAvailable);
-      console.log('[appleAppStoreBrowser] Health check response:', response.data);
-      
-      if (response.data.environment) {
-        console.log('[appleAppStoreBrowser] Backend environment:', response.data.environment);
+      if (response.data.status === 'ok') {
+        this.backendURL = this.primaryBackendURL;
+        this.isBackendAvailable = true;
+        console.log('[appleAppStoreBrowser] Primary backend service available');
+        console.log('[appleAppStoreBrowser] Health check response:', response.data);
+        return;
       }
     } catch (error) {
-      console.warn('[appleAppStoreBrowser] Backend service not available:', {
+      console.warn('[appleAppStoreBrowser] Primary backend not available:', {
         message: error.message,
         code: error.code,
-        endpoint: this.backendURL.replace('/apple-reviews', '/health'),
-        response: error.response?.data,
-        status: error.response?.status
+        endpoint: this.primaryBackendURL.replace('/apple-reviews', '/health')
       });
-      
-      // Log more details about the error
-      if (error.code === 'ECONNREFUSED') {
-        console.error('[appleAppStoreBrowser] Backend connection refused. Make sure backend is running on the correct port.');
-      } else if (error.code === 'ERR_NETWORK') {
-        console.error('[appleAppStoreBrowser] Network error. Check CORS configuration.');
-      }
-      
-      this.isBackendAvailable = false;
     }
+    
+    // Try fallback backend
+    try {
+      const healthEndpoint = this.fallbackBackendURL.replace('/apple-reviews', '/health');
+      console.log('[appleAppStoreBrowser] Checking fallback backend at:', healthEndpoint);
+      
+      const response = await axios.get(healthEndpoint, { timeout: 5000 });
+      if (response.data.status === 'ok') {
+        this.backendURL = this.fallbackBackendURL;
+        this.isBackendAvailable = true;
+        console.log('[appleAppStoreBrowser] Fallback backend service available');
+        console.log('[appleAppStoreBrowser] Health check response:', response.data);
+        return;
+      }
+    } catch (error) {
+      console.warn('[appleAppStoreBrowser] Fallback backend not available:', {
+        message: error.message,
+        code: error.code,
+        endpoint: this.fallbackBackendURL.replace('/apple-reviews', '/health')
+      });
+    }
+    
+    // Neither backend is available
+    this.isBackendAvailable = false;
+    console.error('[appleAppStoreBrowser] No backend service available. Using demo mode.');
   }
 
   /**
