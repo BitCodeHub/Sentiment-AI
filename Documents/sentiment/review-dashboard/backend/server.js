@@ -105,8 +105,21 @@ async function fetchAppleReviews(token, appId, territory = 'USA', limit = 200, n
 
 // Fetch customer review summarizations (includes all ratings, not just written reviews)
 async function fetchAppleReviewSummarizations(token, appId, territory = 'USA') {
+  console.log('[fetchAppleReviewSummarizations] Starting...');
+  console.log('[fetchAppleReviewSummarizations] Parameters:', { appId, territory, hasToken: !!token });
+  
   try {
     const url = `${APPLE_API_BASE}/apps/${appId}/customerReviewSummarizations`;
+    console.log('[fetchAppleReviewSummarizations] Full URL:', url);
+    console.log('[fetchAppleReviewSummarizations] Request headers:', {
+      Authorization: `Bearer ${token.substring(0, 20)}...`,
+      Accept: 'application/json'
+    });
+    console.log('[fetchAppleReviewSummarizations] Request params:', {
+      'filter[territory]': territory
+    });
+    
+    const startTime = Date.now();
     const response = await axios.get(url, {
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -116,10 +129,25 @@ async function fetchAppleReviewSummarizations(token, appId, territory = 'USA') {
         'filter[territory]': territory
       }
     });
+    const responseTime = Date.now() - startTime;
+    
+    console.log('[fetchAppleReviewSummarizations] Response received in', responseTime, 'ms');
+    console.log('[fetchAppleReviewSummarizations] Response status:', response.status);
+    console.log('[fetchAppleReviewSummarizations] Response data:', JSON.stringify(response.data, null, 2));
 
     return response.data;
   } catch (error) {
-    console.error('Apple Summarizations API Error:', error.response?.data || error.message);
+    console.error('[fetchAppleReviewSummarizations] ERROR occurred');
+    console.error('[fetchAppleReviewSummarizations] Error type:', error.constructor.name);
+    console.error('[fetchAppleReviewSummarizations] Error message:', error.message);
+    console.error('[fetchAppleReviewSummarizations] Error code:', error.code);
+    
+    if (error.response) {
+      console.error('[fetchAppleReviewSummarizations] Response status:', error.response.status);
+      console.error('[fetchAppleReviewSummarizations] Response data:', JSON.stringify(error.response.data, null, 2));
+      console.error('[fetchAppleReviewSummarizations] Response headers:', error.response.headers);
+    }
+    
     throw new Error(error.response?.data?.errors?.[0]?.detail || 'Failed to fetch review summarizations');
   }
 }
@@ -547,12 +575,32 @@ app.post('/api/apple-reviews/metadata', upload.single('privateKey'), async (req,
 
 // API endpoint for fetching Apple review summarizations (all ratings)
 app.post('/api/apple-reviews/summarizations', upload.single('privateKey'), async (req, res) => {
+  console.log('\n==== SUMMARIZATIONS ENDPOINT HIT ====');
+  console.log('Timestamp:', new Date().toISOString());
+  console.log('Request headers:', req.headers);
+  console.log('Request body:', {
+    ...req.body,
+    privateKey: req.body.privateKey ? `[REDACTED ${req.body.privateKey.length} chars]` : undefined
+  });
+  console.log('Has file upload:', !!req.file);
+  
   try {
     const { appId, issuerId, keyId, territory, useServerCredentials } = req.body;
     let privateKey = req.body.privateKey;
 
+    console.log('Parsed parameters:', {
+      appId,
+      issuerId,
+      keyId,
+      territory,
+      useServerCredentials,
+      hasPrivateKey: !!privateKey,
+      privateKeyLength: privateKey?.length
+    });
+
     // Validate required fields
     if (!appId) {
+      console.error('Missing app ID');
       return res.status(400).json({ 
         error: 'Missing required fields', 
         details: 'App ID is required' 
@@ -564,41 +612,81 @@ app.post('/api/apple-reviews/summarizations', upload.single('privateKey'), async
     // Check if we should use server-configured credentials
     const configuredApps = getConfiguredApps();
     const hasServerCredentials = configuredApps.some(app => app.id === appId);
+    console.log('Server credentials check:', { hasServerCredentials, configuredApps: configuredApps.length });
     
     if (useServerCredentials && hasServerCredentials) {
+      console.log('Using server-configured credentials');
       // Use server credentials
       const config = configuredApps.find(app => app.id === appId);
       if (!config || !config.keyId) {
+        console.error('Server credentials not properly configured');
         return res.status(400).json({
           error: 'Server credentials not properly configured',
           details: 'Please contact administrator'
         });
       }
       
+      console.log('Generating token with server credentials');
       token = generateAppleToken(config.keyId, config.issuerId, config.privateKey);
     } else {
+      console.log('Using user-provided credentials');
       // Use provided credentials
       if (!issuerId || !keyId || !privateKey) {
+        console.error('Missing user credentials:', { hasIssuerId: !!issuerId, hasKeyId: !!keyId, hasPrivateKey: !!privateKey });
         return res.status(400).json({ 
           error: 'Missing credentials',
           details: 'Please provide issuer ID, key ID, and private key' 
         });
       }
 
+      // Handle private key from file upload
+      if (req.file) {
+        console.log('Using private key from file upload');
+        privateKey = req.file.buffer.toString('utf8');
+      }
+
       // Handle base64 encoded key
       if (privateKey.includes('LS0tLS1CRUdJTi')) {
+        console.log('Decoding base64 private key');
         privateKey = Buffer.from(privateKey, 'base64').toString();
       }
       
-      token = generateAppleToken(keyId, issuerId, privateKey);
+      console.log('Private key format:', {
+        startsWithBEGIN: privateKey.startsWith('-----BEGIN'),
+        endsWithEND: privateKey.endsWith('-----END PRIVATE KEY-----\n') || privateKey.endsWith('-----END PRIVATE KEY-----'),
+        length: privateKey.length,
+        lineCount: privateKey.split('\n').length
+      });
+      
+      console.log('Generating JWT token...');
+      try {
+        token = generateAppleToken(keyId, issuerId, privateKey);
+        console.log('JWT token generated successfully');
+      } catch (tokenError) {
+        console.error('JWT generation error:', tokenError);
+        throw tokenError;
+      }
     }
 
     // Fetch review summarizations
+    console.log('Fetching summarizations from Apple API...');
+    console.log('Territory:', territory || 'USA');
+    const startTime = Date.now();
+    
     const summarizationsData = await fetchAppleReviewSummarizations(token, appId, territory || 'USA');
+    
+    const apiTime = Date.now() - startTime;
+    console.log(`Apple API response received in ${apiTime}ms`);
+    console.log('Response data structure:', {
+      hasData: !!summarizationsData.data,
+      dataLength: summarizationsData.data?.length,
+      firstItem: summarizationsData.data?.[0] ? Object.keys(summarizationsData.data[0]) : null
+    });
     
     // Extract the summarization data
     const summarization = summarizationsData.data?.[0];
     if (!summarization) {
+      console.log('No summarization data found, returning zeros');
       return res.json({
         success: true,
         data: {
@@ -616,8 +704,14 @@ app.post('/api/apple-reviews/summarizations', upload.single('privateKey'), async
     }
 
     const attributes = summarization.attributes || {};
+    console.log('Summarization attributes:', {
+      averageRating: attributes.averageRating,
+      totalRatings: attributes.totalRatings,
+      ratingCountList: attributes.ratingCountList,
+      hasRatingCounts: !!attributes.ratingCountList
+    });
     
-    res.json({
+    const responseData = {
       success: true,
       data: {
         averageRating: attributes.averageRating || 0,
@@ -630,9 +724,21 @@ app.post('/api/apple-reviews/summarizations', upload.single('privateKey'), async
           5: attributes.ratingCountList?.[4] || 0
         }
       }
-    });
+    };
+    
+    console.log('Sending response:', responseData);
+    res.json(responseData);
+    console.log('==== SUMMARIZATIONS ENDPOINT COMPLETE ====\n');
   } catch (error) {
-    console.error('Error fetching review summarizations:', error);
+    console.error('==== ERROR in summarizations endpoint ====');
+    console.error('Error type:', error.constructor.name);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    if (error.response) {
+      console.error('API response error:', error.response.data);
+    }
+    console.error('==== END ERROR ====\n');
+    
     res.status(500).json({ 
       error: 'Failed to fetch review summarizations',
       details: error.message 
@@ -651,11 +757,32 @@ app.get('/api/apple-apps', (req, res) => {
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
+  console.log('[Health Check] Request received from:', req.headers.origin || req.headers.referer || 'unknown');
   res.json({ 
     status: 'ok', 
     service: 'Apple App Store Review API',
     timestamp: new Date().toISOString(),
-    cacheEnabled: true
+    cacheEnabled: true,
+    environment: {
+      port: PORT,
+      corsOrigin: process.env.FRONTEND_URL || 'http://localhost:5173',
+      hasRedis: !!process.env.REDIS_URL
+    }
+  });
+});
+
+// Test endpoint for debugging connectivity
+app.get('/api/test', (req, res) => {
+  console.log('[Test Endpoint] Hit at:', new Date().toISOString());
+  console.log('[Test Endpoint] Headers:', req.headers);
+  res.json({
+    message: 'Backend is reachable',
+    timestamp: new Date().toISOString(),
+    receivedHeaders: {
+      origin: req.headers.origin,
+      referer: req.headers.referer,
+      userAgent: req.headers['user-agent']
+    }
   });
 });
 

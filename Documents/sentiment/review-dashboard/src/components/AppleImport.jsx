@@ -58,10 +58,11 @@ const AppleImport = ({ onImport }) => {
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (file && file.name.endsWith('.p8')) {
-      setPrivateKeyFile(file);
       const reader = new FileReader();
       reader.onload = (event) => {
-        setPrivateKey(event.target.result);
+        const content = event.target.result;
+        setPrivateKey(content);
+        setPrivateKeyFile(null); // Clear file reference, we have the content now
         setError('');
       };
       reader.readAsText(file);
@@ -111,7 +112,8 @@ const AppleImport = ({ onImport }) => {
     setError('');
     
     try {
-      const keyContent = privateKeyFile || privateKey;
+      // Always use the text content (privateKey) which is set from file or direct input
+      const keyContent = privateKey;
       const metadata = await appleAppStoreBrowserService.getReviewMetadata(
         appId.trim(),
         issuerId.trim(),
@@ -157,8 +159,10 @@ const AppleImport = ({ onImport }) => {
       };
       
       // Store private key separately if not using server credentials
-      if (!useServerCredentials && privateKey) {
-        sessionStorage.setItem('applePrivateKey', privateKey);
+      if (!useServerCredentials || !hasServerCredentials) {
+        if (privateKey) {
+          sessionStorage.setItem('applePrivateKey', privateKey);
+        }
       }
       
       sessionStorage.setItem('appleAppConfig', JSON.stringify(config));
@@ -199,8 +203,8 @@ const AppleImport = ({ onImport }) => {
     setImportProgress({ status: 'Connecting to Apple App Store...', percentage: 10 });
 
     try {
-      // Use file if available, otherwise use text content
-      const keyContent = privateKeyFile || privateKey;
+      // Always use the text content (privateKey) which is set from file or direct input
+      const keyContent = privateKey;
       
       setImportProgress({ status: 'Authenticating...', percentage: 30 });
       
@@ -240,6 +244,27 @@ const AppleImport = ({ onImport }) => {
           onImport(reviews);
           setSuccess(true);
           setImportProgress({ status: `Import complete! Fetched ${reviews.length} reviews`, percentage: 100 });
+          
+          // Store app configuration in session for later use
+          if (typeof window !== 'undefined') {
+            const config = {
+              appId: appId.trim(),
+              issuerId: issuerId?.trim(),
+              keyId: keyId?.trim(),
+              useServerCredentials: useServerCredentials && hasServerCredentials,
+              startDate: selectedStartDate,
+              endDate: selectedEndDate
+            };
+            
+            // Store private key separately if not using server credentials
+            if (!useServerCredentials || !hasServerCredentials) {
+              if (privateKey) {
+                sessionStorage.setItem('applePrivateKey', privateKey);
+              }
+            }
+            
+            sessionStorage.setItem('appleAppConfig', JSON.stringify(config));
+          }
           
           // Clear progress after success
           setTimeout(() => {

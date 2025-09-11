@@ -18,16 +18,41 @@ class AppleAppStoreBrowserService {
     try {
       const healthEndpoint = this.backendURL.replace('/apple-reviews', '/health');
       console.log('[appleAppStoreBrowser] Checking backend at:', healthEndpoint);
+      
+      // First try a simple test endpoint
+      try {
+        const testEndpoint = this.backendURL.replace('/apple-reviews', '/test');
+        console.log('[appleAppStoreBrowser] Testing connectivity at:', testEndpoint);
+        const testResponse = await axios.get(testEndpoint, { timeout: 5000 });
+        console.log('[appleAppStoreBrowser] Test endpoint response:', testResponse.data);
+      } catch (testError) {
+        console.error('[appleAppStoreBrowser] Test endpoint failed:', testError.message);
+      }
+      
       const response = await axios.get(healthEndpoint, { timeout: 5000 });
       this.isBackendAvailable = response.data.status === 'ok';
       console.log('[appleAppStoreBrowser] Backend service available:', this.isBackendAvailable);
       console.log('[appleAppStoreBrowser] Health check response:', response.data);
+      
+      if (response.data.environment) {
+        console.log('[appleAppStoreBrowser] Backend environment:', response.data.environment);
+      }
     } catch (error) {
       console.warn('[appleAppStoreBrowser] Backend service not available:', {
         message: error.message,
         code: error.code,
-        endpoint: healthEndpoint
+        endpoint: this.backendURL.replace('/apple-reviews', '/health'),
+        response: error.response?.data,
+        status: error.response?.status
       });
+      
+      // Log more details about the error
+      if (error.code === 'ECONNREFUSED') {
+        console.error('[appleAppStoreBrowser] Backend connection refused. Make sure backend is running on the correct port.');
+      } else if (error.code === 'ERR_NETWORK') {
+        console.error('[appleAppStoreBrowser] Network error. Check CORS configuration.');
+      }
+      
       this.isBackendAvailable = false;
     }
   }
@@ -170,6 +195,20 @@ class AppleAppStoreBrowserService {
     try {
       console.log('Fetching review metadata for app:', appId);
       
+      // Validate required parameters
+      if (!appId) {
+        throw new Error('App ID is required');
+      }
+      
+      if (!useServerCredentials && (!issuerId || !keyId || !privateKeyContent)) {
+        console.error('[getReviewMetadata] Missing credentials:', {
+          hasIssuerId: !!issuerId,
+          hasKeyId: !!keyId,
+          hasPrivateKey: !!privateKeyContent
+        });
+        throw new Error('Issuer ID, Key ID, and Private Key are required when not using server credentials');
+      }
+      
       if (!this.isBackendAvailable) {
         await this.checkBackendAvailability();
       }
@@ -182,11 +221,13 @@ class AppleAppStoreBrowserService {
           formData.append('issuerId', issuerId);
           formData.append('keyId', keyId);
           
+          // Ensure private key is a string
           if (privateKeyContent instanceof File) {
-            formData.append('privateKey', privateKeyContent);
-          } else {
-            formData.append('privateKey', privateKeyContent);
+            console.error('[getReviewMetadata] ERROR: privateKeyContent is a File object, expected string');
+            throw new Error('Private key must be provided as text content, not a File object');
           }
+          
+          formData.append('privateKey', privateKeyContent);
         }
         
         const response = await axios.post(
@@ -228,18 +269,45 @@ class AppleAppStoreBrowserService {
    * This provides the same overall rating users see on the App Store
    */
   async getReviewSummarizations(appId, issuerId, keyId, privateKeyContent, useServerCredentials = false) {
-    console.log('[appleAppStoreBrowser] getReviewSummarizations called with:', {
+    console.log('[appleAppStoreBrowser] ==== getReviewSummarizations START ====');
+    console.log('[appleAppStoreBrowser] Parameters:', {
       appId,
       issuerId,
       keyId,
       hasPrivateKey: !!privateKeyContent,
       privateKeyLength: privateKeyContent?.length,
+      privateKeyType: privateKeyContent?.constructor?.name,
       useServerCredentials,
-      isBackendAvailable: this.isBackendAvailable
+      isBackendAvailable: this.isBackendAvailable,
+      backendURL: this.backendURL
     });
     
+    // Validate required parameters
+    if (!appId) {
+      console.error('[appleAppStoreBrowser] ERROR: appId is required');
+      throw new Error('App ID is required');
+    }
+    
+    if (!useServerCredentials) {
+      if (!issuerId || !keyId || !privateKeyContent) {
+        console.error('[appleAppStoreBrowser] ERROR: Missing credentials for non-server auth', {
+          hasIssuerId: !!issuerId,
+          hasKeyId: !!keyId,
+          hasPrivateKey: !!privateKeyContent
+        });
+        throw new Error('Issuer ID, Key ID, and Private Key are required when not using server credentials');
+      }
+    }
+    
+    // Re-check backend availability
     if (!this.isBackendAvailable) {
-      console.log('[appleAppStoreBrowser] Backend not available, returning mock data');
+      console.log('[appleAppStoreBrowser] Backend marked as unavailable, rechecking...');
+      await this.checkBackendAvailability();
+      console.log('[appleAppStoreBrowser] Backend availability after recheck:', this.isBackendAvailable);
+    }
+    
+    if (!this.isBackendAvailable) {
+      console.log('[appleAppStoreBrowser] Backend still not available, returning mock data');
       // Return mock data for demo
       return {
         averageRating: 4.5,
@@ -254,51 +322,103 @@ class AppleAppStoreBrowserService {
       };
     }
 
+    const summarizationsUrl = this.backendURL.replace('/apple-reviews', '/apple-reviews/summarizations');
+    console.log('[appleAppStoreBrowser] Full backend URL:', summarizationsUrl);
+    
     try {
-      const summarizationsUrl = this.backendURL.replace('/apple-reviews', '/apple-reviews/summarizations');
-      console.log('[appleAppStoreBrowser] Backend URL:', summarizationsUrl);
-      
+      console.log('[appleAppStoreBrowser] Creating FormData...');
       const formData = new FormData();
       formData.append('appId', appId);
-      formData.append('useServerCredentials', useServerCredentials);
+      formData.append('useServerCredentials', useServerCredentials.toString());
       
       if (!useServerCredentials) {
         formData.append('issuerId', issuerId);
         formData.append('keyId', keyId);
+        
+        // Ensure private key is a string, not a File object
+        if (privateKeyContent instanceof File) {
+          console.error('[appleAppStoreBrowser] ERROR: privateKeyContent is a File object, expected string');
+          throw new Error('Private key must be provided as text content, not a File object');
+        }
+        
         formData.append('privateKey', privateKeyContent);
         
-        console.log('[appleAppStoreBrowser] FormData entries (non-credentials):');
-        console.log('  - appId:', appId);
-        console.log('  - useServerCredentials:', useServerCredentials);
-        console.log('  - issuerId:', issuerId);
-        console.log('  - keyId:', keyId);
-        console.log('  - privateKey included:', !!privateKeyContent);
+        console.log('[appleAppStoreBrowser] FormData entries:');
+        for (let [key, value] of formData.entries()) {
+          if (key === 'privateKey') {
+            console.log(`  - ${key}:`, value instanceof File ? `File(${value.name}, ${value.size} bytes)` : `String(${value?.length} chars)`);
+            // Log first few characters of private key for debugging (safely)
+            if (typeof value === 'string' && value.length > 0) {
+              console.log(`    Preview: ${value.substring(0, 50)}...`);
+            }
+          } else {
+            console.log(`  - ${key}:`, value);
+          }
+        }
       } else {
         console.log('[appleAppStoreBrowser] Using server credentials, only appId sent');
       }
 
-      console.log('[appleAppStoreBrowser] Sending POST request to:', summarizationsUrl);
+      console.log('[appleAppStoreBrowser] Making axios POST request...');
+      console.log('[appleAppStoreBrowser] Request config:', {
+        method: 'POST',
+        url: summarizationsUrl,
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: axios.defaults.timeout
+      });
+      
+      const startTime = Date.now();
       const response = await axios.post(summarizationsUrl, formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
-        }
+        },
+        timeout: 30000 // 30 second timeout
       });
+      const responseTime = Date.now() - startTime;
 
-      console.log('[appleAppStoreBrowser] Backend response:', {
+      console.log('[appleAppStoreBrowser] Request completed in', responseTime, 'ms');
+      console.log('[appleAppStoreBrowser] Response details:', {
         status: response.status,
+        statusText: response.statusText,
+        headers: response.headers,
+        dataKeys: Object.keys(response.data || {}),
         data: response.data
       });
       
-      return response.data.data;
+      if (response.data && response.data.data) {
+        console.log('[appleAppStoreBrowser] Summarization data received:', response.data.data);
+        return response.data.data;
+      } else {
+        console.error('[appleAppStoreBrowser] Unexpected response format:', response.data);
+        throw new Error('Invalid response format from backend');
+      }
     } catch (error) {
-      console.error('[appleAppStoreBrowser] Error fetching review summarizations:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-        stack: error.stack
-      });
+      console.error('[appleAppStoreBrowser] ==== ERROR in getReviewSummarizations ====');
+      console.error('[appleAppStoreBrowser] Error type:', error.constructor.name);
+      console.error('[appleAppStoreBrowser] Error message:', error.message);
+      console.error('[appleAppStoreBrowser] Error code:', error.code);
+      
+      if (error.response) {
+        console.error('[appleAppStoreBrowser] Response error details:', {
+          status: error.response.status,
+          statusText: error.response.statusText,
+          headers: error.response.headers,
+          data: error.response.data
+        });
+      } else if (error.request) {
+        console.error('[appleAppStoreBrowser] Request error (no response received):', {
+          request: error.request,
+          config: error.config
+        });
+      } else {
+        console.error('[appleAppStoreBrowser] Setup error:', error.message);
+      }
+      
+      console.error('[appleAppStoreBrowser] Full error object:', error);
+      console.error('[appleAppStoreBrowser] Stack trace:', error.stack);
       
       // Return default values on error
+      console.log('[appleAppStoreBrowser] Returning default zero values due to error');
       return {
         averageRating: 0,
         totalRatings: 0,
@@ -310,6 +430,8 @@ class AppleAppStoreBrowserService {
           5: 0
         }
       };
+    } finally {
+      console.log('[appleAppStoreBrowser] ==== getReviewSummarizations END ====');
     }
   }
 
@@ -370,6 +492,22 @@ class AppleAppStoreBrowserService {
       console.log('Backend available:', this.isBackendAvailable);
       console.log('Use cache:', useCache, 'Force refresh:', forceRefresh);
       console.log('Date range:', startDate, 'to', endDate);
+      console.log('Credentials:', {
+        hasIssuerId: !!issuerId,
+        hasKeyId: !!keyId,
+        hasPrivateKey: !!privateKeyContent,
+        privateKeyType: privateKeyContent?.constructor?.name,
+        useServerCredentials
+      });
+      
+      // Validate required parameters
+      if (!appId) {
+        throw new Error('App ID is required');
+      }
+      
+      if (!useServerCredentials && (!issuerId || !keyId || !privateKeyContent)) {
+        throw new Error('Issuer ID, Key ID, and Private Key are required when not using server credentials');
+      }
       
       // Check frontend cache first if not forcing refresh and no date range
       if (useCache && !forceRefresh && !startDate && !endDate) {
@@ -407,13 +545,14 @@ class AppleAppStoreBrowserService {
             formData.append('issuerId', issuerId);
             formData.append('keyId', keyId);
             
-            // If privateKeyContent is a File object, append as file
+            // Ensure private key is always sent as text
             if (privateKeyContent instanceof File) {
-              formData.append('privateKey', privateKeyContent);
-            } else {
-              // Otherwise send as text
-              formData.append('privateKey', privateKeyContent);
+              console.error('[importReviews] ERROR: privateKeyContent is a File object, expected string');
+              throw new Error('Private key must be provided as text content, not a File object');
             }
+            
+            formData.append('privateKey', privateKeyContent);
+            console.log('[importReviews] Private key added to form data, length:', privateKeyContent.length);
           }
           
           const response = await axios.post(this.backendURL, formData, {
