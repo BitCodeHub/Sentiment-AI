@@ -728,42 +728,6 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange 
           </p>
         </div>
         
-        {/* Apple Data Banner */}
-        {data?.isAppleData && (
-          <div className="apple-data-banner">
-            <div className="banner-content">
-              <div className="banner-info">
-                <Apple size={20} />
-                <span className="banner-text">
-                  {data?.isEmpty ? (
-                    <>No Apple reviews loaded. Select a date range and click "Fetch Reviews" to load data.</>   
-                  ) : (
-                    <>Apple App Store data mode. You can fetch additional reviews by selecting a different date range.</>
-                  )}
-                </span>
-              </div>
-              <div className="banner-actions">
-                <button 
-                  className="fetch-reviews-btn"
-                  onClick={handleFetchAppleReviews}
-                  disabled={isFetchingAppleData || (!selectedDateRange.start && !selectedDateRange.end)}
-                >
-                  {isFetchingAppleData ? (
-                    <>
-                      <RefreshCw className="spinner" size={16} />
-                      Fetching Reviews...
-                    </>
-                  ) : (
-                    <>
-                      <Download size={16} />
-                      Fetch Reviews
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
         
         {/* Search Section */}
         <div className="search-section">
