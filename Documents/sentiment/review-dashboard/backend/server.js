@@ -1,10 +1,18 @@
+console.log('Starting server initialization...');
 const express = require('express');
+console.log('Express loaded');
 const cors = require('cors');
+console.log('CORS loaded');
 const jwt = require('jsonwebtoken');
+console.log('JWT loaded');
 const axios = require('axios');
+console.log('Axios loaded');
 const multer = require('multer');
+console.log('Multer loaded');
 require('dotenv').config();
+console.log('Dotenv loaded');
 const cacheService = require('./services/cacheService');
+console.log('Cache service loaded');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -103,13 +111,13 @@ async function fetchAppleReviews(token, appId, territory = 'USA', limit = 200, n
   }
 }
 
-// Fetch customer review summarizations (includes all ratings, not just written reviews)
+// Fetch rating summaries (includes all ratings, not just written reviews)
 async function fetchAppleReviewSummarizations(token, appId, territory = 'USA') {
   console.log('[fetchAppleReviewSummarizations] Starting...');
   console.log('[fetchAppleReviewSummarizations] Parameters:', { appId, territory, hasToken: !!token });
   
   try {
-    const url = `${APPLE_API_BASE}/apps/${appId}/customerReviewSummarizations`;
+    const url = `${APPLE_API_BASE}/apps/${appId}/ratingSummaries`;
     console.log('[fetchAppleReviewSummarizations] Full URL:', url);
     console.log('[fetchAppleReviewSummarizations] Request headers:', {
       Authorization: `Bearer ${token.substring(0, 20)}...`,
@@ -148,7 +156,7 @@ async function fetchAppleReviewSummarizations(token, appId, territory = 'USA') {
       console.error('[fetchAppleReviewSummarizations] Response headers:', error.response.headers);
     }
     
-    throw new Error(error.response?.data?.errors?.[0]?.detail || 'Failed to fetch review summarizations');
+    throw new Error(error.response?.data?.errors?.[0]?.detail || 'Failed to fetch rating summaries');
   }
 }
 
@@ -573,9 +581,9 @@ app.post('/api/apple-reviews/metadata', upload.single('privateKey'), async (req,
   }
 });
 
-// API endpoint for fetching Apple review summarizations (all ratings)
+// API endpoint for fetching Apple rating summaries (all ratings)
 app.post('/api/apple-reviews/summarizations', upload.single('privateKey'), async (req, res) => {
-  console.log('\n==== SUMMARIZATIONS ENDPOINT HIT ====');
+  console.log('\n==== RATING SUMMARIES ENDPOINT HIT ====');
   console.log('Timestamp:', new Date().toISOString());
   console.log('Request headers:', req.headers);
   console.log('Request body:', {
@@ -668,8 +676,8 @@ app.post('/api/apple-reviews/summarizations', upload.single('privateKey'), async
       }
     }
 
-    // Fetch review summarizations
-    console.log('Fetching summarizations from Apple API...');
+    // Fetch rating summaries
+    console.log('Fetching rating summaries from Apple API...');
     console.log('Territory:', territory || 'USA');
     const startTime = Date.now();
     
@@ -728,9 +736,9 @@ app.post('/api/apple-reviews/summarizations', upload.single('privateKey'), async
     
     console.log('Sending response:', responseData);
     res.json(responseData);
-    console.log('==== SUMMARIZATIONS ENDPOINT COMPLETE ====\n');
+    console.log('==== RATING SUMMARIES ENDPOINT COMPLETE ====\n');
   } catch (error) {
-    console.error('==== ERROR in summarizations endpoint ====');
+    console.error('==== ERROR in rating summaries endpoint ====');
     console.error('Error type:', error.constructor.name);
     console.error('Error message:', error.message);
     console.error('Error stack:', error.stack);
@@ -740,7 +748,7 @@ app.post('/api/apple-reviews/summarizations', upload.single('privateKey'), async
     console.error('==== END ERROR ====\n');
     
     res.status(500).json({ 
-      error: 'Failed to fetch review summarizations',
+      error: 'Failed to fetch rating summaries',
       details: error.message 
     });
   }
@@ -787,8 +795,12 @@ app.get('/api/test', (req, res) => {
 });
 
 // Start server
+console.log('About to start server on port:', PORT);
 app.listen(PORT, () => {
   console.log(`Apple App Store API server running on port ${PORT}`);
   console.log(`Frontend should connect to: http://localhost:${PORT}/api/apple-reviews`);
   console.log(`Cache service initialized with ${process.env.REDIS_URL ? 'Redis' : 'in-memory'} storage`);
+}).on('error', (err) => {
+  console.error('Server startup error:', err);
+  process.exit(1);
 });

@@ -1,4 +1,4 @@
-const Redis = require('redis');
+// const Redis = require('redis');  // Temporarily disabled
 
 class CacheService {
   constructor() {
@@ -10,6 +10,11 @@ class CacheService {
   }
 
   async initializeRedis() {
+    // Skip Redis initialization for now - use in-memory cache only
+    console.log('Using in-memory cache only (Redis disabled)');
+    this.useRedis = false;
+    return;
+    
     try {
       // Try to connect to Redis if available
       if (process.env.REDIS_URL || process.env.REDIS_HOST) {
