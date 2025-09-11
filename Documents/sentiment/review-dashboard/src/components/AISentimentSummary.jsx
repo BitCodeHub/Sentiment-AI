@@ -294,7 +294,7 @@ const AISentimentSummary = ({ reviews, dateRange, onRefresh }) => {
         <div className="header-content">
           <div className="title-section">
             <Brain className="header-icon" size={20} />
-            <CardTitle>AI Sentiment Summary</CardTitle>
+            <CardTitle>Intelligent Briefing</CardTitle>
           </div>
           <div className="header-actions">
             <span className="date-range">
