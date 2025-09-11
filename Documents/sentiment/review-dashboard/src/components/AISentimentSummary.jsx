@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Brain, TrendingUp, TrendingDown, Minus, Calendar, Loader2, AlertCircle, RefreshCw, Info } from 'lucide-react';
+import { Sparkles, TrendingUp, TrendingDown, Minus, Calendar, Loader2, AlertCircle, RefreshCw, Info } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { aiSummaryCache } from '../services/aiSummaryCacheService';
@@ -293,7 +293,7 @@ const AISentimentSummary = ({ reviews, dateRange, onRefresh }) => {
       <CardHeader className="summary-header">
         <div className="header-content">
           <div className="title-section">
-            <Brain className="header-icon" size={20} />
+            <Sparkles className="header-icon animated-sparkle" size={20} />
             <CardTitle>Intelligent Briefing</CardTitle>
           </div>
           <div className="header-actions">

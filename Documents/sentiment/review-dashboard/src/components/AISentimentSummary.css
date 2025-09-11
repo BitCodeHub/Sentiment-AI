@@ -49,6 +49,34 @@
   flex-shrink: 0;
 }
 
+/* Animated sparkle icon */
+.ai-sentiment-summary-card .header-icon.animated-sparkle {
+  animation: sparkle 2s ease-in-out infinite;
+  background: linear-gradient(45deg, #8b5cf6, #ec4899);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+@keyframes sparkle {
+  0%, 100% {
+    transform: scale(1) rotate(0deg);
+    filter: brightness(1);
+  }
+  25% {
+    transform: scale(1.1) rotate(5deg);
+    filter: brightness(1.2);
+  }
+  50% {
+    transform: scale(1) rotate(-5deg);
+    filter: brightness(1.4);
+  }
+  75% {
+    transform: scale(1.05) rotate(3deg);
+    filter: brightness(1.2);
+  }
+}
+
 /* Cache and Quota Indicators */
 .ai-sentiment-summary-card .cache-indicator {
   display: flex;
@@ -299,23 +327,23 @@
 }
 
 .ai-sentiment-summary-card .positive-theme {
-  border-color: rgba(16, 185, 129, 0.2);
-  background: rgba(16, 185, 129, 0.05);
+  border-color: rgba(16, 185, 129, 0.3);
+  background: #10b981;
 }
 
 .ai-sentiment-summary-card .positive-theme:hover {
-  border-color: rgba(16, 185, 129, 0.4);
-  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.5);
+  background: #059669;
 }
 
 .ai-sentiment-summary-card .negative-theme {
-  border-color: rgba(239, 68, 68, 0.2);
-  background: rgba(239, 68, 68, 0.05);
+  border-color: rgba(239, 68, 68, 0.3);
+  background: #ef4444;
 }
 
 .ai-sentiment-summary-card .negative-theme:hover {
-  border-color: rgba(239, 68, 68, 0.4);
-  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.5);
+  background: #dc2626;
 }
 
 .ai-sentiment-summary-card .theme-icon {
@@ -347,21 +375,21 @@
 
 /* Specific colors for positive and negative theme labels */
 .ai-sentiment-summary-card .positive-theme .theme-label {
-  color: #065f46;
+  color: #ffffff;
 }
 
 .ai-sentiment-summary-card .negative-theme .theme-label {
-  color: #7f1d1d;
+  color: #ffffff;
 }
 
 /* Specific colors for positive and negative theme text */
 .ai-sentiment-summary-card .positive-theme .theme-text {
-  color: #064e3b;
+  color: #ffffff;
   font-weight: 600;
 }
 
 .ai-sentiment-summary-card .negative-theme .theme-text {
-  color: #7f1d1d;
+  color: #ffffff;
   font-weight: 600;
 }
 
