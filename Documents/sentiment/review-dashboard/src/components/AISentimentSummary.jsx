@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Brain, TrendingUp, TrendingDown, Minus, Calendar, Loader2, AlertCircle, RefreshCw, Info } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { processMessage } from '../services/geminiChatService';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { aiSummaryCache } from '../services/aiSummaryCacheService';
 import './AISentimentSummary.css';
 
@@ -51,7 +51,50 @@ const AISentimentSummary = ({ reviews, dateRange, onRefresh }) => {
     setFromCache(false);
 
     try {
-      console.log('[AISentimentSummary] Using geminiChatService for AI summary generation');
+      console.log('[AISentimentSummary] Generating AI summary...');
+      
+      // Get API key
+      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+      if (!apiKey) {
+        throw new Error('Gemini API key not configured');
+      }
+      
+      // Initialize Gemini with same config as chat service
+      const genAI = new GoogleGenerativeAI(apiKey);
+      
+      // Use same models as the working chat service
+      const modelsToTry = [
+        'gemini-2.5-flash',          // Primary model used by chat
+        'gemini-2.0-flash-exp',      // Experimental model
+        'gemini-1.5-flash'           // Fallback
+      ];
+      
+      let model = null;
+      let modelName = '';
+      
+      for (const tryModel of modelsToTry) {
+        try {
+          console.log(`[AISentimentSummary] Trying model: ${tryModel}`);
+          model = genAI.getGenerativeModel({ 
+            model: tryModel,
+            generationConfig: {
+              temperature: 0.7,
+              topP: 0.95,
+              topK: 40,
+              maxOutputTokens: 8192,
+            }
+          });
+          modelName = tryModel;
+          console.log(`[AISentimentSummary] Successfully using model: ${tryModel}`);
+          break;
+        } catch (modelError) {
+          console.warn(`[AISentimentSummary] Model ${tryModel} failed:`, modelError.message);
+        }
+      }
+      
+      if (!model) {
+        throw new Error('Unable to initialize any Gemini model');
+      }
 
       // Calculate sentiment metrics
       const totalReviews = reviews.length;
@@ -105,15 +148,15 @@ const AISentimentSummary = ({ reviews, dateRange, onRefresh }) => {
         IMPORTANT: Return only valid JSON without any markdown formatting.
       `;
 
-      console.log('[AISentimentSummary] Sending prompt to Gemini via chat service...');
+      console.log(`[AISentimentSummary] Sending prompt to Gemini (${modelName})...`);
       console.log('[AISentimentSummary] Prompt length:', prompt.length, 'characters');
       
       let responseText;
       try {
-        // Use processMessage from the working chat service
-        const result = await processMessage(prompt, []);
+        // Generate content with the model
+        const result = await model.generateContent(prompt);
         console.log('[AISentimentSummary] API call succeeded');
-        responseText = result.text;
+        responseText = result.response.text();
       } catch (apiError) {
         console.error('[AISentimentSummary] API call failed:', {
           error: apiError,
