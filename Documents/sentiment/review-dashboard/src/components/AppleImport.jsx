@@ -18,7 +18,7 @@ const AppleImport = ({ onImport }) => {
   const [isMockData, setIsMockData] = useState(false);
   const [availableApps, setAvailableApps] = useState([]);
   const [hasServerCredentials, setHasServerCredentials] = useState(false);
-  const useServerCredentials = true; // Always use server credentials
+  const [useServerCredentials, setUseServerCredentials] = useState(false); // Let user choose credentials
   const useCache = true; // Always use cache when available
   const forceRefresh = false; // Don't force refresh by default
   const [metadata, setMetadata] = useState(null);
