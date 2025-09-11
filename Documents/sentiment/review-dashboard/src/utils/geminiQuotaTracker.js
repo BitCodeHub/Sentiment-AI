@@ -5,9 +5,9 @@ class GeminiQuotaTracker {
   constructor() {
     this.storageKey = 'gemini-api-usage';
     this.quotaLimits = {
-      'gemini-1.5-flash': { daily: 50, perMinute: 2 },
-      'gemini-2.5-flash': { daily: 1000, perMinute: 10 },
-      'gemini-2.0-flash-exp': { daily: 1000, perMinute: 10 }
+      'gemini-1.5-flash': { daily: 1500, perMinute: 15 },
+      'gemini-1.5-pro': { daily: 50, perMinute: 2 },
+      'gemini-2.0-flash-exp': { daily: 1500, perMinute: 15 }
     };
     this.loadUsage();
   }
@@ -105,6 +105,8 @@ class GeminiQuotaTracker {
 
     const dailyUsage = this.usage.daily[dateKey]?.[modelName] || { success: 0, failed: 0 };
     const minuteUsage = this.usage.minutely[minuteKey]?.[modelName] || 0;
+    
+    // If model not in quotaLimits, treat as unlimited (experimental models)
     const limits = this.quotaLimits[modelName] || { daily: 'unlimited', perMinute: 'unlimited' };
 
     return {

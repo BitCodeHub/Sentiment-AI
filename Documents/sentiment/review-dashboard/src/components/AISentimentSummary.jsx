@@ -70,10 +70,19 @@ const AISentimentSummary = ({ reviews, dateRange, onRefresh }) => {
       let model;
       let selectedModel = null;
       const modelsToTry = [
-        'gemini-2.5-flash',      // Primary choice - newest and working
-        'gemini-2.0-flash-exp',  // Experimental but working
-        'gemini-1.5-flash'       // Fallback - might have quota issues
+        'gemini-2.0-flash-exp',  // Start with experimental (working in chat)
+        'gemini-1.5-flash',      // Standard model
+        'gemini-1.5-pro'         // Pro model fallback
       ];
+      
+      // Add generation config like the working chat service
+      const generationConfig = {
+        temperature: 0.7,
+        topP: 0.95,
+        topK: 40,
+        maxOutputTokens: 8192,
+      };
+      
       for (const modelName of modelsToTry) {
         // Check quota before trying
         const quotaCheck = geminiQuotaTracker.isQuotaExceeded(modelName);
@@ -84,7 +93,10 @@ const AISentimentSummary = ({ reviews, dateRange, onRefresh }) => {
         
         try {
           console.log(`[AISentimentSummary] Trying model: ${modelName}`);
-          model = genAI.getGenerativeModel({ model: modelName });
+          model = genAI.getGenerativeModel({ 
+            model: modelName,
+            generationConfig: generationConfig
+          });
           selectedModel = modelName;
           // If we get here, model initialization succeeded
           console.log(`[AISentimentSummary] Successfully initialized model: ${modelName}`);
@@ -155,7 +167,32 @@ const AISentimentSummary = ({ reviews, dateRange, onRefresh }) => {
       `;
 
       console.log(`[AISentimentSummary] Sending prompt to Gemini (${selectedModel})...`);
-      const result = await model.generateContent(prompt);
+      console.log('[AISentimentSummary] Prompt length:', prompt.length, 'characters');
+      
+      let result;
+      try {
+        result = await model.generateContent(prompt);
+        console.log('[AISentimentSummary] API call succeeded');
+      } catch (apiError) {
+        console.error('[AISentimentSummary] API call failed:', {
+          error: apiError,
+          message: apiError.message,
+          status: apiError.status,
+          statusText: apiError.statusText,
+          details: apiError.details || 'No details'
+        });
+        
+        // Check if it's a specific error type
+        if (apiError.message?.includes('API_KEY_INVALID')) {
+          throw new Error('Invalid API key. Please check your Gemini API key configuration.');
+        } else if (apiError.message?.includes('PERMISSION_DENIED')) {
+          throw new Error('Permission denied. Please ensure the Gemini API is enabled for your project.');
+        } else if (apiError.message?.includes('models/gemini')) {
+          throw new Error(`Model ${selectedModel} is not available. ${apiError.message}`);
+        }
+        
+        throw apiError;
+      }
       
       // Track successful API call
       geminiQuotaTracker.trackCall(selectedModel, true);
@@ -197,7 +234,7 @@ const AISentimentSummary = ({ reviews, dateRange, onRefresh }) => {
       
       // Provide more specific error messages
       let errorMessage = 'Failed to generate AI summary. ';
-      if (err.message?.includes('API key')) {
+      if (err.message?.includes('API key') || err.message?.includes('API_KEY')) {
         errorMessage += 'API key issue detected. Please check your configuration.';
       } else if (err.message?.includes('JSON')) {
         errorMessage += 'Invalid response format from AI.';
@@ -212,6 +249,17 @@ const AISentimentSummary = ({ reviews, dateRange, onRefresh }) => {
           setSummary(expiredCache);
           setFromCache(true);
           errorMessage = 'Using cached data due to quota limit. Refresh tomorrow for updated insights.';
+        }
+      } else if (err.message?.includes('All Gemini models failed')) {
+        errorMessage += 'All AI models are currently unavailable. This is likely due to quota limits. Try again later.';
+        
+        // Try cache as fallback
+        const expiredCache = aiSummaryCache.get(reviews, dateRange);
+        if (expiredCache) {
+          console.log('[AISentimentSummary] Using cache after all models failed');
+          setSummary(expiredCache);
+          setFromCache(true);
+          errorMessage = 'Using cached insights. Refresh later for updated analysis.';
         }
       } else {
         errorMessage += err.message || 'Please try again.';
