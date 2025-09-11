@@ -293,6 +293,7 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange 
       if (review.appName && review.appName.trim()) options.appName.add(review.appName);
       if (review.device && review.device.trim()) options.device.add(review.device);
       if (review.version && review.version.trim()) options.version.add(review.version);
+      if (review['App Version'] && review['App Version'].trim()) options.version.add(review['App Version']);
       if (review.os && review.os.trim()) options.os.add(review.os);
       if (review.platform && review.platform.trim()) options.platform.add(review.platform);
       if (review.Country && review.Country.trim()) options.country.add(review.Country);
@@ -383,9 +384,14 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange 
         
         // Get the actual value from the review
         // Handle case differences (e.g., 'Country' vs 'country', 'Language' vs 'language')
-        const reviewValue = review[key] || 
-                          review[key.charAt(0).toUpperCase() + key.slice(1)] ||
-                          review[key.toUpperCase()];
+        let reviewValue = review[key] || 
+                         review[key.charAt(0).toUpperCase() + key.slice(1)] ||
+                         review[key.toUpperCase()];
+        
+        // Special handling for version field (can be 'version' or 'App Version')
+        if (key === 'version' && !reviewValue) {
+          reviewValue = review['App Version'];
+        }
         
         // If filter is 'all' or review has no value for this field, include it
         if (!reviewValue || (typeof reviewValue === 'string' && !reviewValue.trim())) return true;
@@ -724,7 +730,7 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange 
         <div className="dashboard-title-area">
           <h1 className="dashboard-title">Review Analytics Dashboard</h1>
           <p className="dashboard-subtitle">
-            Comprehensive insights from {summary.totalReviews.toLocaleString()} reviews
+            Comprehensive insights from {filteredReviews.length.toLocaleString()} reviews
           </p>
         </div>
         
