@@ -40,7 +40,13 @@ const AppleImport = ({ onImport }) => {
           if (response.ok) {
             const data = await response.json();
             setAvailableApps(data.apps || []);
-            setHasServerCredentials(data.hasServerCredentials || false);
+            const hasCredentials = data.hasServerCredentials || false;
+            setHasServerCredentials(hasCredentials);
+            
+            // If server credentials are available, use them by default
+            if (hasCredentials) {
+              setUseServerCredentials(true);
+            }
             
             // If there are configured apps, select the first one by default
             if (data.apps && data.apps.length > 0) {
@@ -318,6 +324,21 @@ const AppleImport = ({ onImport }) => {
           </div>
         )}
 
+        {/* Toggle for using server credentials */}
+        {hasServerCredentials && (
+          <div className="form-group">
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                checked={useServerCredentials}
+                onChange={(e) => setUseServerCredentials(e.target.checked)}
+                disabled={isLoading}
+              />
+              Use server-configured credentials
+            </label>
+            <small>Uncheck to use your own Apple API credentials</small>
+          </div>
+        )}
 
         {/* Date Range Selector */}
         {showDateRange && appId && (
