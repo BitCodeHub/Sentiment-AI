@@ -7,6 +7,7 @@ import './AppleImport.css';
 const AppleImport = ({ onImport }) => {
   const [appId, setAppId] = useState('');
   const [issuerId, setIssuerId] = useState('');
+  const [keyId, setKeyId] = useState('');
   const [privateKey, setPrivateKey] = useState('');
   const [privateKeyFile, setPrivateKeyFile] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -84,6 +85,11 @@ const AppleImport = ({ onImport }) => {
       errors.push('Issuer ID should be in UUID format (e.g., xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)');
     }
     
+    // Validate Key ID
+    if (!/^[A-Z0-9]{10}$/.test(keyId.trim())) {
+      errors.push('Key ID should be 10 characters (uppercase letters and numbers)');
+    }
+    
     // Validate private key
     if (!privateKey || !privateKey.includes('BEGIN PRIVATE KEY')) {
       errors.push('Invalid private key format');
@@ -98,7 +104,7 @@ const AppleImport = ({ onImport }) => {
     
     // Check if we have necessary credentials
     if (!hasServerCredentials || !useServerCredentials) {
-      if (!issuerId || !privateKey) return;
+      if (!issuerId || !keyId || !privateKey) return;
     }
     
     setFetchingMetadata(true);
@@ -109,6 +115,7 @@ const AppleImport = ({ onImport }) => {
       const metadata = await appleAppStoreBrowserService.getReviewMetadata(
         appId.trim(),
         issuerId.trim(),
+        keyId.trim(),
         keyContent,
         useServerCredentials && hasServerCredentials
       );
@@ -143,6 +150,7 @@ const AppleImport = ({ onImport }) => {
       const config = {
         appId: appId.trim(),
         issuerId: issuerId?.trim(),
+        keyId: keyId?.trim(),
         useServerCredentials: useServerCredentials && hasServerCredentials,
         startDate: selectedStartDate,
         endDate: selectedEndDate
@@ -171,7 +179,7 @@ const AppleImport = ({ onImport }) => {
       }
     } else {
       // Otherwise, need all credentials
-      if (!appId || !issuerId || !privateKey) {
+      if (!appId || !issuerId || !keyId || !privateKey) {
         setError('Please fill in all required fields');
         return;
       }
@@ -208,6 +216,7 @@ const AppleImport = ({ onImport }) => {
         const reviews = await appleAppStoreBrowserService.importReviews(
           appId.trim(),
           issuerId.trim(),
+          keyId.trim(),
           keyContent,
           useServerCredentials && hasServerCredentials,
           { 
@@ -342,6 +351,22 @@ const AppleImport = ({ onImport }) => {
                 disabled={isLoading}
               />
               <small>Found in App Store Connect under Users and Access → Keys</small>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="key-id">
+                <Key size={16} />
+                Key ID
+              </label>
+              <input
+                id="key-id"
+                type="text"
+                placeholder="Enter your Key ID (e.g., ABC123DEF4)"
+                value={keyId}
+                onChange={(e) => setKeyId(e.target.value)}
+                disabled={isLoading}
+              />
+              <small>The 10-character identifier for your private key</small>
             </div>
 
             <div className="form-group">

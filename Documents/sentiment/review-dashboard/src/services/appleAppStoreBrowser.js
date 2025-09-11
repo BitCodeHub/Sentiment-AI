@@ -160,7 +160,7 @@ class AppleAppStoreBrowserService {
   /**
    * Get review metadata (date range and count) without fetching all reviews
    */
-  async getReviewMetadata(appId, issuerId, privateKeyContent, useServerCredentials = false) {
+  async getReviewMetadata(appId, issuerId, keyId, privateKeyContent, useServerCredentials = false) {
     try {
       console.log('Fetching review metadata for app:', appId);
       
@@ -174,6 +174,7 @@ class AppleAppStoreBrowserService {
         
         if (!useServerCredentials) {
           formData.append('issuerId', issuerId);
+          formData.append('keyId', keyId);
           
           if (privateKeyContent instanceof File) {
             formData.append('privateKey', privateKeyContent);
@@ -220,7 +221,7 @@ class AppleAppStoreBrowserService {
    * Get review summarizations (includes all ratings, not just written reviews)
    * This provides the same overall rating users see on the App Store
    */
-  async getReviewSummarizations(appId, issuerId, privateKeyContent, useServerCredentials = false) {
+  async getReviewSummarizations(appId, issuerId, keyId, privateKeyContent, useServerCredentials = false) {
     if (!this.isBackendAvailable) {
       // Return mock data for demo
       return {
@@ -244,8 +245,8 @@ class AppleAppStoreBrowserService {
       
       if (!useServerCredentials) {
         formData.append('issuerId', issuerId);
-        formData.append('keyId', privateKeyContent.keyId || '');
-        formData.append('privateKey', privateKeyContent.content || privateKeyContent);
+        formData.append('keyId', keyId);
+        formData.append('privateKey', privateKeyContent);
       }
 
       const response = await axios.post(summarizationsUrl, formData, {
@@ -321,7 +322,7 @@ class AppleAppStoreBrowserService {
    * Main method to import reviews from Apple App Store
    * Calls backend API if available, otherwise returns mock data
    */
-  async importReviews(appId, issuerId, privateKeyContent, useServerCredentials = false, options = {}) {
+  async importReviews(appId, issuerId, keyId, privateKeyContent, useServerCredentials = false, options = {}) {
     const { useCache = true, forceRefresh = false, startDate = null, endDate = null } = options;
     
     try {
@@ -365,6 +366,7 @@ class AppleAppStoreBrowserService {
           // Only send credentials if not using server credentials
           if (!useServerCredentials) {
             formData.append('issuerId', issuerId);
+            formData.append('keyId', keyId);
             
             // If privateKeyContent is a File object, append as file
             if (privateKeyContent instanceof File) {

@@ -121,6 +121,7 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews }) => {
             const config = JSON.parse(configStr);
             const appId = config.appId;
             const issuerId = config.issuerId;
+            const keyId = config.keyId;
             const useServerCredentials = config.useServerCredentials;
             
             // Import the service
@@ -130,6 +131,7 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews }) => {
             const summarizations = await appleService.getReviewSummarizations(
               appId,
               issuerId,
+              keyId,
               privateKey,
               useServerCredentials
             );
@@ -174,6 +176,7 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews }) => {
       const reviews = await appleAppStoreBrowserService.importReviews(
         config.appId,
         config.issuerId,
+        config.keyId,
         privateKey,
         config.useServerCredentials,
         {
