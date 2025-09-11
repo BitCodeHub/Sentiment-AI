@@ -1,0 +1,388 @@
+/* AI Sentiment Summary Card */
+.analytics-card .ai-sentiment-summary-card {
+  padding: 0;
+  border: none;
+  box-shadow: none;
+  background: transparent;
+}
+
+.ai-sentiment-summary-card {
+  background: #ffffff;
+  border: 1px solid #e1e6ea;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: all 0.3s ease;
+  overflow: hidden;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.ai-sentiment-summary-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+
+/* Header */
+.ai-sentiment-summary-card .summary-header {
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  border-bottom: 1px solid #e1e6ea;
+  padding: 1rem 1.5rem;
+}
+
+.ai-sentiment-summary-card .header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.ai-sentiment-summary-card .title-section {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.ai-sentiment-summary-card .header-icon {
+  color: #8b5cf6;
+  flex-shrink: 0;
+}
+
+.ai-sentiment-summary-card .summary-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.ai-sentiment-summary-card .header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.ai-sentiment-summary-card .date-range {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.8125rem;
+  color: #6b7280;
+  padding: 0.375rem 0.75rem;
+  background: rgba(59, 130, 246, 0.05);
+  border-radius: 6px;
+}
+
+.ai-sentiment-summary-card .date-range svg {
+  color: #3b82f6;
+}
+
+.ai-sentiment-summary-card .refresh-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ai-sentiment-summary-card .refresh-btn:hover:not(:disabled) {
+  background: #f3f4f6;
+  color: #374151;
+  border-color: #d1d5db;
+}
+
+.ai-sentiment-summary-card .refresh-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ai-sentiment-summary-card .refresh-btn .spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Content */
+.ai-sentiment-summary-card .summary-content {
+  padding: 1.5rem;
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* Loading State */
+.ai-sentiment-summary-card .loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 2rem;
+  color: #6b7280;
+}
+
+.ai-sentiment-summary-card .spinner {
+  animation: spin 1s linear infinite;
+  color: #8b5cf6;
+}
+
+/* Error State */
+.ai-sentiment-summary-card .error-state {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: #fef2f2;
+  border-radius: 6px;
+  color: #991b1b;
+  font-size: 0.875rem;
+}
+
+.ai-sentiment-summary-card .error-state svg {
+  color: #dc2626;
+  flex-shrink: 0;
+}
+
+/* Summary Grid */
+.ai-sentiment-summary-card .summary-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Insight Section */
+.ai-sentiment-summary-card .insight-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.ai-sentiment-summary-card .period-highlight {
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: #374151;
+  padding: 0.875rem 1rem;
+  background: #f3f4f6;
+  border-left: 3px solid #8b5cf6;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+/* Sentiment Score Section */
+.ai-sentiment-summary-card .sentiment-score-section {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.ai-sentiment-summary-card .score-visual {
+  flex-shrink: 0;
+}
+
+.ai-sentiment-summary-card .score-circle {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.ai-sentiment-summary-card .score-inner {
+  width: 64px;
+  height: 64px;
+  background: #ffffff;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.ai-sentiment-summary-card .score-number {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.ai-sentiment-summary-card .score-label {
+  font-size: 0.625rem;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Trend Info */
+.ai-sentiment-summary-card .trend-info {
+  flex: 1;
+}
+
+.ai-sentiment-summary-card .trend-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.ai-sentiment-summary-card .trend-icon.improving {
+  color: #10b981;
+}
+
+.ai-sentiment-summary-card .trend-icon.declining {
+  color: #ef4444;
+}
+
+.ai-sentiment-summary-card .trend-icon.stable {
+  color: #f59e0b;
+}
+
+.ai-sentiment-summary-card .trend-text {
+  font-weight: 600;
+  text-transform: capitalize;
+  color: #374151;
+}
+
+.ai-sentiment-summary-card .trend-reason {
+  font-size: 0.8125rem;
+  color: #6b7280;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Themes Section */
+.ai-sentiment-summary-card .themes-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.ai-sentiment-summary-card .theme {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.875rem;
+  background: #fafafa;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s ease;
+}
+
+.ai-sentiment-summary-card .positive-theme {
+  border-color: rgba(16, 185, 129, 0.2);
+  background: rgba(16, 185, 129, 0.05);
+}
+
+.ai-sentiment-summary-card .positive-theme:hover {
+  border-color: rgba(16, 185, 129, 0.4);
+  background: rgba(16, 185, 129, 0.08);
+}
+
+.ai-sentiment-summary-card .negative-theme {
+  border-color: rgba(239, 68, 68, 0.2);
+  background: rgba(239, 68, 68, 0.05);
+}
+
+.ai-sentiment-summary-card .negative-theme:hover {
+  border-color: rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.ai-sentiment-summary-card .theme-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.ai-sentiment-summary-card .theme-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.ai-sentiment-summary-card .theme-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6b7280;
+}
+
+.ai-sentiment-summary-card .theme-text {
+  font-size: 0.8125rem;
+  color: #1f2937;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+/* Action Section */
+.ai-sentiment-summary-card .action-section {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%);
+  border-radius: 8px;
+  border: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+.ai-sentiment-summary-card .action-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.ai-sentiment-summary-card .action-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.ai-sentiment-summary-card .action-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6d28d9;
+}
+
+.ai-sentiment-summary-card .action-text {
+  font-size: 0.875rem;
+  color: #4c1d95;
+  font-weight: 500;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 640px) {
+  .ai-sentiment-summary-card .sentiment-score-section {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  
+  .ai-sentiment-summary-card .themes-section {
+    grid-template-columns: 1fr;
+  }
+  
+  .ai-sentiment-summary-card .header-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .ai-sentiment-summary-card .header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+}

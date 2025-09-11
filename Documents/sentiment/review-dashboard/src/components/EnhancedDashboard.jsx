@@ -30,6 +30,7 @@ import DateRangeCalendar from './DateRangeCalendar';
 import ErrorDisplay from './ErrorDisplay';
 import KeywordCloud from './KeywordCloud';
 import SentimentAnalysis from './SentimentAnalysis';
+import AISentimentSummary from './AISentimentSummary';
 import './EnhancedDashboard.css';
 
 const TABLEAU_COLORS = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'];
@@ -1421,6 +1422,20 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews }) => {
                 })}
               </div>
             </div>
+          </div>
+        )}
+        
+        {/* AI-Powered Sentiment Summary - Next to Sentiment Insights */}
+        {expandedSections.sentiment && filteredReviews.length > 0 && (
+          <div className="analytics-card col-span-6">
+            <AISentimentSummary 
+              reviews={filteredReviews} 
+              dateRange={selectedDateRange}
+              onRefresh={() => {
+                // Optional: trigger any refresh logic
+                console.log('AI Summary refreshed');
+              }}
+            />
           </div>
         )}
       </div>
