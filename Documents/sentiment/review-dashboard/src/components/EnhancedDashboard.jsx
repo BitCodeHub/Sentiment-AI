@@ -110,7 +110,7 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews }) => {
   // Fetch all ratings data when Apple data is available
   useEffect(() => {
     const fetchAllRatingsData = async () => {
-      if (data?.isAppleData && !isFetchingAllRatings && !allRatingsData) {
+      if (data?.isAppleData && !isFetchingAllRatings && !allRatingsData && data?.reviews?.length > 0) {
         setIsFetchingAllRatings(true);
         
         try {
@@ -138,6 +138,8 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews }) => {
           }
         } catch (error) {
           console.error('Failed to fetch all ratings data:', error);
+          // Reset the fetching state to allow retry
+          setIsFetchingAllRatings(false);
         } finally {
           setIsFetchingAllRatings(false);
         }
@@ -145,7 +147,7 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews }) => {
     };
     
     fetchAllRatingsData();
-  }, [data?.isAppleData]);
+  }, [data?.isAppleData, data?.reviews?.length, allRatingsData, isFetchingAllRatings]);
 
   // Handle Apple data fetching
   const handleFetchAppleReviews = async () => {

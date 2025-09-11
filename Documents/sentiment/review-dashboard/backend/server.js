@@ -562,6 +562,7 @@ app.post('/api/apple-reviews/summarizations', upload.single('privateKey'), async
     let token;
     
     // Check if we should use server-configured credentials
+    const configuredApps = getConfiguredApps();
     const hasServerCredentials = configuredApps.some(app => app.id === appId);
     
     if (useServerCredentials && hasServerCredentials) {
