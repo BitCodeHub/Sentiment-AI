@@ -62,7 +62,7 @@ const RedditInfluence = ({ appName, category = 'technology' }) => {
         redditService.searchPosts(appName, { 
           timeFilter, 
           sort: sortBy,
-          limit: 50 
+          limit: timeFilter === 'all' ? 500 : 100 
         }),
         redditService.analyzeMentionTrends(appName),
         redditService.detectInfluenceSpikes(appName),
@@ -83,6 +83,29 @@ const RedditInfluence = ({ appName, category = 'technology' }) => {
     } catch (err) {
       console.error('Error loading Reddit data:', err);
       setError(err.message || 'Failed to load Reddit data');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Load posts only (more efficient for Posts tab)
+  const loadPosts = async (newTimeFilter = timeFilter, newSortBy = sortBy) => {
+    console.log('[RedditInfluence] Loading posts with filters:', { newTimeFilter, newSortBy });
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const searchData = await redditService.searchPosts(appName, { 
+        timeFilter: newTimeFilter, 
+        sort: newSortBy,
+        limit: newTimeFilter === 'all' ? 500 : 100 
+      });
+      
+      console.log('[RedditInfluence] Posts loaded:', searchData?.posts?.length || 0);
+      setRecentPosts(searchData.posts || []);
+    } catch (err) {
+      console.error('Error loading posts:', err);
+      setError(err.message || 'Failed to load posts');
     } finally {
       setIsLoading(false);
     }
@@ -293,100 +316,134 @@ const RedditInfluence = ({ appName, category = 'technology' }) => {
   const renderPostsTab = () => {
     return (
       <div className="reddit-posts">
-        <div className="posts-controls">
-          <select 
-            value={timeFilter} 
-            onChange={(e) => setTimeFilter(e.target.value)}
-            className="filter-select"
-          >
-            <option value="day">Past Day</option>
-            <option value="week">Past Week</option>
-            <option value="month">Past Month</option>
-            <option value="year">Past Year</option>
-            <option value="all">All Time</option>
-          </select>
+        <div className="posts-header">
+          <div className="posts-info">
+            <h3>Reddit Posts</h3>
+            <span className="posts-count">{recentPosts.length} posts</span>
+          </div>
           
-          <select 
-            value={sortBy} 
-            onChange={(e) => setSortBy(e.target.value)}
-            className="filter-select"
-          >
-            <option value="relevance">Most Relevant</option>
-            <option value="hot">Hot</option>
-            <option value="new">Newest</option>
-            <option value="top">Top Rated</option>
-          </select>
-          
-          <Button onClick={loadAllData} size="sm" variant="outline">
-            <RefreshCw size={16} />
-            Refresh
-          </Button>
+          <div className="posts-controls">
+            <select 
+              value={timeFilter} 
+              onChange={(e) => {
+                const newFilter = e.target.value;
+                setTimeFilter(newFilter);
+                loadPosts(newFilter, sortBy);
+              }}
+              className="filter-select modern"
+              disabled={isLoading}
+            >
+              <option value="day">Past Day</option>
+              <option value="week">Past Week</option>
+              <option value="month">Past Month</option>
+              <option value="year">Past Year</option>
+              <option value="all">All Time</option>
+            </select>
+            
+            <select 
+              value={sortBy} 
+              onChange={(e) => {
+                const newSort = e.target.value;
+                setSortBy(newSort);
+                loadPosts(timeFilter, newSort);
+              }}
+              className="filter-select modern"
+              disabled={isLoading}
+            >
+              <option value="relevance">Most Relevant</option>
+              <option value="hot">Hot</option>
+              <option value="new">Newest</option>
+              <option value="top">Top Rated</option>
+            </select>
+          </div>
         </div>
 
-        <div className="posts-list">
-          {recentPosts.map(post => {
+        <div className="posts-container">
+          {recentPosts.map((post, index) => {
             const engagementLevel = redditService.getEngagementLevel(post.engagementScore);
             
             return (
-              <div key={post.id} className="post-item">
-                <div className="post-header">
-                  <span className="subreddit">r/{post.subreddit}</span>
-                  <span className={`engagement-badge ${engagementLevel.level}`}>
-                    {engagementLevel.level}
-                  </span>
-                  <span className="post-time">
-                    {redditService.formatTimeAgo(post.created)}
-                  </span>
-                </div>
-                
-                <h4 className="post-title">{post.title}</h4>
-                
-                {post.selftext && (
-                  <p className="post-preview">
-                    {post.selftext.substring(0, 200)}
-                    {post.selftext.length > 200 && '...'}
-                  </p>
-                )}
-                
-                <div className="post-footer">
-                  <div className="post-metrics">
-                    <span className="metric">
-                      <ChevronUp size={16} /> {post.score}
+              <div key={post.id} className="post-card">
+                <div className="post-content">
+                  <div className="post-header">
+                    <a 
+                      href={`https://reddit.com/r/${post.subreddit}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="subreddit-link"
+                    >
+                      r/{post.subreddit}
+                    </a>
+                    <span className="post-dot">•</span>
+                    <span className="post-time">
+                      {redditService.formatTimeAgo(post.created)}
                     </span>
-                    <span className="metric">
-                      <MessageSquare size={16} /> {post.numComments}
+                    <span className={`engagement-badge ${engagementLevel.level}`}>
+                      {engagementLevel.level}
                     </span>
-                    {post.awards > 0 && (
-                      <span className="metric awards">
-                        <Award size={16} /> {post.awards}
-                      </span>
-                    )}
                   </div>
                   
-                  <div className="post-actions">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => {
-                        setSelectedPost(post);
-                        loadPostComments(post.id);
-                      }}
-                    >
-                      View Comments
-                    </Button>
+                  <h4 className="post-title">
                     <a 
-                      href={post.permalink} 
-                      target="_blank" 
+                      href={post.permalink}
+                      target="_blank"
                       rel="noopener noreferrer"
-                      className="external-link"
+                      className="title-link"
                     >
-                      <ExternalLink size={16} />
+                      {post.title}
                     </a>
+                  </h4>
+                  
+                  {post.selftext && (
+                    <p className="post-preview">
+                      {post.selftext.substring(0, 150)}
+                      {post.selftext.length > 150 && '...'}
+                    </p>
+                  )}
+                  
+                  <div className="post-footer">
+                    <div className="post-stats">
+                      <span className="stat-item upvotes">
+                        <ChevronUp size={14} /> {post.score}
+                      </span>
+                      <span className="stat-item comments">
+                        <MessageSquare size={14} /> {post.numComments}
+                      </span>
+                      {post.awards > 0 && (
+                        <span className="stat-item awards">
+                          <Award size={14} /> {post.awards}
+                        </span>
+                      )}
+                      <span className="stat-item engagement">
+                        <Zap size={14} /> {redditService.formatEngagementScore(post.engagementScore)}
+                      </span>
+                    </div>
+                    
+                    <div className="post-actions">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="action-btn"
+                        onClick={() => {
+                          setSelectedPost(post);
+                          loadPostComments(post.id);
+                        }}
+                      >
+                        <MessageSquare size={14} />
+                        Comments
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>
             );
           })}
+          
+          {recentPosts.length === 0 && !isLoading && (
+            <div className="empty-state">
+              <p>No posts found for the selected filters.</p>
+            </div>
+          )}
         </div>
       </div>
     );
