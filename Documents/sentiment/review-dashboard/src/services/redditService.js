@@ -18,7 +18,17 @@ class RedditService {
       return response.data;
     } catch (error) {
       console.error('Error searching Reddit posts:', error);
-      throw error;
+      
+      // Provide more helpful error messages
+      if (error.response?.data?.details?.includes('authenticate')) {
+        throw new Error('Reddit API credentials not configured. Please set up Reddit Client ID and Secret in the backend .env file.');
+      } else if (error.response?.status === 429) {
+        throw new Error('Reddit API rate limit exceeded. Please try again later.');
+      } else if (error.code === 'ERR_NETWORK') {
+        throw new Error('Cannot connect to backend server. Please ensure the backend is running on port 3001.');
+      }
+      
+      throw new Error(error.response?.data?.error || error.message || 'Failed to search Reddit posts');
     }
   }
 
@@ -56,7 +66,15 @@ class RedditService {
       return response.data;
     } catch (error) {
       console.error('Error analyzing mention trends:', error);
-      throw error;
+      
+      // Provide more helpful error messages
+      if (error.response?.data?.details?.includes('authenticate')) {
+        throw new Error('Reddit API credentials not configured. Please set up Reddit Client ID and Secret in the backend .env file.');
+      } else if (error.code === 'ERR_NETWORK') {
+        throw new Error('Cannot connect to backend server. Please ensure the backend is running on port 3001.');
+      }
+      
+      throw new Error(error.response?.data?.error || error.message || 'Failed to analyze mention trends');
     }
   }
 
@@ -70,7 +88,15 @@ class RedditService {
       return response.data;
     } catch (error) {
       console.error('Error detecting influence spikes:', error);
-      throw error;
+      
+      // Provide more helpful error messages
+      if (error.response?.data?.details?.includes('authenticate')) {
+        throw new Error('Reddit API credentials not configured. Please set up Reddit Client ID and Secret in the backend .env file.');
+      } else if (error.code === 'ERR_NETWORK') {
+        throw new Error('Cannot connect to backend server. Please ensure the backend is running on port 3001.');
+      }
+      
+      throw new Error(error.response?.data?.error || error.message || 'Failed to detect influence spikes');
     }
   }
 
@@ -84,7 +110,15 @@ class RedditService {
       return response.data;
     } catch (error) {
       console.error('Error finding relevant subreddits:', error);
-      throw error;
+      
+      // Provide more helpful error messages
+      if (error.response?.data?.details?.includes('authenticate')) {
+        throw new Error('Reddit API credentials not configured. Please set up Reddit Client ID and Secret in the backend .env file.');
+      } else if (error.code === 'ERR_NETWORK') {
+        throw new Error('Cannot connect to backend server. Please ensure the backend is running on port 3001.');
+      }
+      
+      throw new Error(error.response?.data?.error || error.message || 'Failed to find relevant subreddits');
     }
   }
 
