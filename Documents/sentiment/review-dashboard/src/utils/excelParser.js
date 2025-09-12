@@ -578,7 +578,8 @@ export const aggregateData = (reviews) => {
       platformDistribution: {},
       timeSeriesData: [],
       topKeywords: [],
-      responseRate: 0
+      responseRate: 0,
+      appName: ''
     };
   }
   
@@ -588,6 +589,19 @@ export const aggregateData = (reviews) => {
     ? validRatings.reduce((sum, r) => sum + r.rating, 0) / validRatings.length 
     : 0;
   
+  // Extract app name from reviews (find the most common app name)
+  const appNames = {};
+  reviews.forEach(r => {
+    if (r.appName && r.appName.trim()) {
+      appNames[r.appName] = (appNames[r.appName] || 0) + 1;
+    }
+  });
+  
+  // Get the most common app name
+  const appName = Object.keys(appNames).length > 0 
+    ? Object.entries(appNames).sort((a, b) => b[1] - a[1])[0][0]
+    : '';
+  
   // Debug device and OS data distribution
   const deviceCount = reviews.filter(r => r.device && r.device.trim()).length;
   const osCount = reviews.filter(r => r.os && r.os.trim()).length;
@@ -596,7 +610,8 @@ export const aggregateData = (reviews) => {
     reviewsWithDevice: deviceCount,
     devicePercentage: ((deviceCount / totalReviews) * 100).toFixed(1) + '%',
     reviewsWithOS: osCount,
-    osPercentage: ((osCount / totalReviews) * 100).toFixed(1) + '%'
+    osPercentage: ((osCount / totalReviews) * 100).toFixed(1) + '%',
+    appName: appName || 'Not found'
   });
   
   // Rating distribution
@@ -744,6 +759,8 @@ export const aggregateData = (reviews) => {
     topKeywords,
     reviews: reviews.sort((a, b) => b.date - a.date),
     // Add response rate calculation
-    responseRate: Math.round((reviews.filter(r => r.response && r.response.trim().length > 0).length / totalReviews) * 100)
+    responseRate: Math.round((reviews.filter(r => r.response && r.response.trim().length > 0).length / totalReviews) * 100),
+    // Add app name
+    appName: appName
   };
 };

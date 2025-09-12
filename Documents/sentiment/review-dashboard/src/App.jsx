@@ -95,6 +95,7 @@ function App() {
           timeSeriesData: [],
           topKeywords: [],
           responseRate: 0,
+          appName: '', // Add appName for Reddit component
           isAppleData: true, // Flag to indicate this is Apple data mode
           isEmpty: true // Flag to show data needs to be loaded
         };

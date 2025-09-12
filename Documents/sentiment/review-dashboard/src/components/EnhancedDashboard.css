@@ -4578,3 +4578,30 @@ html {
     right: auto;
   }
 }
+
+/* Reddit setup notice */
+.reddit-setup-notice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  text-align: center;
+  color: #6b7280;
+  gap: 1rem;
+}
+
+.reddit-setup-notice svg {
+  color: #f59e0b;
+}
+
+.reddit-setup-notice p {
+  font-size: 1rem;
+  color: #374151;
+  margin: 0;
+}
+
+.reddit-setup-notice small {
+  font-size: 0.875rem;
+  color: #9ca3af;
+}

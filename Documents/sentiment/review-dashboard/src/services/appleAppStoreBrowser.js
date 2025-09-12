@@ -542,10 +542,20 @@ class AppleAppStoreBrowserService {
           
           // Add date range parameters if provided
           if (startDate) {
-            formData.append('startDate', startDate);
+            // Convert to ISO date string (YYYY-MM-DD) if it's a Date object
+            const startDateStr = startDate instanceof Date 
+              ? startDate.toISOString().split('T')[0] 
+              : startDate;
+            formData.append('startDate', startDateStr);
+            console.log('[importReviews] Start date:', startDateStr);
           }
           if (endDate) {
-            formData.append('endDate', endDate);
+            // Convert to ISO date string (YYYY-MM-DD) if it's a Date object
+            const endDateStr = endDate instanceof Date 
+              ? endDate.toISOString().split('T')[0] 
+              : endDate;
+            formData.append('endDate', endDateStr);
+            console.log('[importReviews] End date:', endDateStr);
           }
           
           // Only send credentials if not using server credentials

@@ -1437,7 +1437,7 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange 
       </div>
 
       {/* Reddit Influence Monitor */}
-      {expandedSections.reddit && data?.appName && (
+      {expandedSections.reddit && (data?.appName || data?.isAppleData) && (
         <div className="analytics-card col-span-12" style={{ marginTop: '24px' }}>
           <div className="analytics-header" style={{ cursor: 'pointer' }} onClick={() => toggleSection('reddit')}>
             <h3 className="analytics-title">
@@ -1446,10 +1446,18 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange 
             </h3>
           </div>
           <div className="analytics-content">
-            <RedditInfluence 
-              appName={data.appName} 
-              category={data.category || 'technology'}
-            />
+            {data?.appName ? (
+              <RedditInfluence 
+                appName={data.appName} 
+                category={data.category || 'technology'}
+              />
+            ) : (
+              <div className="reddit-setup-notice">
+                <AlertCircle size={20} />
+                <p>To enable Reddit monitoring, please specify your app name in the uploaded data.</p>
+                <small>Ensure your Excel/CSV file includes an "App Name" column with your app's name.</small>
+              </div>
+            )}
           </div>
         </div>
       )}
