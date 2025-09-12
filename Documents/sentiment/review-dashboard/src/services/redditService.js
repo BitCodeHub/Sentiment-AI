@@ -1,11 +1,13 @@
 import axios from 'axios';
 
-// Get backend URL from environment or default
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
+// Get backend URL from environment or default to production
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 
+  (window.location.hostname === 'localhost' ? 'http://localhost:3001' : 'https://sentiment-review-backend.onrender.com');
 
 class RedditService {
   constructor() {
     this.baseUrl = `${BACKEND_URL}/api/reddit`;
+    console.log('[RedditService] Using backend URL:', BACKEND_URL);
   }
 
   // Search for posts mentioning the app
@@ -24,8 +26,8 @@ class RedditService {
         throw new Error('Reddit API credentials not configured. Please set up Reddit Client ID and Secret in the backend .env file.');
       } else if (error.response?.status === 429) {
         throw new Error('Reddit API rate limit exceeded. Please try again later.');
-      } else if (error.code === 'ERR_NETWORK') {
-        throw new Error('Cannot connect to backend server. Please ensure the backend is running on port 3001.');
+      } else if (error.code === 'ERR_NETWORK' || error.code === 'ECONNREFUSED') {
+        throw new Error(`Cannot connect to backend server at ${BACKEND_URL}. Please check your connection and try again.`);
       }
       
       throw new Error(error.response?.data?.error || error.message || 'Failed to search Reddit posts');
@@ -70,8 +72,8 @@ class RedditService {
       // Provide more helpful error messages
       if (error.response?.data?.details?.includes('authenticate')) {
         throw new Error('Reddit API credentials not configured. Please set up Reddit Client ID and Secret in the backend .env file.');
-      } else if (error.code === 'ERR_NETWORK') {
-        throw new Error('Cannot connect to backend server. Please ensure the backend is running on port 3001.');
+      } else if (error.code === 'ERR_NETWORK' || error.code === 'ECONNREFUSED') {
+        throw new Error(`Cannot connect to backend server at ${BACKEND_URL}. Please check your connection and try again.`);
       }
       
       throw new Error(error.response?.data?.error || error.message || 'Failed to analyze mention trends');
@@ -92,8 +94,8 @@ class RedditService {
       // Provide more helpful error messages
       if (error.response?.data?.details?.includes('authenticate')) {
         throw new Error('Reddit API credentials not configured. Please set up Reddit Client ID and Secret in the backend .env file.');
-      } else if (error.code === 'ERR_NETWORK') {
-        throw new Error('Cannot connect to backend server. Please ensure the backend is running on port 3001.');
+      } else if (error.code === 'ERR_NETWORK' || error.code === 'ECONNREFUSED') {
+        throw new Error(`Cannot connect to backend server at ${BACKEND_URL}. Please check your connection and try again.`);
       }
       
       throw new Error(error.response?.data?.error || error.message || 'Failed to detect influence spikes');
@@ -114,8 +116,8 @@ class RedditService {
       // Provide more helpful error messages
       if (error.response?.data?.details?.includes('authenticate')) {
         throw new Error('Reddit API credentials not configured. Please set up Reddit Client ID and Secret in the backend .env file.');
-      } else if (error.code === 'ERR_NETWORK') {
-        throw new Error('Cannot connect to backend server. Please ensure the backend is running on port 3001.');
+      } else if (error.code === 'ERR_NETWORK' || error.code === 'ECONNREFUSED') {
+        throw new Error(`Cannot connect to backend server at ${BACKEND_URL}. Please check your connection and try again.`);
       }
       
       throw new Error(error.response?.data?.error || error.message || 'Failed to find relevant subreddits');
