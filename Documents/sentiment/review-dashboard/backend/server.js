@@ -222,11 +222,27 @@ async function fetchAllReviews(token, appId, territory = 'USA', sinceDate = null
   
   // Parse date range if provided
   const startDate = dateRange?.startDate ? new Date(dateRange.startDate) : null;
-  const endDate = dateRange?.endDate ? new Date(dateRange.endDate) : null;
+  let endDate = dateRange?.endDate ? new Date(dateRange.endDate) : null;
+  
+  // If endDate is provided, set it to end of day (23:59:59.999) to include all reviews from that day
+  if (endDate) {
+    endDate = new Date(endDate);
+    endDate.setHours(23, 59, 59, 999);
+  }
   
   while (hasMore) {
     const response = await fetchAppleReviews(token, appId, territory, limit, nextLink);
     const reviews = response.data || [];
+    
+    // Log the most recent reviews for debugging
+    if (reviews.length > 0 && !nextLink) {
+      const newestReview = new Date(reviews[0].attributes.createdDate);
+      const oldestReview = new Date(reviews[reviews.length - 1].attributes.createdDate);
+      console.log(`[fetchAllReviews] Batch ${allReviews.length > 0 ? 'next' : 'first'}:`);
+      console.log(`  - Newest review: ${newestReview.toISOString()} (${Math.floor((Date.now() - newestReview) / (1000 * 60 * 60 * 24))} days ago)`);
+      console.log(`  - Oldest review: ${oldestReview.toISOString()}`);
+      console.log(`  - Date filter: ${startDate ? startDate.toISOString() : 'none'} to ${endDate ? endDate.toISOString() : 'none'}`);
+    }
     
     // Filter reviews based on date criteria
     let filtered = reviews;

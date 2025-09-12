@@ -44,8 +44,13 @@ const DateRangePicker = ({
       const start = new Date();
       start.setDate(start.getDate() - days);
       
+      // Add one extra day to end date to ensure we catch all reviews including today's
+      // This accounts for any timezone differences with Apple's servers
+      const endWithBuffer = new Date();
+      endWithBuffer.setDate(endWithBuffer.getDate() + 1);
+      
       const startStr = start.toISOString().split('T')[0];
-      const endStr = end.toISOString().split('T')[0];
+      const endStr = endWithBuffer.toISOString().split('T')[0];
       
       setStartDate(startStr);
       setEndDate(endStr);
