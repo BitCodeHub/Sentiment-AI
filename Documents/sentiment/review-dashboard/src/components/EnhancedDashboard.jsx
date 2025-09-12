@@ -95,8 +95,14 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange 
           });
           
           // Auto-fetch reviews with the selected date range
-          if (data?.isEmpty && onFetchReviews) {
-            handleFetchAppleReviews();
+          // Also fetch if data is older than 30 minutes to ensure fresh data
+          if (onFetchReviews) {
+            const shouldRefresh = data?.isEmpty || 
+              (data?.lastUpdated && new Date() - new Date(data.lastUpdated) > 30 * 60 * 1000);
+            
+            if (shouldRefresh) {
+              handleFetchAppleReviews();
+            }
           }
         }
       }
@@ -219,6 +225,7 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange 
       const appleAppStoreBrowserService = (await import('../services/appleAppStoreBrowser')).default;
       
       // Fetch reviews with date range
+      // Always force refresh to ensure we get the latest reviews including those posted today
       const reviews = await appleAppStoreBrowserService.importReviews(
         config.appId,
         config.issuerId,
@@ -227,7 +234,7 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange 
         config.useServerCredentials,
         {
           useCache: true,
-          forceRefresh: false,
+          forceRefresh: true, // Always fetch fresh data to show latest reviews
           startDate: selectedDateRange.start,
           endDate: selectedDateRange.end
         }
