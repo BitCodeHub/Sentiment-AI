@@ -77,6 +77,20 @@ const RedditInfluence = ({ appName, category = 'technology' }) => {
         subreddits: subredditsData?.subreddits?.length || 0
       });
       
+      // Detailed logging for debugging
+      console.log('[RedditInfluence] Trends data structure:', trendsData?.trends);
+      console.log('[RedditInfluence] Spikes data structure:', spikesData);
+      
+      if (trendsData?.trends) {
+        Object.keys(trendsData.trends).forEach(period => {
+          console.log(`[RedditInfluence] Trends[${period}]:`, {
+            totalMentions: trendsData.trends[period]?.totalMentions,
+            averageEngagement: trendsData.trends[period]?.averageEngagement,
+            posts: trendsData.trends[period]?.posts?.length || 0
+          });
+        });
+      }
+      
       setRecentPosts(searchData.posts || []);
       setTrends(trendsData.trends || {});
       setSpikes(spikesData || {});
@@ -158,6 +172,58 @@ const RedditInfluence = ({ appName, category = 'technology' }) => {
     const trendChartData = trends ? redditService.generateTrendChartData(trends) : [];
     const spikeChartData = spikes?.spikes ? redditService.generateSpikeChartData(spikes.spikes) : [];
     
+    // Helper function to get metric data based on current timeFilter
+    const getMetricData = (metricType) => {
+      console.log('[RedditInfluence] Getting metric data:', { 
+        metricType, 
+        timeFilter, 
+        availableTrends: trends ? Object.keys(trends) : [],
+        trendsData: trends
+      });
+      
+      if (!trends) {
+        console.log('[RedditInfluence] No trends data available');
+        return 0;
+      }
+      
+      // Handle "all" time by using the year data or summing available data
+      const effectiveTimeFilter = timeFilter === 'all' ? 'year' : timeFilter;
+      
+      if (timeFilter === 'all' && metricType === 'totalMentions') {
+        // For all time, sum up all available periods
+        const allMentions = ['day', 'week', 'month', 'year']
+          .map(period => trends[period]?.totalMentions || 0)
+          .reduce((sum, val) => Math.max(sum, val), 0); // Use max instead of sum to avoid double counting
+        
+        console.log('[RedditInfluence] All-time mentions calculation:', {
+          periods: ['day', 'week', 'month', 'year'].map(p => ({ 
+            period: p, 
+            mentions: trends[p]?.totalMentions || 0 
+          })),
+          result: allMentions
+        });
+        
+        return allMentions;
+      }
+      
+      if (timeFilter === 'all' && metricType === 'averageEngagement') {
+        // For all time, use the year average or calculate weighted average
+        const yearEngagement = trends['year']?.averageEngagement || 0;
+        console.log('[RedditInfluence] All-time avg engagement:', yearEngagement);
+        return yearEngagement;
+      }
+      
+      const trendData = trends[effectiveTimeFilter];
+      if (!trendData) {
+        console.log('[RedditInfluence] No trend data for period:', effectiveTimeFilter);
+        return 0;
+      }
+      
+      const value = trendData[metricType] || 0;
+      console.log('[RedditInfluence] Metric value:', { period: effectiveTimeFilter, metricType, value });
+      return value;
+    };
+    
     return (
       <div className="reddit-overview">
         {/* Date Range Filter */}
@@ -200,7 +266,7 @@ const RedditInfluence = ({ appName, category = 'technology' }) => {
             <Activity className="metric-icon" />
             <div className="metric-content">
               <div className="metric-value">
-                {trends?.[timeFilter]?.totalMentions || 0}
+                {getMetricData('totalMentions')}
               </div>
               <div className="metric-label">
                 {timeFilter === 'day' ? 'Daily' : 
@@ -229,8 +295,8 @@ const RedditInfluence = ({ appName, category = 'technology' }) => {
             <Award className="metric-icon" />
             <div className="metric-content">
               <div className="metric-value">
-                {trends?.[timeFilter]?.averageEngagement ? 
-                  redditService.formatEngagementScore(trends[timeFilter].averageEngagement) : '0'}
+                {getMetricData('averageEngagement') ? 
+                  redditService.formatEngagementScore(getMetricData('averageEngagement')) : '0'}
               </div>
               <div className="metric-label">
                 Avg Engagement
@@ -302,47 +368,52 @@ const RedditInfluence = ({ appName, category = 'technology' }) => {
         )}
 
         {/* Top Post */}
-        {trends?.[timeFilter]?.topPost && (
-          <Card className="top-post-card">
-            <CardHeader>
-              <CardTitle>Top Post This {timeFilter === 'day' ? 'Day' : 
-                                        timeFilter === 'week' ? 'Week' :
-                                        timeFilter === 'month' ? 'Month' :
-                                        timeFilter === 'year' ? 'Year' : 'Period'}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="post-item featured">
-                <div className="post-header">
-                  <span className="subreddit">r/{trends[timeFilter].topPost.subreddit}</span>
-                  <span className="post-time">
-                    {redditService.formatTimeAgo(trends[timeFilter].topPost.created)}
-                  </span>
+        {(() => {
+          const effectiveTimeFilter = timeFilter === 'all' ? 'year' : timeFilter;
+          const topPost = trends?.[effectiveTimeFilter]?.topPost;
+          
+          return topPost && (
+            <Card className="top-post-card">
+              <CardHeader>
+                <CardTitle>Top Post This {timeFilter === 'day' ? 'Day' : 
+                                          timeFilter === 'week' ? 'Week' :
+                                          timeFilter === 'month' ? 'Month' :
+                                          timeFilter === 'year' ? 'Year' : 'Period'}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="post-item featured">
+                  <div className="post-header">
+                    <span className="subreddit">r/{topPost.subreddit}</span>
+                    <span className="post-time">
+                      {redditService.formatTimeAgo(topPost.created)}
+                    </span>
+                  </div>
+                  <h4 className="post-title">{topPost.title}</h4>
+                  <div className="post-metrics">
+                    <span className="metric">
+                      <ChevronUp size={16} /> {topPost.score}
+                    </span>
+                    <span className="metric">
+                      <MessageSquare size={16} /> {topPost.numComments}
+                    </span>
+                    <span className="metric engagement-score">
+                      <Award size={16} /> 
+                      {redditService.formatEngagementScore(topPost.engagementScore)}
+                    </span>
+                  </div>
+                  <a 
+                    href={topPost.permalink} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="view-link"
+                  >
+                    View on Reddit <ExternalLink size={14} />
+                  </a>
                 </div>
-                <h4 className="post-title">{trends[timeFilter].topPost.title}</h4>
-                <div className="post-metrics">
-                  <span className="metric">
-                    <ChevronUp size={16} /> {trends[timeFilter].topPost.score}
-                  </span>
-                  <span className="metric">
-                    <MessageSquare size={16} /> {trends[timeFilter].topPost.numComments}
-                  </span>
-                  <span className="metric engagement-score">
-                    <Award size={16} /> 
-                    {redditService.formatEngagementScore(trends[timeFilter].topPost.engagementScore)}
-                  </span>
-                </div>
-                <a 
-                  href={trends[timeFilter].topPost.permalink} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="view-link"
-                >
-                  View on Reddit <ExternalLink size={14} />
-                </a>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+              </CardContent>
+            </Card>
+          );
+        })()}
       </div>
     );
   };
