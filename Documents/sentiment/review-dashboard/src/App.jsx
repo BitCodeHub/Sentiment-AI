@@ -76,6 +76,18 @@ function App() {
     try {
       console.log('Processing Apple reviews:', reviews?.length, 'reviews');
       
+      // Get app name from session storage
+      let appName = '';
+      const configStr = sessionStorage.getItem('appleAppConfig');
+      if (configStr) {
+        try {
+          const config = JSON.parse(configStr);
+          appName = config.appName || `App ${config.appId || ''}`;
+        } catch (e) {
+          console.error('Error parsing Apple config:', e);
+        }
+      }
+      
       // Handle empty reviews array (entering dashboard without data)
       if (!reviews || reviews.length === 0) {
         console.log('Entering dashboard with no initial data');
@@ -95,7 +107,7 @@ function App() {
           timeSeriesData: [],
           topKeywords: [],
           responseRate: 0,
-          appName: '', // Add appName for Reddit component
+          appName: appName, // Add appName for Reddit component
           isAppleData: true, // Flag to indicate this is Apple data mode
           isEmpty: true // Flag to show data needs to be loaded
         };
@@ -123,6 +135,7 @@ function App() {
       
       aggregatedData.isAppleData = true; // Flag to indicate this is Apple data
       aggregatedData.isEmpty = false;
+      aggregatedData.appName = appName; // Add appName for Reddit component
       
       setData(aggregatedData);
     } catch (err) {

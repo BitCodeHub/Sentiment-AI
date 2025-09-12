@@ -25,6 +25,7 @@ const AppleImport = ({ onImport }) => {
   const [fetchingMetadata, setFetchingMetadata] = useState(false);
   const [selectedStartDate, setSelectedStartDate] = useState(null);
   const [selectedEndDate, setSelectedEndDate] = useState(null);
+  const [selectedAppName, setSelectedAppName] = useState('');
   const [showDateRange, setShowDateRange] = useState(true);
 
   // Check backend availability and configured apps on mount
@@ -51,6 +52,7 @@ const AppleImport = ({ onImport }) => {
             // If there are configured apps, select the first one by default
             if (data.apps && data.apps.length > 0) {
               setAppId(data.apps[0].id);
+              setSelectedAppName(data.apps[0].name || '');
             }
           }
         } catch (err) {
@@ -157,6 +159,7 @@ const AppleImport = ({ onImport }) => {
     if (typeof window !== 'undefined') {
       const config = {
         appId: appId.trim(),
+        appName: selectedAppName || `App ${appId.trim()}`, // Use selected name or fallback to App ID
         issuerId: issuerId?.trim(),
         keyId: keyId?.trim(),
         useServerCredentials: useServerCredentials && hasServerCredentials,
@@ -255,6 +258,7 @@ const AppleImport = ({ onImport }) => {
           if (typeof window !== 'undefined') {
             const config = {
               appId: appId.trim(),
+              appName: selectedAppName || `App ${appId.trim()}`, // Use selected name or fallback to App ID
               issuerId: issuerId?.trim(),
               keyId: keyId?.trim(),
               useServerCredentials: useServerCredentials && hasServerCredentials,
@@ -309,7 +313,16 @@ const AppleImport = ({ onImport }) => {
             </label>
             <select
               value={appId}
-              onChange={(e) => setAppId(e.target.value)}
+              onChange={(e) => {
+                setAppId(e.target.value);
+                // Find and store the app name
+                const selectedApp = availableApps.find(app => app.id === e.target.value);
+                if (selectedApp) {
+                  setSelectedAppName(selectedApp.name);
+                } else {
+                  setSelectedAppName('');
+                }
+              }}
               disabled={isLoading}
               className="app-selector"
             >

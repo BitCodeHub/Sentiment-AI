@@ -1454,8 +1454,12 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange 
             ) : (
               <div className="reddit-setup-notice">
                 <AlertCircle size={20} />
-                <p>To enable Reddit monitoring, please specify your app name in the uploaded data.</p>
-                <small>Ensure your Excel/CSV file includes an "App Name" column with your app's name.</small>
+                <p>To enable Reddit monitoring, please specify your app name.</p>
+                <small>
+                  {data?.isAppleData 
+                    ? "App name will be detected from your Apple App Store selection."
+                    : "Ensure your Excel/CSV file includes an 'App Name' column with your app's name."}
+                </small>
               </div>
             )}
           </div>
