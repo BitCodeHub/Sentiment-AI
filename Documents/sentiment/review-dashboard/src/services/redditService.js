@@ -34,11 +34,16 @@ class RedditService {
         success: response.data?.success,
         postCount: response.data?.posts?.length || 0,
         count: response.data?.count,
-        requestSent: { time: requestBody.time, sort: requestBody.sort },
+        requestSent: { time: requestBody.time, sort: requestBody.sort, limit: requestBody.limit },
         firstPost: response.data?.posts?.[0] ? {
           title: response.data.posts[0].title.substring(0, 50),
           created: response.data.posts[0].created,
           subreddit: response.data.posts[0].subreddit
+        } : null,
+        lastPost: response.data?.posts?.length > 0 ? {
+          title: response.data.posts[response.data.posts.length - 1].title.substring(0, 50),
+          created: response.data.posts[response.data.posts.length - 1].created,
+          subreddit: response.data.posts[response.data.posts.length - 1].subreddit
         } : null
       });
       

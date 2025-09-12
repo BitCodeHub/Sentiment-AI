@@ -117,21 +117,24 @@ const RedditInfluence = ({ appName, category = 'technology' }) => {
         success: searchData?.success
       });
       
-      // Only update if this is still the latest request
-      if (newTimeFilter === timeFilter && newSortBy === sortBy) {
-        setRecentPosts(searchData.posts || []);
-        
-        // Log what we're actually showing
-        if (searchData.posts && searchData.posts.length > 0) {
-          console.log('[RedditInfluence] Sample posts:', 
-            searchData.posts.slice(0, 3).map(p => ({
-              title: p.title.substring(0, 50),
-              score: p.score,
-              created: p.created,
-              subreddit: p.subreddit
-            }))
-          );
-        }
+      // Update the posts data
+      setRecentPosts(searchData.posts || []);
+      
+      // Log what we're actually showing
+      console.log('[RedditInfluence] Posts updated:', {
+        totalPosts: searchData.posts?.length || 0,
+        filters: { time: newTimeFilter, sort: newSortBy }
+      });
+      
+      if (searchData.posts && searchData.posts.length > 0) {
+        console.log('[RedditInfluence] Sample posts:', 
+          searchData.posts.slice(0, 3).map(p => ({
+            title: p.title.substring(0, 50),
+            score: p.score,
+            created: p.created,
+            subreddit: p.subreddit
+          }))
+        );
       }
     } catch (err) {
       console.error('[RedditInfluence] Error loading posts:', err);
@@ -392,12 +395,24 @@ const RedditInfluence = ({ appName, category = 'technology' }) => {
           </div>
         </div>
 
-        <div className="posts-container">
+        <div className="posts-container" style={{ position: 'relative', minHeight: isLoading ? '300px' : 'auto' }}>
           {isLoading && (
-            <div className="loading-overlay">
+            <div className="loading-overlay" style={{ 
+              position: 'absolute', 
+              top: 0, 
+              left: 0, 
+              right: 0, 
+              bottom: 0, 
+              background: 'rgba(255, 255, 255, 0.95)', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              zIndex: 10, 
+              borderRadius: '0.5rem' 
+            }}>
               <div className="loading-content">
                 <RefreshCw size={24} className="spinning" />
-                <p>Loading {sortBy === 'new' ? 'newest' : sortBy} posts...</p>
+                <p>Loading {sortBy === 'new' ? 'newest' : sortBy} posts from {timeFilter === 'day' ? 'past 24 hours' : `past ${timeFilter}`}...</p>
               </div>
             </div>
           )}

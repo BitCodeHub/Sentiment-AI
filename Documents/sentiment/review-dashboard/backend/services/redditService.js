@@ -216,7 +216,7 @@ class RedditService {
         }
         
         const data = await this.makeRequest(endpoint, params);
-        const posts = this.processSearchResults(data, appName);
+        const posts = this.processSearchResults(data, appName, timeFilter);
         
         if (posts.length === 0) {
           break; // No more posts
@@ -246,31 +246,75 @@ class RedditService {
   }
 
   // Process search results to extract relevant data
-  processSearchResults(data, appName) {
+  processSearchResults(data, appName, timeFilter) {
     if (!data.data || !data.data.children) {
       return [];
     }
 
-    return data.data.children.map(child => {
-      const post = child.data;
-      return {
-        id: post.id,
-        title: post.title,
-        subreddit: post.subreddit,
-        author: post.author,
-        created: new Date(post.created_utc * 1000),
-        score: post.score,
-        upvoteRatio: post.upvote_ratio,
-        numComments: post.num_comments,
-        permalink: `https://reddit.com${post.permalink}`,
-        selftext: post.selftext,
-        url: post.url,
-        isVideo: post.is_video,
-        thumbnail: post.thumbnail !== 'self' && post.thumbnail !== 'default' ? post.thumbnail : null,
-        awards: post.total_awards_received || 0,
-        engagementScore: this.calculateEngagementScore(post)
-      };
+    // Get time cutoff based on filter
+    const now = new Date();
+    let cutoffDate = null;
+    
+    switch(timeFilter) {
+      case 'day':
+        cutoffDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        break;
+      case 'week':
+        cutoffDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        break;
+      case 'month':
+        cutoffDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        break;
+      case 'year':
+        cutoffDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+        break;
+      case 'all':
+      default:
+        cutoffDate = null;
+        break;
+    }
+
+    console.log('[RedditService] Filtering posts with cutoff:', {
+      timeFilter,
+      cutoffDate: cutoffDate ? cutoffDate.toISOString() : 'none',
+      totalPosts: data.data.children.length
     });
+
+    const posts = data.data.children
+      .map(child => {
+        const post = child.data;
+        return {
+          id: post.id,
+          title: post.title,
+          subreddit: post.subreddit,
+          author: post.author,
+          created: new Date(post.created_utc * 1000),
+          score: post.score,
+          upvoteRatio: post.upvote_ratio,
+          numComments: post.num_comments,
+          permalink: `https://reddit.com${post.permalink}`,
+          selftext: post.selftext,
+          url: post.url,
+          isVideo: post.is_video,
+          thumbnail: post.thumbnail !== 'self' && post.thumbnail !== 'default' ? post.thumbnail : null,
+          awards: post.total_awards_received || 0,
+          engagementScore: this.calculateEngagementScore(post)
+        };
+      })
+      .filter(post => {
+        // Apply time filter if cutoffDate is set
+        if (cutoffDate) {
+          return post.created >= cutoffDate;
+        }
+        return true;
+      });
+
+    console.log('[RedditService] Posts after filtering:', {
+      filtered: posts.length,
+      original: data.data.children.length
+    });
+
+    return posts;
   }
 
   // Calculate engagement score for a post

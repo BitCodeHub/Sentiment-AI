@@ -412,12 +412,13 @@
   right: 0;
   bottom: 0;
   background: rgba(255, 255, 255, 0.95);
-  display: flex;
+  display: flex !important;
   align-items: center;
   justify-content: center;
-  z-index: 10;
+  z-index: 20;
   border-radius: 0.5rem;
   backdrop-filter: blur(4px);
+  min-height: 200px;
 }
 
 .loading-content {
