@@ -234,7 +234,7 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange 
         config.useServerCredentials,
         {
           useCache: true,
-          forceRefresh: true, // Always fetch fresh data to show latest reviews
+          forceRefresh: false, // Use cache when available for better performance
           startDate: selectedDateRange.start,
           endDate: selectedDateRange.end
         }
@@ -408,6 +408,11 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange 
       
       // Date range filtering
       const matchesDateRange = (() => {
+        // Skip frontend date filtering for Apple data if dates were already filtered on backend
+        if (data?.isAppleData && data?.dateRangeFilter) {
+          return true; // Already filtered by backend
+        }
+        
         if (!selectedDateRange.start && !selectedDateRange.end) return true;
         
         const reviewDate = new Date(review.date || review.Date || review['Review Date']);
@@ -417,11 +422,16 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange 
         const endDate = selectedDateRange.end ? new Date(selectedDateRange.end) : null;
         
         if (startDate && endDate) {
-          return reviewDate >= startDate && reviewDate <= endDate;
+          // For end date comparison, set to end of day to include all reviews from that day
+          const endOfDay = new Date(endDate);
+          endOfDay.setHours(23, 59, 59, 999);
+          return reviewDate >= startDate && reviewDate <= endOfDay;
         } else if (startDate) {
           return reviewDate >= startDate;
         } else if (endDate) {
-          return reviewDate <= endDate;
+          const endOfDay = new Date(endDate);
+          endOfDay.setHours(23, 59, 59, 999);
+          return reviewDate <= endOfDay;
         }
         
         return true;

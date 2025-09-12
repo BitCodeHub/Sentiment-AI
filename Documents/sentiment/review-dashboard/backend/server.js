@@ -230,18 +230,39 @@ async function fetchAllReviews(token, appId, territory = 'USA', sinceDate = null
     endDate.setHours(23, 59, 59, 999);
   }
   
+  // Debug logging for date range
+  console.log(`[fetchAllReviews] Date range parsing:
+    - Input: ${JSON.stringify(dateRange)}
+    - Parsed startDate: ${startDate ? startDate.toISOString() : 'null'}
+    - Parsed endDate: ${endDate ? endDate.toISOString() : 'null'}`);
+  
   while (hasMore) {
     const response = await fetchAppleReviews(token, appId, territory, limit, nextLink);
     const reviews = response.data || [];
     
+    // Early exit if no reviews
+    if (reviews.length === 0) {
+      hasMore = false;
+      break;
+    }
+    
+    // Get date bounds for this batch
+    const newestReview = new Date(reviews[0].attributes.createdDate);
+    const oldestReview = new Date(reviews[reviews.length - 1].attributes.createdDate);
+    
     // Log the most recent reviews for debugging
-    if (reviews.length > 0 && !nextLink) {
-      const newestReview = new Date(reviews[0].attributes.createdDate);
-      const oldestReview = new Date(reviews[reviews.length - 1].attributes.createdDate);
+    if (!nextLink) {
       console.log(`[fetchAllReviews] Batch ${allReviews.length > 0 ? 'next' : 'first'}:`);
       console.log(`  - Newest review: ${newestReview.toISOString()} (${Math.floor((Date.now() - newestReview) / (1000 * 60 * 60 * 24))} days ago)`);
       console.log(`  - Oldest review: ${oldestReview.toISOString()}`);
       console.log(`  - Date filter: ${startDate ? startDate.toISOString() : 'none'} to ${endDate ? endDate.toISOString() : 'none'}`);
+    }
+    
+    // Early stopping: if we have a startDate and the newest review in this batch is before it, stop
+    if (startDate && newestReview < startDate) {
+      console.log(`[fetchAllReviews] Stopping early: newest review in batch is before start date`);
+      hasMore = false;
+      break;
     }
     
     // Filter reviews based on date criteria
@@ -266,6 +287,13 @@ async function fetchAllReviews(token, appId, territory = 'USA', sinceDate = null
         
         return true;
       });
+      
+      // Debug logging for filtering
+      if (reviews.length > 0 && filtered.length === 0) {
+        console.log(`[fetchAllReviews] WARNING: All ${reviews.length} reviews filtered out!`);
+        console.log(`  - Sample review date: ${new Date(reviews[0].attributes.createdDate).toISOString()}`);
+        console.log(`  - Date range: ${startDate ? startDate.toISOString() : 'none'} to ${endDate ? endDate.toISOString() : 'none'}`);
+      }
       
       allReviews.push(...filtered);
       
@@ -428,18 +456,45 @@ app.post('/api/apple-reviews', upload.single('privateKey'), async (req, res) => 
       });
     }
 
-    // Check cache first if not forcing refresh and no date range specified
-    if (useCache !== false && !forceRefresh && !startDate && !endDate) {
+    // Check cache first if not forcing refresh
+    if (useCache !== false && !forceRefresh) {
       const cachedData = await cacheService.getCachedReviews(appId);
       if (cachedData.fromCache) {
-        console.log(`Serving ${cachedData.reviews.length} reviews from cache for app ${appId}`);
+        // Filter cached reviews by date range if specified
+        let filteredReviews = cachedData.reviews;
+        if (startDate || endDate) {
+          const start = startDate ? new Date(startDate) : null;
+          let end = endDate ? new Date(endDate) : null;
+          
+          // Set end date to end of day to include all reviews from that day
+          if (end) {
+            end.setHours(23, 59, 59, 999);
+          }
+          
+          filteredReviews = cachedData.reviews.filter(review => {
+            const reviewDate = new Date(review.Date);
+            if (start && reviewDate < start) return false;
+            if (end && reviewDate > end) return false;
+            return true;
+          });
+          
+          console.log(`Serving ${filteredReviews.length} reviews from cache (filtered from ${cachedData.reviews.length}) for date range ${startDate || 'any'} to ${endDate || 'any'}`);
+        } else {
+          console.log(`Serving ${cachedData.reviews.length} reviews from cache for app ${appId}`);
+        }
+        
         return res.json({
           success: true,
-          reviews: cachedData.reviews,
+          reviews: filteredReviews,
           fromCache: true,
+          dateRangeFilter: (startDate || endDate) ? {
+            startDate,
+            endDate,
+            filteredCount: filteredReviews.length
+          } : null,
           meta: {
             ...cachedData.metadata,
-            total: cachedData.reviews.length,
+            total: filteredReviews.length,
             appId: appId,
             territory: 'USA'
           }
@@ -450,9 +505,9 @@ app.post('/api/apple-reviews', upload.single('privateKey'), async (req, res) => 
     // Generate JWT token
     const token = generateAppleToken(extractedKeyId, issuerId, privateKey);
 
-    // Get last sync date for incremental updates (only if no date range specified)
+    // Get last sync date for incremental updates (disabled only for forceRefresh)
     const cachedMetadata = await cacheService.getAppMetadata(appId);
-    const sinceDate = (forceRefresh || startDate || endDate) ? null : cachedMetadata?.lastSync;
+    const sinceDate = forceRefresh ? null : cachedMetadata?.lastSync;
 
     // Create date range object if dates are provided
     const dateRange = (startDate || endDate) ? { startDate, endDate } : null;
