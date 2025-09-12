@@ -82,7 +82,12 @@ function App() {
       if (configStr) {
         try {
           const config = JSON.parse(configStr);
-          appName = config.appName || `App ${config.appId || ''}`;
+          appName = config.appName || '';
+          console.log('[App.jsx] Extracted app name from config:', {
+            fullConfig: config,
+            extractedAppName: appName,
+            appId: config.appId
+          });
         } catch (e) {
           console.error('Error parsing Apple config:', e);
         }
@@ -136,6 +141,11 @@ function App() {
       aggregatedData.isAppleData = true; // Flag to indicate this is Apple data
       aggregatedData.isEmpty = false;
       aggregatedData.appName = appName; // Add appName for Reddit component
+      
+      console.log('[App.jsx] Final aggregated data with appName:', {
+        appName: aggregatedData.appName,
+        reviewCount: aggregatedData.reviews?.length || 0
+      });
       
       setData(aggregatedData);
     } catch (err) {

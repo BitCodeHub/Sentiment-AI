@@ -17,6 +17,12 @@ require('dotenv').config({
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Trust proxy when running on Render or other platforms
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1); // Trust first proxy
+  console.log('Trust proxy enabled for production environment');
+}
+
 // Security middleware
 app.use(helmet({
   contentSecurityPolicy: {
@@ -56,6 +62,12 @@ const limiter = rateLimit({
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
+  // Skip successful requests from rate limit count
+  skipSuccessfulRequests: false,
+  // Use X-Forwarded-For header when behind proxy
+  keyGenerator: (req) => {
+    return req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+  }
 });
 app.use('/api/', limiter);
 

@@ -12,11 +12,20 @@ class RedditService {
 
   // Search for posts mentioning the app
   async searchPosts(appName, options = {}) {
+    console.log('[RedditService] searchPosts called with:', { appName, options });
+    
     try {
       const response = await axios.post(`${this.baseUrl}/search`, {
         appName,
         ...options
       });
+      
+      console.log('[RedditService] searchPosts response:', {
+        success: response.data?.success,
+        postCount: response.data?.posts?.length || 0,
+        count: response.data?.count
+      });
+      
       return response.data;
     } catch (error) {
       console.error('Error searching Reddit posts:', error);
@@ -60,11 +69,19 @@ class RedditService {
 
   // Analyze mention trends
   async analyzeMentionTrends(appName, options = {}) {
+    console.log('[RedditService] analyzeMentionTrends called with:', { appName, options });
+    
     try {
       const response = await axios.post(`${this.baseUrl}/trends`, {
         appName,
         ...options
       });
+      
+      console.log('[RedditService] trends response:', {
+        success: response.data?.success,
+        hasTrends: !!response.data?.trends
+      });
+      
       return response.data;
     } catch (error) {
       console.error('Error analyzing mention trends:', error);
@@ -82,11 +99,19 @@ class RedditService {
 
   // Detect influence spikes
   async detectInfluenceSpikes(appName, options = {}) {
+    console.log('[RedditService] detectInfluenceSpikes called with:', { appName, options });
+    
     try {
       const response = await axios.post(`${this.baseUrl}/spikes`, {
         appName,
         ...options
       });
+      
+      console.log('[RedditService] spikes response:', {
+        success: response.data?.success,
+        spikeCount: response.data?.spikes?.length || 0
+      });
+      
       return response.data;
     } catch (error) {
       console.error('Error detecting influence spikes:', error);
@@ -104,11 +129,19 @@ class RedditService {
 
   // Find relevant subreddits
   async findRelevantSubreddits(appName, category = 'technology') {
+    console.log('[RedditService] findRelevantSubreddits called with:', { appName, category });
+    
     try {
       const response = await axios.post(`${this.baseUrl}/relevant-subreddits`, {
         appName,
         category
       });
+      
+      console.log('[RedditService] subreddits response:', {
+        success: response.data?.success,
+        subredditCount: response.data?.subreddits?.length || 0
+      });
+      
       return response.data;
     } catch (error) {
       console.error('Error finding relevant subreddits:', error);

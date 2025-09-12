@@ -17,6 +17,12 @@ import redditService from '../services/redditService';
 import './RedditInfluence.css';
 
 const RedditInfluence = ({ appName, category = 'technology' }) => {
+  // Debug logging
+  console.log('[RedditInfluence] Component initialized with:', {
+    appName,
+    category,
+    appNameLength: appName?.length
+  });
   const [activeTab, setActiveTab] = useState('overview');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -35,16 +41,21 @@ const RedditInfluence = ({ appName, category = 'technology' }) => {
   
   // Load initial data
   useEffect(() => {
+    console.log('[RedditInfluence] useEffect triggered with appName:', appName);
     if (appName) {
       loadAllData();
+    } else {
+      console.warn('[RedditInfluence] No appName provided, skipping data load');
     }
   }, [appName]);
 
   const loadAllData = async () => {
+    console.log('[RedditInfluence] Starting loadAllData with appName:', appName);
     setIsLoading(true);
     setError(null);
     
     try {
+      console.log('[RedditInfluence] Making Reddit API calls for:', appName);
       const [searchData, trendsData, spikesData, subredditsData] = await Promise.all([
         redditService.searchPosts(appName, { 
           timeFilter, 
@@ -55,6 +66,13 @@ const RedditInfluence = ({ appName, category = 'technology' }) => {
         redditService.detectInfluenceSpikes(appName),
         redditService.findRelevantSubreddits(appName, category)
       ]);
+      
+      console.log('[RedditInfluence] API responses:', {
+        searchPosts: searchData?.posts?.length || 0,
+        trends: trendsData?.trends ? Object.keys(trendsData.trends) : [],
+        spikes: spikesData?.spikes?.length || 0,
+        subreddits: subredditsData?.subreddits?.length || 0
+      });
       
       setRecentPosts(searchData.posts || []);
       setTrends(trendsData.trends || {});

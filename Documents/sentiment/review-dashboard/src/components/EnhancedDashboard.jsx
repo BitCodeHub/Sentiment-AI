@@ -1437,6 +1437,12 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange 
       </div>
 
       {/* Reddit Influence Monitor */}
+      {console.log('[EnhancedDashboard] Reddit section check:', {
+        expandedSections_reddit: expandedSections.reddit,
+        data_appName: data?.appName,
+        data_isAppleData: data?.isAppleData,
+        shouldShowReddit: expandedSections.reddit && (data?.appName || data?.isAppleData)
+      })}
       {expandedSections.reddit && (data?.appName || data?.isAppleData) && (
         <div className="analytics-card col-span-12" style={{ marginTop: '24px' }}>
           <div className="analytics-header" style={{ cursor: 'pointer' }} onClick={() => toggleSection('reddit')}>
@@ -1446,6 +1452,7 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange 
             </h3>
           </div>
           <div className="analytics-content">
+            {console.log('[EnhancedDashboard] Inside Reddit content, appName:', data?.appName)}
             {data?.appName ? (
               <RedditInfluence 
                 appName={data.appName} 

@@ -79,7 +79,37 @@ class RedditService {
     } = options;
 
     try {
-      const searchQuery = `"${appName}" OR ${appName.replace(/\s+/g, '')}`;
+      console.log('[RedditService] searchPosts called with:', { appName, options });
+      
+      // Create multiple search variations for complex app names
+      const searchVariations = [];
+      
+      // Add exact match with quotes
+      searchVariations.push(`"${appName}"`);
+      
+      // Add version without spaces
+      const noSpaces = appName.replace(/\s+/g, '');
+      if (noSpaces !== appName) {
+        searchVariations.push(noSpaces);
+      }
+      
+      // For apps with "with" in the name, try both full name and shortened version
+      if (appName.toLowerCase().includes(' with ')) {
+        const shortened = appName.split(' with ')[0].trim();
+        searchVariations.push(`"${shortened}"`);
+        searchVariations.push(shortened);
+      }
+      
+      // For MyHyundai specifically, also search for "Hyundai Bluelink" and "Bluelink"
+      if (appName.toLowerCase().includes('hyundai')) {
+        searchVariations.push('"Hyundai Bluelink"');
+        searchVariations.push('Bluelink');
+        searchVariations.push('"Hyundai app"');
+      }
+      
+      const searchQuery = searchVariations.join(' OR ');
+      console.log('[RedditService] Final search query:', searchQuery);
+      
       const endpoint = subreddit === 'all' ? '/search' : `/r/${subreddit}/search`;
       
       const data = await this.makeRequest(endpoint, {
@@ -357,8 +387,32 @@ class RedditService {
   // Find relevant subreddits for the app
   async findRelevantSubreddits(appName, category = 'technology') {
     try {
-      // Search for subreddits related to the app category
-      const searchQuery = `${category} ${appName.split(' ')[0]}`;
+      console.log('[RedditService] findRelevantSubreddits called with:', { appName, category });
+      
+      // Create search terms based on app name
+      let searchTerms = [category];
+      
+      // Extract key terms from app name
+      const words = appName.split(' ').filter(word => 
+        word.length > 2 && !['with', 'for', 'and', 'the'].includes(word.toLowerCase())
+      );
+      searchTerms = searchTerms.concat(words);
+      
+      // For car apps, add automotive-related terms
+      if (appName.toLowerCase().includes('hyundai') || 
+          appName.toLowerCase().includes('toyota') || 
+          appName.toLowerCase().includes('ford')) {
+        searchTerms.push('cars', 'automotive', 'vehicles');
+      }
+      
+      // For Hyundai specifically, add relevant subreddits
+      if (appName.toLowerCase().includes('hyundai')) {
+        // We'll manually add these after the search
+      }
+      
+      const searchQuery = searchTerms.join(' ');
+      console.log('[RedditService] Subreddit search query:', searchQuery);
+      
       const data = await this.makeRequest('/subreddits/search', {
         q: searchQuery,
         limit: 10
@@ -372,6 +426,22 @@ class RedditService {
         active: child.data.accounts_active || 0
       }));
 
+      // For Hyundai apps, manually add relevant car subreddits
+      if (appName.toLowerCase().includes('hyundai')) {
+        const carSubreddits = [
+          { name: 'Hyundai', subscribers: 50000, description: 'Hyundai vehicles discussion', url: 'https://reddit.com/r/Hyundai' },
+          { name: 'cars', subscribers: 3000000, description: 'General car discussion', url: 'https://reddit.com/r/cars' },
+          { name: 'CarTalk', subscribers: 500000, description: 'Car advice and discussion', url: 'https://reddit.com/r/CarTalk' }
+        ];
+        
+        // Merge with search results, avoiding duplicates
+        carSubreddits.forEach(carSub => {
+          if (!subreddits.find(sub => sub.name.toLowerCase() === carSub.name.toLowerCase())) {
+            subreddits.push(carSub);
+          }
+        });
+      }
+      
       // Sort by subscriber count
       return subreddits.sort((a, b) => b.subscribers - a.subscribers);
     } catch (error) {
