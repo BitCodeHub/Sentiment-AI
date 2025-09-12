@@ -1441,35 +1441,44 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange 
         expandedSections_reddit: expandedSections.reddit,
         data_appName: data?.appName,
         data_isAppleData: data?.isAppleData,
-        shouldShowReddit: expandedSections.reddit && (data?.appName || data?.isAppleData)
+        shouldShowReddit: data?.appName || data?.isAppleData
       })}
-      {expandedSections.reddit && (data?.appName || data?.isAppleData) && (
+      {(data?.appName || data?.isAppleData) && (
         <div className="analytics-card col-span-12" style={{ marginTop: '24px' }}>
           <div className="analytics-header" style={{ cursor: 'pointer' }} onClick={() => toggleSection('reddit')}>
             <h3 className="analytics-title">
               Reddit Influence & Mentions
-              <ChevronUp className="inline-block ml-auto" style={{ width: '16px', height: '16px' }} />
+              <span className="info-tooltip" title="Monitor Reddit discussions and mentions of your app">
+                <HelpCircle size={14} className="inline-block ml-2" style={{ opacity: 0.6 }} />
+              </span>
+              {expandedSections.reddit ? (
+                <ChevronUp className="inline-block ml-auto" style={{ width: '16px', height: '16px' }} />
+              ) : (
+                <ChevronDown className="inline-block ml-auto" style={{ width: '16px', height: '16px' }} />
+              )}
             </h3>
           </div>
-          <div className="analytics-content">
-            {console.log('[EnhancedDashboard] Inside Reddit content, appName:', data?.appName)}
-            {data?.appName ? (
-              <RedditInfluence 
-                appName={data.appName} 
-                category={data.category || 'technology'}
-              />
-            ) : (
-              <div className="reddit-setup-notice">
-                <AlertCircle size={20} />
-                <p>To enable Reddit monitoring, please specify your app name.</p>
-                <small>
-                  {data?.isAppleData 
-                    ? "App name will be detected from your Apple App Store selection."
-                    : "Ensure your Excel/CSV file includes an 'App Name' column with your app's name."}
-                </small>
-              </div>
-            )}
-          </div>
+          {expandedSections.reddit && (
+            <div className="analytics-content">
+              {console.log('[EnhancedDashboard] Inside Reddit content, appName:', data?.appName)}
+              {data?.appName ? (
+                <RedditInfluence 
+                  appName={data.appName} 
+                  category={data.category || 'technology'}
+                />
+              ) : (
+                <div className="reddit-setup-notice">
+                  <AlertCircle size={20} />
+                  <p>To enable Reddit monitoring, please specify your app name.</p>
+                  <small>
+                    {data?.isAppleData 
+                      ? "App name will be detected from your Apple App Store selection."
+                      : "Ensure your Excel/CSV file includes an 'App Name' column with your app's name."}
+                  </small>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 

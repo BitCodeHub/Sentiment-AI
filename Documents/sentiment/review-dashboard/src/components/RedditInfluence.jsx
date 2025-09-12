@@ -7,7 +7,7 @@ import { Alert, AlertDescription } from './ui/alert';
 import {
   TrendingUp, MessageSquare, Award, ExternalLink, Users,
   AlertTriangle, RefreshCw, ChevronUp, ChevronDown,
-  Calendar, Filter, X, Zap, Activity
+  Calendar, Filter, X, Zap, Activity, HelpCircle
 } from 'lucide-react';
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, 
@@ -38,6 +38,8 @@ const RedditInfluence = ({ appName, category = 'technology' }) => {
   // Filters
   const [timeFilter, setTimeFilter] = useState('week');
   const [sortBy, setSortBy] = useState('relevance');
+  const [dateRange, setDateRange] = useState({ start: null, end: null });
+  const [showDatePicker, setShowDatePicker] = useState(false);
   
   // Load initial data
   useEffect(() => {
@@ -101,46 +103,95 @@ const RedditInfluence = ({ appName, category = 'technology' }) => {
     
     return (
       <div className="reddit-overview">
+        {/* Date Range Filter */}
+        <div className="reddit-filters">
+          <div className="filter-group">
+            <label className="filter-label">
+              <Calendar size={14} />
+              Time Period
+            </label>
+            <select 
+              value={timeFilter} 
+              onChange={(e) => {
+                setTimeFilter(e.target.value);
+                loadAllData();
+              }}
+              className="filter-select"
+            >
+              <option value="day">Past 24 Hours</option>
+              <option value="week">Past Week</option>
+              <option value="month">Past Month</option>
+              <option value="year">Past Year</option>
+              <option value="all">All Time</option>
+            </select>
+          </div>
+          
+          <Button 
+            onClick={loadAllData} 
+            size="sm" 
+            variant="outline"
+            className="refresh-button"
+          >
+            <RefreshCw size={16} className={isLoading ? 'spinning' : ''} />
+            Refresh Data
+          </Button>
+        </div>
+        
         {/* Key Metrics */}
         <div className="metrics-grid">
-          <div className="metric-card">
+          <div className="metric-card" title={`Total number of Reddit posts mentioning your app in the selected time period (${timeFilter})`}>
             <Activity className="metric-icon" />
             <div className="metric-content">
               <div className="metric-value">
-                {trends?.week?.totalMentions || 0}
+                {trends?.[timeFilter]?.totalMentions || 0}
               </div>
-              <div className="metric-label">Weekly Mentions</div>
+              <div className="metric-label">
+                {timeFilter === 'day' ? 'Daily' : 
+                 timeFilter === 'week' ? 'Weekly' : 
+                 timeFilter === 'month' ? 'Monthly' : 
+                 timeFilter === 'year' ? 'Yearly' : 'All-Time'} Mentions
+                <span className="metric-tooltip">?</span>
+              </div>
             </div>
           </div>
           
-          <div className="metric-card">
+          <div className="metric-card" title={`Number of times engagement exceeded ${spikes?.metrics?.spikeThreshold || '2x'} the average. A spike means unusually high discussion activity about your app.`}>
             <TrendingUp className="metric-icon" />
             <div className="metric-content">
               <div className="metric-value">
                 {spikes?.spikes?.length || 0}
               </div>
-              <div className="metric-label">Recent Spikes</div>
+              <div className="metric-label">
+                Recent Spikes
+                <span className="metric-tooltip">?</span>
+              </div>
             </div>
           </div>
           
-          <div className="metric-card">
+          <div className="metric-card" title="Average engagement score calculated from upvotes, comments, and awards. Higher scores indicate more active discussions.">
             <Award className="metric-icon" />
             <div className="metric-content">
               <div className="metric-value">
-                {trends?.week?.averageEngagement ? 
-                  redditService.formatEngagementScore(trends.week.averageEngagement) : '0'}
+                {trends?.[timeFilter]?.averageEngagement ? 
+                  redditService.formatEngagementScore(trends[timeFilter].averageEngagement) : '0'}
               </div>
-              <div className="metric-label">Avg Engagement</div>
+              <div className="metric-label">
+                Avg Engagement
+                <span className="metric-tooltip">?</span>
+              </div>
             </div>
           </div>
           
-          <div className="metric-card">
+          <div className="metric-card" title="Number of subreddits where your app is likely to be discussed based on relevance to your app category">
             <Users className="metric-icon" />
             <div className="metric-content">
               <div className="metric-value">
                 {relevantSubreddits.length}
               </div>
-              <div className="metric-label">Relevant Subreddits</div>
+              <div className="metric-label">
+                Relevant Subreddits
+                <span className="metric-tooltip">?</span>
+              </div>
             </div>
           </div>
         </div>
@@ -194,34 +245,37 @@ const RedditInfluence = ({ appName, category = 'technology' }) => {
         )}
 
         {/* Top Post */}
-        {trends?.week?.topPost && (
+        {trends?.[timeFilter]?.topPost && (
           <Card className="top-post-card">
             <CardHeader>
-              <CardTitle>Top Post This Week</CardTitle>
+              <CardTitle>Top Post This {timeFilter === 'day' ? 'Day' : 
+                                        timeFilter === 'week' ? 'Week' :
+                                        timeFilter === 'month' ? 'Month' :
+                                        timeFilter === 'year' ? 'Year' : 'Period'}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="post-item featured">
                 <div className="post-header">
-                  <span className="subreddit">r/{trends.week.topPost.subreddit}</span>
+                  <span className="subreddit">r/{trends[timeFilter].topPost.subreddit}</span>
                   <span className="post-time">
-                    {redditService.formatTimeAgo(trends.week.topPost.created)}
+                    {redditService.formatTimeAgo(trends[timeFilter].topPost.created)}
                   </span>
                 </div>
-                <h4 className="post-title">{trends.week.topPost.title}</h4>
+                <h4 className="post-title">{trends[timeFilter].topPost.title}</h4>
                 <div className="post-metrics">
                   <span className="metric">
-                    <ChevronUp size={16} /> {trends.week.topPost.score}
+                    <ChevronUp size={16} /> {trends[timeFilter].topPost.score}
                   </span>
                   <span className="metric">
-                    <MessageSquare size={16} /> {trends.week.topPost.numComments}
+                    <MessageSquare size={16} /> {trends[timeFilter].topPost.numComments}
                   </span>
                   <span className="metric engagement-score">
                     <Award size={16} /> 
-                    {redditService.formatEngagementScore(trends.week.topPost.engagementScore)}
+                    {redditService.formatEngagementScore(trends[timeFilter].topPost.engagementScore)}
                   </span>
                 </div>
                 <a 
-                  href={trends.week.topPost.permalink} 
+                  href={trends[timeFilter].topPost.permalink} 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="view-link"
@@ -382,26 +436,55 @@ const RedditInfluence = ({ appName, category = 'technology' }) => {
     
     return (
       <div className="reddit-spikes">
+        {/* Info Banner for Zero Spikes */}
+        {spikes.spikes.length === 0 && (
+          <Alert className="spike-info-alert">
+            <HelpCircle className="alert-icon" />
+            <AlertDescription>
+              <div className="alert-title">No Recent Spikes Detected</div>
+              <p>This is normal if your app has consistent engagement or low Reddit activity.</p>
+              <ul className="info-list">
+                <li>Spikes occur when engagement exceeds {spikes.metrics?.spikeThreshold || '2x average'}</li>
+                <li>Currently analyzing {spikes.metrics?.daysAnalyzed || 0} days with {spikes.metrics?.totalMentions || 0} total mentions</li>
+                <li>Average daily engagement: {spikes.metrics?.averageDailyEngagement || 0}</li>
+              </ul>
+              <p className="help-text">
+                Even without spikes, consistent mentions indicate steady community interest. 
+                Focus on your Weekly Mentions and Average Engagement metrics.
+              </p>
+            </AlertDescription>
+          </Alert>
+        )}
+        
         {/* Spike Metrics */}
         <div className="spike-metrics">
-          <Card>
+          <Card title="The baseline engagement level calculated from all posts in the analysis period">
             <CardContent>
               <div className="metric-label">Average Daily Engagement</div>
               <div className="metric-value">
                 {spikes.metrics?.averageDailyEngagement || 0}
               </div>
+              <div className="metric-detail">
+                Median: {spikes.metrics?.medianDailyEngagement || 0}
+              </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card title="Engagement must exceed this multiplier of the average to be considered a spike">
             <CardContent>
               <div className="metric-label">Spike Threshold</div>
               <div className="metric-value">{spikes.metrics?.spikeThreshold}</div>
+              <div className="metric-detail">
+                Minimum for spike: {Math.round((spikes.metrics?.averageDailyEngagement || 0) * 2)}
+              </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card title="Number of days with at least one mention in the analysis period">
             <CardContent>
               <div className="metric-label">Days Analyzed</div>
               <div className="metric-value">{spikes.metrics?.daysAnalyzed || 0}</div>
+              <div className="metric-detail">
+                Total mentions: {spikes.metrics?.totalMentions || 0}
+              </div>
             </CardContent>
           </Card>
         </div>
