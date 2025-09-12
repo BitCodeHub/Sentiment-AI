@@ -8,6 +8,8 @@ const rateLimit = require('express-rate-limit');
 const fs = require('fs');
 const path = require('path');
 const { getAppleCredentials, validateCredentials, getAppleApps } = require('./config/apple-credentials');
+const cacheService = require('./services/cacheService');
+const redditService = require('./services/redditService');
 require('dotenv').config({ 
   path: process.env.NODE_ENV === 'production' ? '.env.production' : '.env' 
 });
@@ -56,6 +58,16 @@ const limiter = rateLimit({
   legacyHeaders: false,
 });
 app.use('/api/', limiter);
+
+// Stricter rate limiting for Reddit API endpoints
+const redditLimiter = rateLimit({
+  windowMs: parseInt(process.env.REDDIT_RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
+  max: parseInt(process.env.REDDIT_RATE_LIMIT_MAX_REQUESTS) || 30,
+  message: 'Too many Reddit API requests, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use('/api/reddit/', redditLimiter);
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
@@ -388,7 +400,7 @@ function transformReview(review) {
   };
 }
 
-// API endpoint for fetching Apple reviews
+// API endpoint for fetching Apple reviews with caching support
 app.post('/api/apple-reviews', upload.single('privateKey'), async (req, res) => {
   try {
     let credentials;
@@ -464,6 +476,56 @@ app.post('/api/apple-reviews', upload.single('privateKey'), async (req, res) => 
       });
     }
 
+    // Check for date range and cache options
+    const { useCache, forceRefresh, startDate, endDate } = req.body;
+    
+    // Check cache first if not forcing refresh
+    if (useCache !== false && !forceRefresh) {
+      const cachedData = await cacheService.getCachedReviews(credentials.appId);
+      if (cachedData.fromCache) {
+        // Filter cached reviews by date range if specified
+        let filteredReviews = cachedData.reviews;
+        if (startDate || endDate) {
+          const start = startDate ? new Date(startDate) : null;
+          let end = endDate ? new Date(endDate) : null;
+          
+          // Set end date to end of day to include all reviews from that day
+          if (end) {
+            end.setHours(23, 59, 59, 999);
+          }
+          
+          filteredReviews = cachedData.reviews.filter(review => {
+            const reviewDate = new Date(review.Date);
+            if (start && reviewDate < start) return false;
+            if (end && reviewDate > end) return false;
+            return true;
+          });
+          
+          console.log(`Serving ${filteredReviews.length} reviews from cache (filtered from ${cachedData.reviews.length}) for date range ${startDate || 'any'} to ${endDate || 'any'}`);
+        } else {
+          console.log(`Serving ${cachedData.reviews.length} reviews from cache for app ${credentials.appId}`);
+        }
+        
+        return res.json({
+          success: true,
+          reviews: filteredReviews,
+          fromCache: true,
+          dateRangeFilter: (startDate || endDate) ? {
+            startDate,
+            endDate,
+            filteredCount: filteredReviews.length
+          } : null,
+          meta: {
+            ...cachedData.metadata,
+            total: filteredReviews.length,
+            appId: credentials.appId,
+            territory: 'USA',
+            fetchedAt: new Date().toISOString()
+          }
+        });
+      }
+    }
+
     // Generate JWT token with caching
     const token = await getAppleToken(credentials.keyId, credentials.issuerId, credentials.privateKey);
 
@@ -472,6 +534,9 @@ app.post('/api/apple-reviews', upload.single('privateKey'), async (req, res) => 
     
     // Transform reviews to our format
     const reviews = reviewData.data.map(transformReview);
+    
+    // Cache the reviews
+    const metadata = await cacheService.setCachedReviews(credentials.appId, reviews);
 
     // Log success for monitoring
     console.log(`Successfully fetched ${reviews.length} reviews for app ${credentials.appId}`);
@@ -480,7 +545,9 @@ app.post('/api/apple-reviews', upload.single('privateKey'), async (req, res) => 
     res.json({
       success: true,
       reviews: reviews,
+      fromCache: false,
       meta: {
+        ...metadata,
         total: reviews.length,
         appId: credentials.appId,
         territory: 'USA',
@@ -518,11 +585,18 @@ app.get('/api/health', (req, res) => {
   const apps = getAppleApps();
   res.json({ 
     status: 'ok', 
-    service: 'Apple App Store Review API',
+    service: 'Apple App Store Review API with Reddit Integration',
     environment: process.env.NODE_ENV || 'development',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
-    configuredApps: apps.length
+    configuredApps: apps.length,
+    features: {
+      apple: true,
+      reddit: true,
+      cache: true,
+      rateLimit: true
+    },
+    cacheType: process.env.REDIS_URL ? 'redis' : 'memory'
   });
 });
 
@@ -666,6 +740,232 @@ app.get('/api/apple-apps', (req, res) => {
     apps: apps,
     hasServerCredentials: !!storedCredentials
   });
+});
+
+// Reddit API endpoints with production error handling
+// Search for posts mentioning the app
+app.post('/api/reddit/search', async (req, res) => {
+  try {
+    const { appName, limit = 100, sort = 'new', time = 'week', subreddit } = req.body;
+    
+    if (!appName) {
+      return res.status(400).json({ error: 'App name is required' });
+    }
+    
+    const posts = await redditService.searchPosts(appName, {
+      limit,
+      sort,
+      timeFilter: time,
+      subreddit
+    });
+    
+    res.json({
+      success: true,
+      posts,
+      count: posts.length
+    });
+  } catch (error) {
+    console.error('Reddit search error:', error.message);
+    res.status(500).json({ 
+      error: 'Failed to search Reddit posts',
+      details: process.env.NODE_ENV === 'production' ? 'Service temporarily unavailable' : error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Get subreddit info
+app.get('/api/reddit/subreddit/:subreddit', async (req, res) => {
+  try {
+    const { subreddit } = req.params;
+    
+    const info = await redditService.getSubredditInfo(subreddit);
+    
+    res.json({
+      success: true,
+      subreddit: info
+    });
+  } catch (error) {
+    console.error('Reddit subreddit error:', error.message);
+    res.status(500).json({ 
+      error: 'Failed to fetch subreddit info',
+      details: process.env.NODE_ENV === 'production' ? 'Service temporarily unavailable' : error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Get post comments
+app.get('/api/reddit/post/:postId/comments', async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const { limit = 100 } = req.query;
+    
+    const comments = await redditService.getPostComments(postId, {
+      limit: parseInt(limit)
+    });
+    
+    res.json({
+      success: true,
+      comments,
+      count: comments.length
+    });
+  } catch (error) {
+    console.error('Reddit comments error:', error.message);
+    res.status(500).json({ 
+      error: 'Failed to fetch post comments',
+      details: process.env.NODE_ENV === 'production' ? 'Service temporarily unavailable' : error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Analyze mention trends
+app.post('/api/reddit/trends', async (req, res) => {
+  try {
+    const { appName, timeframes = ['day', 'week', 'month', 'year'], subreddit = 'all' } = req.body;
+    
+    if (!appName) {
+      return res.status(400).json({ error: 'App name is required' });
+    }
+    
+    const trends = await redditService.analyzeMentionTrends(appName, {
+      timeframes,
+      subreddit
+    });
+    
+    res.json({
+      success: true,
+      appName,
+      trends
+    });
+  } catch (error) {
+    console.error('Reddit trends error:', error.message);
+    res.status(500).json({ 
+      error: 'Failed to analyze mention trends',
+      details: process.env.NODE_ENV === 'production' ? 'Service temporarily unavailable' : error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Detect influence spikes
+app.post('/api/reddit/spikes', async (req, res) => {
+  try {
+    const { appName, lookbackDays = 30, spikeThreshold = 2.0, subreddit = 'all' } = req.body;
+    
+    if (!appName) {
+      return res.status(400).json({ error: 'App name is required' });
+    }
+    
+    const spikeData = await redditService.detectInfluenceSpikes(appName, {
+      lookbackDays,
+      spikeThreshold,
+      subreddit
+    });
+    
+    res.json({
+      success: true,
+      appName,
+      ...spikeData
+    });
+  } catch (error) {
+    console.error('Reddit spike detection error:', error.message);
+    res.status(500).json({ 
+      error: 'Failed to detect influence spikes',
+      details: process.env.NODE_ENV === 'production' ? 'Service temporarily unavailable' : error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Get relevant subreddits
+app.post('/api/reddit/relevant-subreddits', async (req, res) => {
+  try {
+    const { appName, category = 'technology' } = req.body;
+    
+    if (!appName) {
+      return res.status(400).json({ error: 'App name is required' });
+    }
+    
+    const subreddits = await redditService.findRelevantSubreddits(appName, category);
+    
+    res.json({
+      success: true,
+      appName,
+      category,
+      subreddits
+    });
+  } catch (error) {
+    console.error('Reddit relevant subreddits error:', error.message);
+    res.status(500).json({ 
+      error: 'Failed to find relevant subreddits',
+      details: process.env.NODE_ENV === 'production' ? 'Service temporarily unavailable' : error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Cache status endpoint
+app.get('/api/cache/status/:appId', async (req, res) => {
+  try {
+    const { appId } = req.params;
+    const metadata = await cacheService.getAppMetadata(appId);
+    const hasCache = await cacheService.has(cacheService.generateReviewKey(appId));
+    
+    res.json({
+      appId,
+      hasCache,
+      metadata,
+      cacheStats: await cacheService.getStats()
+    });
+  } catch (error) {
+    console.error('Cache status error:', error.message);
+    res.status(500).json({ 
+      error: 'Failed to get cache status',
+      details: process.env.NODE_ENV === 'production' ? 'Service error' : error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Clear cache endpoint
+app.delete('/api/cache/:appId', async (req, res) => {
+  try {
+    const { appId } = req.params;
+    await cacheService.delete(cacheService.generateReviewKey(appId));
+    await cacheService.delete(cacheService.generateMetaKey(appId));
+    
+    res.json({
+      success: true,
+      message: `Cache cleared for app ${appId}`
+    });
+  } catch (error) {
+    console.error('Cache clear error:', error.message);
+    res.status(500).json({ 
+      error: 'Failed to clear cache',
+      details: process.env.NODE_ENV === 'production' ? 'Service error' : error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Clear all cache endpoint
+app.delete('/api/cache', async (req, res) => {
+  try {
+    await cacheService.clear();
+    res.json({
+      success: true,
+      message: 'All cache cleared'
+    });
+  } catch (error) {
+    console.error('Cache clear all error:', error.message);
+    res.status(500).json({ 
+      error: 'Failed to clear all cache',
+      details: process.env.NODE_ENV === 'production' ? 'Service error' : error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 // Diagnostic endpoint (remove in production after testing)
