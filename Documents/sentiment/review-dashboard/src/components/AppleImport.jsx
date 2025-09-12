@@ -376,21 +376,40 @@ const AppleImport = ({ onImport }) => {
         
         {/* Show manual app ID input if no server credentials or user wants to use different credentials */}
         {(!hasServerCredentials || !useServerCredentials || availableApps.length === 0) && (
-          <div className="form-group">
-            <label htmlFor="app-id">
-              <Hash size={16} />
-              App ID
-            </label>
-            <input
-              id="app-id"
-              type="text"
-              placeholder="Enter your App Store app ID"
-              value={appId}
-              onChange={(e) => setAppId(e.target.value)}
-              disabled={isLoading}
-            />
-            <small>Found in App Store Connect under App Information</small>
-          </div>
+          <>
+            <div className="form-group">
+              <label htmlFor="app-id">
+                <Hash size={16} />
+                App ID
+              </label>
+              <input
+                id="app-id"
+                type="text"
+                placeholder="Enter your App Store app ID"
+                value={appId}
+                onChange={(e) => setAppId(e.target.value)}
+                disabled={isLoading}
+              />
+              <small>Found in App Store Connect under App Information</small>
+            </div>
+            
+            {/* App Name field for Reddit integration */}
+            <div className="form-group">
+              <label htmlFor="app-name">
+                <Apple size={16} />
+                App Name (for Reddit monitoring)
+              </label>
+              <input
+                id="app-name"
+                type="text"
+                placeholder="Enter your app name (e.g., 'Instagram', 'Spotify')"
+                value={selectedAppName}
+                onChange={(e) => setSelectedAppName(e.target.value)}
+                disabled={isLoading}
+              />
+              <small>Used to search for mentions on Reddit</small>
+            </div>
+          </>
         )}
 
         {/* Show credential fields only if not using server credentials */}
