@@ -14,11 +14,20 @@ class RedditService {
   async searchPosts(appName, options = {}) {
     console.log('[RedditService] searchPosts called with:', { appName, options });
     
+    // Map frontend parameters to backend expected parameters
+    const { timeFilter, sort, limit, subreddit } = options;
+    const requestBody = {
+      appName,
+      time: timeFilter || 'week',  // Backend expects 'time' not 'timeFilter'
+      sort: sort || 'relevance',
+      limit: limit || 100,
+      subreddit: subreddit || 'all'
+    };
+    
+    console.log('[RedditService] Sending request with:', requestBody);
+    
     try {
-      const response = await axios.post(`${this.baseUrl}/search`, {
-        appName,
-        ...options
-      });
+      const response = await axios.post(`${this.baseUrl}/search`, requestBody);
       
       console.log('[RedditService] searchPosts response:', {
         success: response.data?.success,

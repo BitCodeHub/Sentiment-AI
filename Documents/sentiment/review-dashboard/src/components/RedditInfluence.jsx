@@ -62,7 +62,8 @@ const RedditInfluence = ({ appName, category = 'technology' }) => {
         redditService.searchPosts(appName, { 
           timeFilter, 
           sort: sortBy,
-          limit: timeFilter === 'all' ? 500 : 100 
+          limit: 200,
+          subreddit: 'all'
         }),
         redditService.analyzeMentionTrends(appName),
         redditService.detectInfluenceSpikes(appName),
@@ -90,22 +91,52 @@ const RedditInfluence = ({ appName, category = 'technology' }) => {
 
   // Load posts only (more efficient for Posts tab)
   const loadPosts = async (newTimeFilter = timeFilter, newSortBy = sortBy) => {
-    console.log('[RedditInfluence] Loading posts with filters:', { newTimeFilter, newSortBy });
+    console.log('[RedditInfluence] Loading posts with filters:', { 
+      timeFilter: newTimeFilter, 
+      sortBy: newSortBy,
+      appName 
+    });
     setIsLoading(true);
     setError(null);
+    
+    // Store current filter values to compare after load
+    const requestedTimeFilter = newTimeFilter;
+    const requestedSortBy = newSortBy;
     
     try {
       const searchData = await redditService.searchPosts(appName, { 
         timeFilter: newTimeFilter, 
         sort: newSortBy,
-        limit: newTimeFilter === 'all' ? 500 : 100 
+        limit: 200, // Request up to 200 posts, actual results may vary
+        subreddit: 'all'
       });
       
-      console.log('[RedditInfluence] Posts loaded:', searchData?.posts?.length || 0);
-      setRecentPosts(searchData.posts || []);
+      console.log('[RedditInfluence] API Response:', {
+        requestedFilters: { time: requestedTimeFilter, sort: requestedSortBy },
+        postsReturned: searchData?.posts?.length || 0,
+        success: searchData?.success
+      });
+      
+      // Only update if this is still the latest request
+      if (newTimeFilter === timeFilter && newSortBy === sortBy) {
+        setRecentPosts(searchData.posts || []);
+        
+        // Log what we're actually showing
+        if (searchData.posts && searchData.posts.length > 0) {
+          console.log('[RedditInfluence] Sample posts:', 
+            searchData.posts.slice(0, 3).map(p => ({
+              title: p.title.substring(0, 50),
+              score: p.score,
+              created: p.created,
+              subreddit: p.subreddit
+            }))
+          );
+        }
+      }
     } catch (err) {
-      console.error('Error loading posts:', err);
+      console.error('[RedditInfluence] Error loading posts:', err);
       setError(err.message || 'Failed to load posts');
+      setRecentPosts([]);
     } finally {
       setIsLoading(false);
     }
@@ -319,7 +350,10 @@ const RedditInfluence = ({ appName, category = 'technology' }) => {
         <div className="posts-header">
           <div className="posts-info">
             <h3>Reddit Posts</h3>
-            <span className="posts-count">{recentPosts.length} posts</span>
+            <span className="posts-count">
+              {recentPosts.length} {recentPosts.length === 1 ? 'post' : 'posts'}
+              {timeFilter !== 'all' && ` from ${timeFilter === 'day' ? 'today' : `past ${timeFilter}`}`}
+            </span>
           </div>
           
           <div className="posts-controls">
@@ -333,7 +367,7 @@ const RedditInfluence = ({ appName, category = 'technology' }) => {
               className="filter-select modern"
               disabled={isLoading}
             >
-              <option value="day">Past Day</option>
+              <option value="day">Past 24 Hours</option>
               <option value="week">Past Week</option>
               <option value="month">Past Month</option>
               <option value="year">Past Year</option>
@@ -359,7 +393,16 @@ const RedditInfluence = ({ appName, category = 'technology' }) => {
         </div>
 
         <div className="posts-container">
-          {recentPosts.map((post, index) => {
+          {isLoading && (
+            <div className="loading-overlay">
+              <div className="loading-content">
+                <RefreshCw size={24} className="spinning" />
+                <p>Loading {sortBy === 'new' ? 'newest' : sortBy} posts...</p>
+              </div>
+            </div>
+          )}
+          
+          {!isLoading && recentPosts.map((post, index) => {
             const engagementLevel = redditService.getEngagementLevel(post.engagementScore);
             
             return (
@@ -439,9 +482,13 @@ const RedditInfluence = ({ appName, category = 'technology' }) => {
             );
           })}
           
-          {recentPosts.length === 0 && !isLoading && (
+          {!isLoading && recentPosts.length === 0 && (
             <div className="empty-state">
-              <p>No posts found for the selected filters.</p>
+              <MessageSquare size={48} style={{ opacity: 0.3, marginBottom: '1rem' }} />
+              <p>No posts found {timeFilter !== 'all' ? `from the past ${timeFilter}` : ''} with "{sortBy}" sorting.</p>
+              <p style={{ fontSize: '0.875rem', marginTop: '0.5rem', opacity: 0.7 }}>
+                Try changing the time range or sort order to see different results.
+              </p>
             </div>
           )}
         </div>

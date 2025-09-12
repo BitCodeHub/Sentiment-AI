@@ -411,12 +411,13 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.95);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 10;
   border-radius: 0.5rem;
+  backdrop-filter: blur(4px);
 }
 
 .loading-content {
@@ -1077,4 +1078,23 @@
 .empty-state p {
   font-size: 0.9375rem;
   margin: 0;
+}
+
+/* Loading indicator */
+.loading-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: #fff5f5;
+  border: 1px solid #ff4500;
+  border-radius: 0.5rem;
+  color: #ff4500;
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-left: auto;
+}
+
+.loading-indicator .spinning {
+  animation: spin 1s linear infinite;
 }
