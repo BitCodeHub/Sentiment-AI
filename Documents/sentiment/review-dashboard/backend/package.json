@@ -8,7 +8,10 @@
     "start:production": "NODE_ENV=production node server-production.js",
     "dev": "nodemon server.js",
     "build": "echo 'No build step required for Node.js'",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "check-config": "node check-config.js",
+    "test-reddit": "node test-reddit-config.js",
+    "prestart": "node check-config.js"
   },
   "keywords": [
     "apple",

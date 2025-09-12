@@ -9,14 +9,41 @@ class RedditService {
     this.tokenUrl = 'https://www.reddit.com/api/v1/access_token';
     this.accessToken = null;
     this.tokenExpiry = null;
+    
+    // Log initialization status
+    console.log('[RedditService] Initializing with:', {
+      hasClientId: !!this.clientId,
+      clientIdLength: this.clientId?.length || 0,
+      hasClientSecret: !!this.clientSecret,
+      clientSecretLength: this.clientSecret?.length || 0,
+      userAgent: this.userAgent,
+      environment: process.env.NODE_ENV || 'development'
+    });
+    
+    // Validate credentials
+    if (!this.clientId || !this.clientSecret) {
+      console.error('[RedditService] WARNING: Reddit credentials not found in environment variables!');
+      console.error('[RedditService] Please set REDDIT_CLIENT_ID and REDDIT_CLIENT_SECRET');
+    }
   }
 
   // Get OAuth access token
   async getAccessToken() {
     if (this.accessToken && this.tokenExpiry && new Date() < this.tokenExpiry) {
+      console.log('[RedditService] Using cached access token');
       return this.accessToken;
     }
 
+    // Check credentials before attempting authentication
+    if (!this.clientId || !this.clientSecret) {
+      const error = new Error('Reddit API credentials not configured');
+      console.error('[RedditService] getAccessToken error:', error.message);
+      throw error;
+    }
+
+    console.log('[RedditService] Requesting new access token...');
+    const startTime = Date.now();
+    
     try {
       const auth = Buffer.from(`${this.clientId}:${this.clientSecret}`).toString('base64');
       const response = await axios.post(
@@ -35,15 +62,40 @@ class RedditService {
       // Set expiry 5 minutes before actual expiry for safety
       this.tokenExpiry = new Date(Date.now() + (response.data.expires_in - 300) * 1000);
       
+      const responseTime = Date.now() - startTime;
+      console.log('[RedditService] Access token obtained successfully in', responseTime, 'ms');
+      console.log('[RedditService] Token expires at:', this.tokenExpiry.toISOString());
+      
       return this.accessToken;
     } catch (error) {
-      console.error('Error getting Reddit access token:', error.response?.data || error.message);
-      throw new Error('Failed to authenticate with Reddit');
+      const responseTime = Date.now() - startTime;
+      console.error('[RedditService] Failed to get access token after', responseTime, 'ms');
+      console.error('[RedditService] Error details:', {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        code: error.code
+      });
+      
+      // Provide more specific error messages
+      if (error.response?.status === 401) {
+        throw new Error('Invalid Reddit API credentials. Please check REDDIT_CLIENT_ID and REDDIT_CLIENT_SECRET.');
+      } else if (error.response?.status === 403) {
+        throw new Error('Reddit API access forbidden. Please check your app configuration.');
+      } else if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
+        throw new Error('Cannot connect to Reddit API. Please check your network connection.');
+      }
+      
+      throw new Error(`Failed to authenticate with Reddit: ${error.message}`);
     }
   }
 
   // Make authenticated request to Reddit API
   async makeRequest(endpoint, params = {}) {
+    console.log('[RedditService] Making request to:', endpoint, 'with params:', params);
+    const startTime = Date.now();
+    
     const token = await this.getAccessToken();
     
     try {
@@ -55,9 +107,20 @@ class RedditService {
         params
       });
       
+      const responseTime = Date.now() - startTime;
+      console.log('[RedditService] Request successful in', responseTime, 'ms');
+      console.log('[RedditService] Response data keys:', Object.keys(response.data));
+      
       return response.data;
     } catch (error) {
-      console.error('Reddit API Error:', error.response?.data || error.message);
+      const responseTime = Date.now() - startTime;
+      console.error('[RedditService] Request failed after', responseTime, 'ms');
+      console.error('[RedditService] Reddit API Error:', {
+        endpoint,
+        status: error.response?.status,
+        message: error.response?.data || error.message,
+        headers: error.response?.headers
+      });
       
       // Handle rate limiting
       if (error.response?.status === 429) {
@@ -367,8 +430,22 @@ class RedditService {
     }
   }
 
+  // Get service status (for health checks)
+  getStatus() {
+    return {
+      configured: !!(this.clientId && this.clientSecret),
+      hasClientId: !!this.clientId,
+      hasClientSecret: !!this.clientSecret,
+      userAgent: this.userAgent,
+      hasAccessToken: !!this.accessToken,
+      tokenExpiry: this.tokenExpiry?.toISOString() || null,
+      tokenValid: this.accessToken && this.tokenExpiry && new Date() < this.tokenExpiry
+    };
+  }
+
   // Get subreddit info
   async getSubredditInfo(subredditName) {
+    console.log('[RedditService] Getting info for subreddit:', subredditName);
     try {
       const data = await this.makeRequest(`/r/${subredditName}/about`);
       return {
@@ -379,7 +456,7 @@ class RedditService {
         url: `https://reddit.com/r/${data.data.display_name}`
       };
     } catch (error) {
-      console.error('Error fetching subreddit info:', error);
+      console.error('[RedditService] Error fetching subreddit info:', error.message);
       throw error;
     }
   }
