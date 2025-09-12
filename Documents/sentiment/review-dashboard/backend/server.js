@@ -13,6 +13,8 @@ require('dotenv').config();
 console.log('Dotenv loaded');
 const cacheService = require('./services/cacheService');
 console.log('Cache service loaded');
+const redditService = require('./services/redditService');
+console.log('Reddit service loaded');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -924,6 +926,164 @@ app.get('/api/apple-apps', (req, res) => {
     apps: apps.map(app => ({ id: app.id, name: app.name })),
     hasServerCredentials: apps.length > 0
   });
+});
+
+// Reddit API endpoints
+// Search for posts mentioning the app
+app.post('/api/reddit/search', async (req, res) => {
+  try {
+    const { appName, limit = 100, sort = 'new', time = 'week', subreddit } = req.body;
+    
+    if (!appName) {
+      return res.status(400).json({ error: 'App name is required' });
+    }
+    
+    const posts = await redditService.searchPosts(appName, {
+      limit,
+      sort,
+      timeFilter: time,
+      subreddit
+    });
+    
+    res.json({
+      success: true,
+      posts,
+      count: posts.length
+    });
+  } catch (error) {
+    console.error('Reddit search error:', error);
+    res.status(500).json({ 
+      error: 'Failed to search Reddit posts',
+      details: error.message 
+    });
+  }
+});
+
+// Get subreddit info
+app.get('/api/reddit/subreddit/:subreddit', async (req, res) => {
+  try {
+    const { subreddit } = req.params;
+    
+    const info = await redditService.getSubredditInfo(subreddit);
+    
+    res.json({
+      success: true,
+      subreddit: info
+    });
+  } catch (error) {
+    console.error('Reddit subreddit error:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch subreddit info',
+      details: error.message 
+    });
+  }
+});
+
+// Get post comments
+app.get('/api/reddit/post/:postId/comments', async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const { limit = 100 } = req.query;
+    
+    const comments = await redditService.getPostComments(postId, {
+      limit: parseInt(limit)
+    });
+    
+    res.json({
+      success: true,
+      comments,
+      count: comments.length
+    });
+  } catch (error) {
+    console.error('Reddit comments error:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch post comments',
+      details: error.message 
+    });
+  }
+});
+
+// Analyze mention trends
+app.post('/api/reddit/trends', async (req, res) => {
+  try {
+    const { appName, timeframes = ['day', 'week', 'month', 'year'], subreddit = 'all' } = req.body;
+    
+    if (!appName) {
+      return res.status(400).json({ error: 'App name is required' });
+    }
+    
+    const trends = await redditService.analyzeMentionTrends(appName, {
+      timeframes,
+      subreddit
+    });
+    
+    res.json({
+      success: true,
+      appName,
+      trends
+    });
+  } catch (error) {
+    console.error('Reddit trends error:', error);
+    res.status(500).json({ 
+      error: 'Failed to analyze mention trends',
+      details: error.message 
+    });
+  }
+});
+
+// Detect influence spikes
+app.post('/api/reddit/spikes', async (req, res) => {
+  try {
+    const { appName, lookbackDays = 30, spikeThreshold = 2.0, subreddit = 'all' } = req.body;
+    
+    if (!appName) {
+      return res.status(400).json({ error: 'App name is required' });
+    }
+    
+    const spikeData = await redditService.detectInfluenceSpikes(appName, {
+      lookbackDays,
+      spikeThreshold,
+      subreddit
+    });
+    
+    res.json({
+      success: true,
+      appName,
+      ...spikeData
+    });
+  } catch (error) {
+    console.error('Reddit spike detection error:', error);
+    res.status(500).json({ 
+      error: 'Failed to detect influence spikes',
+      details: error.message 
+    });
+  }
+});
+
+// Get relevant subreddits
+app.post('/api/reddit/relevant-subreddits', async (req, res) => {
+  try {
+    const { appName, category = 'technology' } = req.body;
+    
+    if (!appName) {
+      return res.status(400).json({ error: 'App name is required' });
+    }
+    
+    const subreddits = await redditService.findRelevantSubreddits(appName, category);
+    
+    res.json({
+      success: true,
+      appName,
+      category,
+      subreddits
+    });
+  } catch (error) {
+    console.error('Reddit relevant subreddits error:', error);
+    res.status(500).json({ 
+      error: 'Failed to find relevant subreddits',
+      details: error.message 
+    });
+  }
 });
 
 // Health check endpoint

@@ -31,6 +31,7 @@ import ErrorDisplay from './ErrorDisplay';
 import KeywordCloud from './KeywordCloud';
 import SentimentAnalysis from './SentimentAnalysis';
 import AISentimentSummary from './AISentimentSummary';
+import RedditInfluence from './RedditInfluence';
 import './EnhancedDashboard.css';
 
 const TABLEAU_COLORS = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'];
@@ -65,7 +66,8 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange 
     sentiment: true,
     trends: true,
     ai: true,
-    keywords: true
+    keywords: true,
+    reddit: true
   });
   // Enhanced review display is always enabled
   const useEnhancedReviewDisplay = true;
@@ -1434,6 +1436,23 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange 
         )}
       </div>
 
+      {/* Reddit Influence Monitor */}
+      {expandedSections.reddit && data?.appName && (
+        <div className="analytics-card col-span-12" style={{ marginTop: '24px' }}>
+          <div className="analytics-header" style={{ cursor: 'pointer' }} onClick={() => toggleSection('reddit')}>
+            <h3 className="analytics-title">
+              Reddit Influence & Mentions
+              <ChevronUp className="inline-block ml-auto" style={{ width: '16px', height: '16px' }} />
+            </h3>
+          </div>
+          <div className="analytics-content">
+            <RedditInfluence 
+              appName={data.appName} 
+              category={data.category || 'technology'}
+            />
+          </div>
+        </div>
+      )}
 
       {/* AI Analysis Results - Displayed inline below buttons */}
       {(aiInsights || deepInsights || executiveAnalysis) && (
