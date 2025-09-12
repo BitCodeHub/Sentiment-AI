@@ -610,7 +610,7 @@ const RedditInfluence = ({ appName, category = 'technology' }) => {
           className={`tab ${activeTab === 'posts' ? 'active' : ''}`}
           onClick={() => setActiveTab('posts')}
         >
-          Posts ({recentPosts.length})
+          Posts ({totalPostCount || recentPosts.length})
         </button>
         <button 
           className={`tab ${activeTab === 'subreddits' ? 'active' : ''}`}

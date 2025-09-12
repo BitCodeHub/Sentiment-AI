@@ -140,6 +140,10 @@ class RedditService {
       limit = 100,
       sort = 'relevance'
     } = options;
+    
+    // Reddit API has a hard limit of 100 per request, but we can make multiple requests
+    const maxLimit = Math.min(limit, 1000); // Cap at 1000 to prevent abuse
+    const requestLimit = Math.min(maxLimit, 100); // Reddit's per-request limit
 
     try {
       console.log('[RedditService] searchPosts called with:', { appName, options });
@@ -175,16 +179,51 @@ class RedditService {
       
       const endpoint = subreddit === 'all' ? '/search' : `/r/${subreddit}/search`;
       
-      const data = await this.makeRequest(endpoint, {
-        q: searchQuery,
-        type: 'link',
-        sort,
-        t: timeFilter,
-        limit,
-        restrict_sr: subreddit !== 'all'
-      });
-
-      return this.processSearchResults(data, appName);
+      // If we need more than 100 posts, we'll need to make multiple requests
+      let allPosts = [];
+      let after = null;
+      let remainingLimit = maxLimit;
+      
+      while (remainingLimit > 0 && allPosts.length < maxLimit) {
+        const currentLimit = Math.min(remainingLimit, requestLimit);
+        
+        const params = {
+          q: searchQuery,
+          type: 'link',
+          sort,
+          t: timeFilter,
+          limit: currentLimit,
+          restrict_sr: subreddit !== 'all'
+        };
+        
+        if (after) {
+          params.after = after;
+        }
+        
+        const data = await this.makeRequest(endpoint, params);
+        const posts = this.processSearchResults(data, appName);
+        
+        if (posts.length === 0) {
+          break; // No more posts
+        }
+        
+        allPosts = allPosts.concat(posts);
+        remainingLimit -= posts.length;
+        
+        // Get the 'after' token for pagination
+        if (data.data && data.data.after) {
+          after = data.data.after;
+        } else {
+          break; // No more pages
+        }
+        
+        // For limits <= 100, don't paginate
+        if (maxLimit <= 100) {
+          break;
+        }
+      }
+      
+      return allPosts.slice(0, maxLimit);
     } catch (error) {
       console.error('Error searching Reddit posts:', error);
       throw error;
