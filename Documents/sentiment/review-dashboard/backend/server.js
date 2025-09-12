@@ -19,11 +19,48 @@ console.log('Reddit service loaded');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Middleware
+// Request logging middleware - MUST BE FIRST
+app.use((req, res, next) => {
+  const timestamp = new Date().toISOString();
+  const method = req.method;
+  const url = req.url;
+  const origin = req.headers.origin || req.headers.referer || 'unknown';
+  
+  // Log all incoming requests
+  console.log(`\n[${timestamp}] ${method} ${url}`);
+  console.log(`  Origin: ${origin}`);
+  console.log(`  User-Agent: ${req.headers['user-agent']}`);
+  
+  // Log request body for POST/PUT requests (but not for file uploads)
+  if ((method === 'POST' || method === 'PUT') && req.body && !req.headers['content-type']?.includes('multipart/form-data')) {
+    console.log(`  Body: ${JSON.stringify(req.body).substring(0, 200)}...`);
+  }
+  
+  // Log response when it's sent
+  const originalSend = res.send;
+  res.send = function(data) {
+    console.log(`  Response Status: ${res.statusCode}`);
+    if (res.statusCode >= 400) {
+      console.log(`  Error Response: ${data}`);
+    }
+    originalSend.call(this, data);
+  };
+  
+  next();
+});
+
+// CORS middleware
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:5173',
   credentials: true
 }));
+
+// Log CORS preflight requests
+app.options('*', (req, res, next) => {
+  console.log(`[CORS Preflight] ${req.method} ${req.url} from ${req.headers.origin}`);
+  next();
+});
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -931,31 +968,79 @@ app.get('/api/apple-apps', (req, res) => {
 // Reddit API endpoints
 // Search for posts mentioning the app
 app.post('/api/reddit/search', async (req, res) => {
+  console.log('\n=== Reddit Search Request ===');
+  console.log('Timestamp:', new Date().toISOString());
+  console.log('Request headers:', {
+    origin: req.headers.origin,
+    referer: req.headers.referer,
+    contentType: req.headers['content-type'],
+    userAgent: req.headers['user-agent']
+  });
+  console.log('Request body:', req.body);
+  console.log('Reddit service configured:', redditService.getStatus().configured);
+  
   try {
     const { appName, limit = 100, sort = 'new', time = 'week', subreddit } = req.body;
     
     if (!appName) {
+      console.log('[Reddit Search] Error: App name is required');
       return res.status(400).json({ error: 'App name is required' });
     }
     
+    // Check if Reddit service is configured
+    const redditStatus = redditService.getStatus();
+    if (!redditStatus.configured) {
+      console.error('[Reddit Search] Error: Reddit API not configured');
+      return res.status(503).json({
+        error: 'Reddit service not configured',
+        details: 'Reddit API credentials are missing. Please configure REDDIT_CLIENT_ID and REDDIT_CLIENT_SECRET.',
+        configured: false
+      });
+    }
+    
+    console.log('[Reddit Search] Searching for:', appName);
+    console.log('[Reddit Search] Options:', { limit, sort, time, subreddit });
+    
+    const startTime = Date.now();
     const posts = await redditService.searchPosts(appName, {
       limit,
       sort,
       timeFilter: time,
       subreddit
     });
+    const searchTime = Date.now() - startTime;
+    
+    console.log(`[Reddit Search] Search completed in ${searchTime}ms`);
+    console.log(`[Reddit Search] Found ${posts.length} posts`);
     
     res.json({
       success: true,
       posts,
-      count: posts.length
+      count: posts.length,
+      searchTime
     });
   } catch (error) {
-    console.error('Reddit search error:', error);
-    res.status(500).json({ 
-      error: 'Failed to search Reddit posts',
-      details: error.message 
-    });
+    console.error('[Reddit Search] Error:', error.message);
+    console.error('[Reddit Search] Stack:', error.stack);
+    
+    // Provide more specific error responses
+    if (error.message.includes('credentials')) {
+      res.status(503).json({ 
+        error: 'Reddit service configuration error',
+        details: error.message,
+        configured: false
+      });
+    } else if (error.message.includes('Rate limited')) {
+      res.status(429).json({ 
+        error: 'Reddit API rate limit exceeded',
+        details: error.message 
+      });
+    } else {
+      res.status(500).json({ 
+        error: 'Failed to search Reddit posts',
+        details: error.message 
+      });
+    }
   }
 });
 
@@ -1086,9 +1171,59 @@ app.post('/api/reddit/relevant-subreddits', async (req, res) => {
   }
 });
 
+// Reddit service status endpoint
+app.get('/api/reddit/status', async (req, res) => {
+  console.log('[Reddit Status] Checking Reddit service status...');
+  
+  try {
+    const status = redditService.getStatus();
+    
+    // If configured, try to get an access token to verify credentials work
+    let authTest = { tested: false, success: false, error: null };
+    
+    if (status.configured) {
+      try {
+        console.log('[Reddit Status] Testing authentication...');
+        await redditService.getAccessToken();
+        authTest = { tested: true, success: true, error: null };
+        console.log('[Reddit Status] Authentication test successful');
+      } catch (error) {
+        authTest = { tested: true, success: false, error: error.message };
+        console.error('[Reddit Status] Authentication test failed:', error.message);
+      }
+    }
+    
+    res.json({
+      success: true,
+      configured: status.configured,
+      status: status.configured ? 'ready' : 'not configured',
+      details: {
+        ...status,
+        authenticationTest: authTest
+      },
+      requiredEnvVars: {
+        REDDIT_CLIENT_ID: !!process.env.REDDIT_CLIENT_ID,
+        REDDIT_CLIENT_SECRET: !!process.env.REDDIT_CLIENT_SECRET
+      },
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('[Reddit Status] Error checking status:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to check Reddit service status',
+      details: error.message
+    });
+  }
+});
+
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   console.log('[Health Check] Request received from:', req.headers.origin || req.headers.referer || 'unknown');
+  
+  // Get Reddit service status
+  const redditStatus = redditService.getStatus();
+  
   res.json({ 
     status: 'ok', 
     service: 'Apple App Store Review API',
@@ -1097,7 +1232,14 @@ app.get('/api/health', (req, res) => {
     environment: {
       port: PORT,
       corsOrigin: process.env.FRONTEND_URL || 'http://localhost:5173',
-      hasRedis: !!process.env.REDIS_URL
+      hasRedis: !!process.env.REDIS_URL,
+      nodeEnv: process.env.NODE_ENV || 'development'
+    },
+    services: {
+      reddit: {
+        status: redditStatus.configured ? 'configured' : 'not configured',
+        details: redditStatus
+      }
     }
   });
 });
@@ -1120,9 +1262,30 @@ app.get('/api/test', (req, res) => {
 // Start server
 console.log('About to start server on port:', PORT);
 app.listen(PORT, () => {
+  console.log('\n=== Server Started Successfully ===');
   console.log(`Apple App Store API server running on port ${PORT}`);
   console.log(`Frontend should connect to: http://localhost:${PORT}/api/apple-reviews`);
   console.log(`Cache service initialized with ${process.env.REDIS_URL ? 'Redis' : 'in-memory'} storage`);
+  
+  // Log Reddit service status
+  const redditStatus = redditService.getStatus();
+  console.log('\n=== Reddit Service Status ===');
+  if (redditStatus.configured) {
+    console.log('✓ Reddit API configured successfully');
+    console.log('  - Client ID present:', redditStatus.hasClientId);
+    console.log('  - Client Secret present:', redditStatus.hasClientSecret);
+    console.log('  - User Agent:', redditStatus.userAgent);
+  } else {
+    console.log('✗ Reddit API not configured');
+    console.log('  - Missing REDDIT_CLIENT_ID:', !redditStatus.hasClientId);
+    console.log('  - Missing REDDIT_CLIENT_SECRET:', !redditStatus.hasClientSecret);
+    console.log('  - Please set these environment variables to enable Reddit integration');
+  }
+  
+  console.log('\n=== Environment ===');
+  console.log('NODE_ENV:', process.env.NODE_ENV || 'development');
+  console.log('CORS Origin:', process.env.FRONTEND_URL || 'http://localhost:5173');
+  console.log('================================\n');
 }).on('error', (err) => {
   console.error('Server startup error:', err);
   process.exit(1);
