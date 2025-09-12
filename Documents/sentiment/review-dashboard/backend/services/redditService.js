@@ -192,8 +192,67 @@ class RedditService {
       
       const endpoint = subreddit === 'all' ? '/search' : `/r/${subreddit}/search`;
       
-      // If we need more than 100 posts, we'll need to make multiple requests
+      // Strategy: For longer time periods, use multiple requests with different sorts
+      // to get more diverse posts across time periods
       let allPosts = [];
+      
+      const shouldUseDiverseStrategy = ['year', 'all'].includes(timeFilter) && maxLimit > 200;
+      
+      if (shouldUseDiverseStrategy) {
+        console.log('[RedditService] Using diverse search strategy for', timeFilter);
+        
+        // Make multiple requests with different sort orders to get diverse posts
+        const searchStrategies = [
+          { sort: 'relevance', limit: Math.floor(maxLimit * 0.4) },
+          { sort: 'new', limit: Math.floor(maxLimit * 0.3) },
+          { sort: 'top', limit: Math.floor(maxLimit * 0.3) }
+        ];
+        
+        for (const strategy of searchStrategies) {
+          try {
+            const params = {
+              q: searchQuery,
+              type: 'link',
+              sort: strategy.sort,
+              t: timeFilter,
+              limit: Math.min(strategy.limit, 100),
+              restrict_sr: subreddit !== 'all'
+            };
+            
+            console.log('[RedditService] Diverse strategy request:', { 
+              strategy: strategy.sort, 
+              limit: strategy.limit,
+              params 
+            });
+            
+            const data = await this.makeRequest(endpoint, params);
+            const posts = this.processSearchResults(data, appName, timeFilter);
+            
+            // Filter out duplicates by ID
+            const newPosts = posts.filter(post => !allPosts.some(existing => existing.id === post.id));
+            allPosts = allPosts.concat(newPosts);
+            
+            console.log('[RedditService] Strategy results:', {
+              strategy: strategy.sort,
+              postsFound: posts.length,
+              newUniquePosts: newPosts.length,
+              totalSoFar: allPosts.length
+            });
+            
+          } catch (error) {
+            console.error(`[RedditService] Error with ${strategy.sort} strategy:`, error.message);
+          }
+        }
+        
+        console.log('[RedditService] Diverse strategy complete:', {
+          totalUniquePosts: allPosts.length,
+          targetWas: maxLimit
+        });
+        
+        return allPosts.slice(0, maxLimit);
+      }
+      
+      // Standard single-request approach for smaller limits or shorter time periods
       let after = null;
       let remainingLimit = maxLimit;
       
@@ -309,10 +368,35 @@ class RedditService {
         return true;
       });
 
-    console.log('[RedditService] Posts after filtering:', {
-      filtered: posts.length,
-      original: data.data.children.length
-    });
+    // Log date range analysis
+    if (posts.length > 0) {
+      const dates = posts.map(p => p.created).sort((a, b) => a - b);
+      const oldest = dates[0];
+      const newest = dates[dates.length - 1];
+      const daysDiff = Math.floor((newest - oldest) / (1000 * 60 * 60 * 24));
+      
+      console.log('[RedditService] Posts date analysis:', {
+        totalFiltered: posts.length,
+        originalFromReddit: data.data.children.length,
+        timeFilter,
+        cutoffDate: cutoffDate ? cutoffDate.toISOString() : 'none',
+        oldestPost: oldest.toISOString(),
+        newestPost: newest.toISOString(),
+        dateSpanDays: daysDiff,
+        postsPerTimeRange: {
+          last24h: posts.filter(p => p.created >= new Date(Date.now() - 24*60*60*1000)).length,
+          last7d: posts.filter(p => p.created >= new Date(Date.now() - 7*24*60*60*1000)).length,
+          last30d: posts.filter(p => p.created >= new Date(Date.now() - 30*24*60*60*1000)).length,
+          last365d: posts.filter(p => p.created >= new Date(Date.now() - 365*24*60*60*1000)).length
+        }
+      });
+    } else {
+      console.log('[RedditService] No posts after filtering:', {
+        originalFromReddit: data.data.children.length,
+        timeFilter,
+        cutoffDate: cutoffDate ? cutoffDate.toISOString() : 'none'
+      });
+    }
 
     return posts;
   }

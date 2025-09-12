@@ -58,11 +58,26 @@ const RedditInfluence = ({ appName, category = 'technology' }) => {
     
     try {
       console.log('[RedditInfluence] Making Reddit API calls for:', appName);
+      // Use dynamic limits based on time filter
+      const getLimit = (timeFilter) => {
+        switch(timeFilter) {
+          case 'day': return 100;
+          case 'week': return 200;
+          case 'month': return 300;
+          case 'year': return 500;
+          case 'all': return 800;
+          default: return 200;
+        }
+      };
+      
+      const requestLimit = getLimit(timeFilter);
+      console.log('[RedditInfluence] loadAllData using limit:', { timeFilter, limit: requestLimit });
+
       const [searchData, trendsData, spikesData, subredditsData] = await Promise.all([
         redditService.searchPosts(appName, { 
           timeFilter, 
           sort: sortBy,
-          limit: 200,
+          limit: requestLimit,
           subreddit: 'all'
         }),
         redditService.analyzeMentionTrends(appName),
@@ -118,10 +133,25 @@ const RedditInfluence = ({ appName, category = 'technology' }) => {
     const requestedSortBy = newSortBy;
     
     try {
+      // Increase limit for broader time ranges to get more diverse posts
+      const getLimit = (timeFilter) => {
+        switch(timeFilter) {
+          case 'day': return 100;
+          case 'week': return 200;
+          case 'month': return 300;
+          case 'year': return 500;
+          case 'all': return 800;
+          default: return 200;
+        }
+      };
+      
+      const requestLimit = getLimit(newTimeFilter);
+      console.log('[RedditInfluence] Using request limit:', { timeFilter: newTimeFilter, limit: requestLimit });
+      
       const searchData = await redditService.searchPosts(appName, { 
         timeFilter: newTimeFilter, 
         sort: newSortBy,
-        limit: 200, // Request up to 200 posts, actual results may vary
+        limit: requestLimit,
         subreddit: 'all'
       });
       
