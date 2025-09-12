@@ -999,7 +999,13 @@ app.post('/api/reddit/search', async (req, res) => {
     }
     
     console.log('[Reddit Search] Searching for:', appName);
-    console.log('[Reddit Search] Options:', { limit, sort, time, subreddit });
+    console.log('[Reddit Search] Request body values:', { limit, sort, time, subreddit });
+    console.log('[Reddit Search] Passing to searchPosts:', {
+      limit,
+      sort,
+      timeFilter: time,  // Note: mapping 'time' to 'timeFilter'
+      subreddit
+    });
     
     const startTime = Date.now();
     const posts = await redditService.searchPosts(appName, {

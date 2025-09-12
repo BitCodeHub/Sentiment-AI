@@ -24,7 +24,8 @@ class RedditService {
       subreddit: subreddit || 'all'
     };
     
-    console.log('[RedditService] Sending request with:', requestBody);
+    console.log('[RedditService] Request body being sent:', JSON.stringify(requestBody, null, 2));
+    console.log('[RedditService] Request URL:', `${this.baseUrl}/search`);
     
     try {
       const response = await axios.post(`${this.baseUrl}/search`, requestBody);
@@ -32,7 +33,13 @@ class RedditService {
       console.log('[RedditService] searchPosts response:', {
         success: response.data?.success,
         postCount: response.data?.posts?.length || 0,
-        count: response.data?.count
+        count: response.data?.count,
+        requestSent: { time: requestBody.time, sort: requestBody.sort },
+        firstPost: response.data?.posts?.[0] ? {
+          title: response.data.posts[0].title.substring(0, 50),
+          created: response.data.posts[0].created,
+          subreddit: response.data.posts[0].subreddit
+        } : null
       });
       
       return response.data;

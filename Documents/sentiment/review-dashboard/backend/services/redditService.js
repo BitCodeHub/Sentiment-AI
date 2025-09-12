@@ -134,12 +134,25 @@ class RedditService {
 
   // Search for posts mentioning the app
   async searchPosts(appName, options = {}) {
+    console.log('[Backend RedditService] searchPosts called with:', {
+      appName,
+      options,
+      optionKeys: Object.keys(options)
+    });
+    
     const {
       subreddit = 'all',
       timeFilter = 'month',
       limit = 100,
       sort = 'relevance'
     } = options;
+    
+    console.log('[Backend RedditService] Extracted parameters:', {
+      subreddit,
+      timeFilter,
+      limit,
+      sort
+    });
     
     // Reddit API has a hard limit of 100 per request, but we can make multiple requests
     const maxLimit = Math.min(limit, 1000); // Cap at 1000 to prevent abuse
@@ -195,6 +208,8 @@ class RedditService {
           limit: currentLimit,
           restrict_sr: subreddit !== 'all'
         };
+        
+        console.log('[Backend RedditService] Reddit API params:', params);
         
         if (after) {
           params.after = after;
