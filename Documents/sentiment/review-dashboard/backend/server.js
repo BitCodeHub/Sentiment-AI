@@ -280,19 +280,25 @@ async function fetchAllReviews(token, appId, territory = 'USA', sinceDate = null
     - Parsed endDate: ${endDate ? endDate.toISOString() : 'null'}`);
   
   let pageCount = 0;
-  const maxPages = 100; // Increase max pages to handle more reviews
+  const maxPages = 1000; // Increased to fetch ALL reviews - no artificial limits
   
   while (hasMore && pageCount < maxPages) {
     pageCount++;
-    console.log(`[fetchAllReviews] Fetching page ${pageCount}...`);
+    console.log(`[fetchAllReviews] Fetching page ${pageCount}/${maxPages}...`);
     
     const response = await fetchAppleReviews(token, appId, territory, limit, nextLink);
     const reviews = response.data || [];
     
     console.log(`[fetchAllReviews] Page ${pageCount}: received ${reviews.length} reviews`);
     
+    // Log pagination info
+    if (response.links) {
+      console.log(`[fetchAllReviews] Pagination links present: next=${!!response.links.next}`);
+    }
+    
     // Early exit if no reviews
     if (reviews.length === 0) {
+      console.log(`[fetchAllReviews] No more reviews found, stopping pagination`);
       hasMore = false;
       break;
     }
@@ -381,6 +387,14 @@ async function fetchAllReviews(token, appId, territory = 'USA', sinceDate = null
   }
   
   console.log(`[fetchAllReviews] Completed: fetched ${allReviews.length} reviews across ${pageCount} pages`);
+  if (pageCount >= maxPages) {
+    console.log(`[fetchAllReviews] WARNING: Hit max page limit of ${maxPages}. There may be more reviews available.`);
+  }
+  
+  // Log warning if we hit the page limit
+  if (pageCount >= maxPages) {
+    console.log(`[fetchAllReviews] WARNING: Hit maximum page limit (${maxPages}). There may be more reviews available.`);
+  }
   
   return allReviews;
 }
@@ -1343,7 +1357,7 @@ app.post('/api/apple-reviews/hybrid', upload.single('privateKey'), async (req, r
   console.log('Timestamp:', new Date().toISOString());
   
   try {
-    const { appId, issuerId, keyId, useServerCredentials, countries = ['us'], daysToFetch = 5475, startDate, endDate } = req.body; // Default to 15 years
+    const { appId, issuerId, keyId, useServerCredentials, countries = ['us'], daysToFetch = 5475, startDate, endDate } = req.body; // Default to 15 years, US only
     let privateKey = req.body.privateKey;
     
     if (!appId) {
@@ -1359,8 +1373,8 @@ app.post('/api/apple-reviews/hybrid', upload.single('privateKey'), async (req, r
     
     // Try RSS feed first (doesn't require auth)
     try {
-      console.log('[Hybrid] Fetching from RSS feeds...');
-      const rssResult = await appleRSSService.fetchMultiCountryReviews(appId, countries, 200);
+      console.log(`[Hybrid] Fetching from RSS feeds for countries: ${countries.join(', ')}`);
+      const rssResult = await appleRSSService.fetchMultiCountryReviews(appId, countries, 500);
       results.rss = {
         success: true,
         reviews: rssResult.reviews,
@@ -1374,6 +1388,8 @@ app.post('/api/apple-reviews/hybrid', upload.single('privateKey'), async (req, r
     
     // Try App Store Connect API if credentials provided
     if (issuerId || useServerCredentials) {
+      console.log('[Hybrid] Attempting to use Apple API with credentials');
+      console.log(`[Hybrid] Has issuer ID: ${!!issuerId}, Use server credentials: ${useServerCredentials}`);
       try {
         console.log('[Hybrid] Fetching from App Store Connect API...');
         
@@ -1423,17 +1439,38 @@ app.post('/api/apple-reviews/hybrid', upload.single('privateKey'), async (req, r
             error: null
           };
           console.log(`[Hybrid] API: ${transformedReviews.length} reviews`);
+          
+          // Log warning if API returns 0 reviews
+          if (transformedReviews.length === 0) {
+            console.log('[Hybrid] WARNING: Apple API returned 0 reviews. Possible issues:');
+            console.log('  - Date range might be too restrictive');
+            console.log('  - App might not have reviews in the specified period');
+            console.log('  - Credentials might be for a different app');
+            console.log(`  - Date range requested: ${apiStartDate} to ${apiEndDate}`);
+          }
         }
       } catch (apiError) {
         console.error('[Hybrid] API error:', apiError.message);
         results.api.error = apiError.message;
       }
+    } else {
+      console.log('[Hybrid] WARNING: No Apple API credentials provided');
+      console.log('[Hybrid] Only RSS feeds will be used (limited to recent reviews)');
+      console.log('[Hybrid] To get full review history, provide:');
+      console.log('  - issuerId, keyId, and privateKey');
+      console.log('  - OR use useServerCredentials=true with configured server credentials');
     }
     
     // Merge and deduplicate reviews
     const allReviews = [...results.rss.reviews, ...results.api.reviews];
     const uniqueReviews = [];
     const seenIds = new Set();
+    
+    // Log review sources for debugging
+    console.log(`[Hybrid] Review sources breakdown:`);
+    console.log(`  - RSS reviews: ${results.rss.reviews.length}`);
+    console.log(`  - API reviews: ${results.api.reviews.length}`);
+    console.log(`  - Total before deduplication: ${allReviews.length}`);
     
     for (const review of allReviews) {
       // Create a unique key based on author, date, and rating
@@ -1447,7 +1484,7 @@ app.post('/api/apple-reviews/hybrid', upload.single('privateKey'), async (req, r
     // Sort by date (newest first)
     uniqueReviews.sort((a, b) => new Date(b.Date) - new Date(a.Date));
     
-    console.log(`[Hybrid] Total unique reviews: ${uniqueReviews.length}`);
+    console.log(`[Hybrid] Total unique reviews after deduplication: ${uniqueReviews.length}`);
     
     // Log date range
     if (uniqueReviews.length > 0) {

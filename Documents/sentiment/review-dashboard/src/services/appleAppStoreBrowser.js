@@ -594,7 +594,8 @@ class AppleAppStoreBrowserService {
           
           // Add countries and days to fetch for hybrid endpoint
           if (useHybrid) {
-            formData.append('countries', JSON.stringify(['us'])); // Only US reviews
+            // Fetch from US only as requested
+            formData.append('countries', JSON.stringify(['us'])); // US only
             // Fetch up to 15 years of data by default (since App Store launch in 2008)
             // This allows fetching all historical reviews
             formData.append('daysToFetch', (options.daysToFetch || 5475).toString()); // 15 years
