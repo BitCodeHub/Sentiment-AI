@@ -1,0 +1,145 @@
+.intelligence-briefing-handler {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 20px;
+  margin: 20px 0;
+  max-width: 800px;
+}
+
+.briefing-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  color: #1f2937;
+}
+
+.briefing-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.sample-requests {
+  margin-bottom: 20px;
+}
+
+.sample-requests p {
+  font-size: 14px;
+  color: #6b7280;
+  margin-bottom: 10px;
+}
+
+.sample-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sample-chip {
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 13px;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.sample-chip:hover {
+  background: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
+}
+
+.messages-container {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 15px;
+  min-height: 100px;
+  max-height: 300px;
+  overflow-y: auto;
+  margin-bottom: 15px;
+}
+
+.message {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.message:last-child {
+  margin-bottom: 0;
+}
+
+.message.user {
+  color: #1f2937;
+}
+
+.message.system {
+  color: #059669;
+}
+
+.message.error {
+  color: #dc2626;
+}
+
+.message svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.input-form {
+  display: flex;
+  gap: 10px;
+}
+
+.briefing-input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+
+.briefing-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.briefing-input:disabled {
+  background: #f3f4f6;
+  cursor: not-allowed;
+}
+
+.submit-button {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-family: inherit;
+}
+
+.submit-button:hover:not(:disabled) {
+  background: #2563eb;
+}
+
+.submit-button:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}

@@ -22,6 +22,7 @@ import { analyzeReviews, generateInsights } from '../services/geminiAIAnalysis';
 import { performDeepAnalysis } from '../services/geminiDeepAnalysis';
 import { performExecutiveAnalysis } from '../services/geminiExecutiveAnalysis';
 import { getErrorMessage } from '../utils/errorHandler';
+import { parseDateRequest, isIntelligenceBriefingRequest } from '../utils/dateParser';
 import AIInsights from './AIInsights';
 import CategorizedReviews from './CategorizedReviews';
 import ReviewDisplay from './ReviewDisplay';
@@ -32,6 +33,7 @@ import KeywordCloud from './KeywordCloud';
 import SentimentAnalysis from './SentimentAnalysis';
 import AISentimentSummary from './AISentimentSummary';
 import RedditInfluence from './RedditInfluence';
+import IntelligenceBriefingHandler from './IntelligenceBriefingHandler';
 import './EnhancedDashboard.css';
 
 const TABLEAU_COLORS = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'];
@@ -83,6 +85,8 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange 
   // Add state for Apple review summarizations (all ratings)
   const [allRatingsData, setAllRatingsData] = useState(null);
   const [isFetchingAllRatings, setIsFetchingAllRatings] = useState(false);
+  // Add state for intelligence briefing handler
+  const [showBriefingHandler, setShowBriefingHandler] = useState(false);
   
   // Initialize date range from Apple app config on mount and auto-fetch
   useEffect(() => {
@@ -646,6 +650,65 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange 
     }));
   };
 
+  // Handle intelligence briefing requests with date filtering
+  const handleIntelligenceBriefingRequest = useCallback(async (userRequest) => {
+    console.log('[IntelligenceBriefing] Processing request:', userRequest);
+    
+    // Check if this is an intelligence briefing request
+    if (!isIntelligenceBriefingRequest(userRequest)) {
+      return false; // Not an intelligence briefing request
+    }
+    
+    // Parse the date from the request
+    const dateRange = parseDateRequest(userRequest);
+    
+    if (dateRange) {
+      console.log('[IntelligenceBriefing] Setting date range:', dateRange);
+      
+      // Set the date range filter
+      setSelectedDateRange({ start: dateRange.start, end: dateRange.end });
+      
+      // If Apple data, we need to fetch new data with the date range
+      if (data?.isAppleData && onFetchReviews) {
+        try {
+          // Trigger a re-fetch with the new date range
+          // The date range will be used by the parent component
+          if (onDateRangeChange) {
+            onDateRangeChange({ start: dateRange.start, end: dateRange.end });
+          }
+          
+          // Wait a bit for the data to update and then trigger executive analysis
+          setTimeout(() => {
+            triggerExecutiveAnalysis();
+          }, 2000);
+        } catch (error) {
+          console.error('[IntelligenceBriefing] Error setting date range:', error);
+          setError('Failed to fetch data for the requested time period');
+        }
+      } else {
+        // For non-Apple data, just trigger executive analysis with filtered data
+        setTimeout(() => {
+          triggerExecutiveAnalysis();
+        }, 100);
+      }
+      
+      return true; // Request handled
+    } else {
+      // No specific date range, trigger executive analysis with all data
+      triggerExecutiveAnalysis();
+      return true; // Request handled
+    }
+  }, [data, triggerExecutiveAnalysis, onFetchReviews, onDateRangeChange]);
+
+  // Expose the handler for external use (e.g., from a chat interface)
+  useEffect(() => {
+    window.handleIntelligenceBriefingRequest = handleIntelligenceBriefingRequest;
+    
+    return () => {
+      delete window.handleIntelligenceBriefingRequest;
+    };
+  }, [handleIntelligenceBriefingRequest]);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -674,6 +737,14 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange 
         </div>
         
         <div className="toolbar-section toolbar-right">
+          <button 
+            className={`toolbar-btn ${showBriefingHandler ? 'active' : ''}`}
+            title="Intelligence Briefing Assistant"
+            onClick={() => setShowBriefingHandler(!showBriefingHandler)}
+          >
+            <MessageSquare size={18} />
+            <span>Briefing</span>
+          </button>
           <button 
             className="toolbar-btn" 
             title="AI Sentiment Analysis"
@@ -1050,7 +1121,10 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange 
         </div>
       </div>
 
-
+      {/* Intelligence Briefing Handler */}
+      {showBriefingHandler && (
+        <IntelligenceBriefingHandler />
+      )}
 
       {/* Charts Grid */}
       <div className="dashboard-analytics-grid">
