@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   MessageSquare, Send, X, Loader, Sparkles, 
   AlertCircle, RotateCcw, ChevronDown, Bot, User,
@@ -43,6 +43,7 @@ const ChatPage = ({ reviewData = [] }) => {
   const suggestionsScrollRef = useRef(null);
   const scrollTimeoutRef = useRef(null);
   const navigate = useNavigate();
+  const location = useLocation();
   
   // Check for speech synthesis support using enhanced TTS
   const [ttsCapabilities, setTtsCapabilities] = useState(null);
@@ -129,6 +130,17 @@ const ChatPage = ({ reviewData = [] }) => {
     }
   }, [reviewData]);
 
+  // Handle competitive context from navigation
+  useEffect(() => {
+    if (location.state?.initialQuestion && sessionId) {
+      // Auto-send the competitive question
+      setInputMessage(location.state.initialQuestion);
+      setTimeout(() => {
+        handleSendMessage();
+      }, 500);
+    }
+  }, [sessionId, location.state]);
+
   // Generate suggestions when session is ready
   useEffect(() => {
     if (sessionId && reviewData.length > 0) {
@@ -178,6 +190,7 @@ const ChatPage = ({ reviewData = [] }) => {
       const metadata = {
         appName: reviewData[0]?.appName || reviewData[0]?.['App Name'] || 'Unknown App',
         totalReviews: reviewData.length,
+        competitiveContext: location.state?.competitiveContext || null,
       };
       
       await initializeChatSession(session, reviewData, metadata);

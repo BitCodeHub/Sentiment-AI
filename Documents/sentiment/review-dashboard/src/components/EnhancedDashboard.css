@@ -4605,3 +4605,10 @@ html {
   font-size: 0.875rem;
   color: #9ca3af;
 }
+
+/* Competitive Analysis View */
+.competitive-view {
+  padding: 0;
+  background: transparent;
+  min-height: calc(100vh - 60px);
+}

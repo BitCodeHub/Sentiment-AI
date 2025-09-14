@@ -16,7 +16,7 @@ import {
   ChevronDown, ChevronUp, X, Download, RefreshCw, Calendar,
   Smartphone, Package, Layers, Globe, Monitor,
   Share2, Printer, Save, Settings, HelpCircle, Undo, Redo,
-  CheckCircle, MessageSquare, Apple
+  CheckCircle, MessageSquare, Apple, Car
 } from 'lucide-react';
 import { analyzeReviews, generateInsights } from '../services/geminiAIAnalysis';
 import { performDeepAnalysis } from '../services/geminiDeepAnalysis';
@@ -34,6 +34,7 @@ import SentimentAnalysis from './SentimentAnalysis';
 import AISentimentSummary from './AISentimentSummary';
 import RedditInfluence from './RedditInfluence';
 import IntelligenceBriefingHandler from './IntelligenceBriefingHandler';
+import CompetitiveAnalysis from './CompetitiveAnalysis';
 import './EnhancedDashboard.css';
 
 const TABLEAU_COLORS = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'];
@@ -783,6 +784,16 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange 
                   >
                     <Target size={20} />
                     <span>All Reviews</span>
+                  </button>
+                </li>
+                <li className={`nav-item ${currentView === 'competitive' ? 'active' : ''}`}>
+                  <button 
+                    className="nav-button"
+                    onClick={() => setCurrentView('competitive')}
+                    title="Competitive Analysis"
+                  >
+                    <Car size={20} />
+                    <span>Competitive Analysis</span>
                   </button>
                 </li>
               </ul>
@@ -1730,6 +1741,25 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange 
             <p className="view-subtitle">Browse through all {filteredReviews.length} customer reviews</p>
           </div>
           <ReviewDisplay reviews={filteredReviews} searchTerm={searchTerm} />
+        </div>
+      )}
+      
+      {/* Competitive Analysis View */}
+      {currentView === 'competitive' && (
+        <div className="competitive-view">
+          <CompetitiveAnalysis 
+            currentOEM={data?.oem}
+            currentAppName={data?.appName || 'Your App'}
+            onAskAI={(question, context) => {
+              // Navigate to chat with context
+              navigate('/chat', { 
+                state: { 
+                  initialQuestion: question, 
+                  competitiveContext: context 
+                } 
+              });
+            }}
+          />
         </div>
       )}
         </>
