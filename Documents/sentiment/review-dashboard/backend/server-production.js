@@ -926,57 +926,14 @@ app.post('/api/apple-reviews/summarizations', upload.single('privateKey'), async
     console.log('Territory:', territory || 'USA');
     const startTime = Date.now();
     
-    const summarizationsData = await fetchAppleReviewSummarizations(token, appId, territory || 'USA');
+    const ratingData = await fetchAppleReviewSummarizations(token, appId, territory || 'USA');
     
     const apiTime = Date.now() - startTime;
-    console.log(`Apple API response received in ${apiTime}ms`);
-    console.log('Response data structure:', {
-      hasData: !!summarizationsData.data,
-      dataLength: summarizationsData.data?.length,
-      firstItem: summarizationsData.data?.[0] ? Object.keys(summarizationsData.data[0]) : null
-    });
-    
-    // Extract the summarization data
-    const summarization = summarizationsData.data?.[0];
-    if (!summarization) {
-      console.log('No summarization data found, returning zeros');
-      return res.json({
-        success: true,
-        data: {
-          averageRating: 0,
-          totalRatings: 0,
-          ratingCounts: {
-            1: 0,
-            2: 0,
-            3: 0,
-            4: 0,
-            5: 0
-          }
-        }
-      });
-    }
-
-    const attributes = summarization.attributes || {};
-    console.log('Summarization attributes:', {
-      averageRating: attributes.averageRating,
-      totalRatings: attributes.totalRatings,
-      ratingCountList: attributes.ratingCountList,
-      hasRatingCounts: !!attributes.ratingCountList
-    });
-    
+    console.log(`iTunes API response received in ${apiTime}ms`);
+    console.log('Rating data received:', ratingData);
     const responseData = {
       success: true,
-      data: {
-        averageRating: attributes.averageRating || 0,
-        totalRatings: attributes.totalRatings || 0,
-        ratingCounts: {
-          1: attributes.ratingCountList?.[0] || 0,
-          2: attributes.ratingCountList?.[1] || 0,
-          3: attributes.ratingCountList?.[2] || 0,
-          4: attributes.ratingCountList?.[3] || 0,
-          5: attributes.ratingCountList?.[4] || 0
-        }
-      }
+      data: ratingData
     };
     
     console.log('Sending response:', responseData);
