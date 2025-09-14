@@ -19,6 +19,8 @@ const appleRSSService = require('./services/appleRSSService');
 console.log('Apple RSS service loaded');
 const competitorService = require('./services/competitorService');
 console.log('Competitor service loaded');
+const { getAppleApps, getAppleCredentials } = require('./config/apple-credentials');
+console.log('Apple credentials config loaded');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -81,24 +83,22 @@ const APPLE_API_BASE = 'https://api.appstoreconnect.apple.com/v1';
 
 // Get configured apps from environment or config
 function getConfiguredApps() {
-  // Check for configured apps in environment
-  const apps = [];
+  // Use the centralized function from apple-credentials.js
+  const apps = getAppleApps();
+  const sharedCredentials = getAppleCredentials();
   
-  // Example: APPLE_APP_1234567890_NAME=MyApp
-  Object.keys(process.env).forEach(key => {
-    const match = key.match(/^APPLE_APP_(\d+)_NAME$/);
-    if (match) {
-      const appId = match[1];
-      apps.push({
-        id: appId,
-        name: process.env[key],
-        issuerId: process.env[`APPLE_ISSUER_ID_${appId}`],
-        keyId: process.env[`APPLE_KEY_ID_${appId}`],
-        privateKey: process.env[`APPLE_PRIVATE_KEY_${appId}`]
-      });
-    }
-  });
+  // If we have shared credentials, apply them to all apps
+  if (sharedCredentials) {
+    return apps.map(app => ({
+      id: app.id,
+      name: app.name,
+      issuerId: sharedCredentials.issuerId,
+      keyId: sharedCredentials.keyId,
+      privateKey: sharedCredentials.privateKey
+    }));
+  }
   
+  // Return apps without credentials if none are configured
   return apps;
 }
 
@@ -1002,9 +1002,18 @@ app.post('/api/apple-reviews/summarizations', upload.single('privateKey'), async
 // Get configured apps endpoint
 app.get('/api/apple-apps', (req, res) => {
   const apps = getConfiguredApps();
+  const appsWithCredentials = apps.filter(app => app.issuerId && app.keyId && app.privateKey);
+  
+  console.log('[Apple Apps] Configured apps:', apps.length);
+  console.log('[Apple Apps] Apps with credentials:', appsWithCredentials.length);
+  
   res.json({
-    apps: apps.map(app => ({ id: app.id, name: app.name })),
-    hasServerCredentials: apps.length > 0
+    apps: apps.map(app => ({ 
+      id: app.id, 
+      name: app.name,
+      hasCredentials: !!(app.issuerId && app.keyId && app.privateKey)
+    })),
+    hasServerCredentials: appsWithCredentials.length > 0
   });
 });
 
@@ -1844,6 +1853,20 @@ app.listen(PORT, () => {
   console.log(`Apple App Store API server running on port ${PORT}`);
   console.log(`Frontend should connect to: http://localhost:${PORT}/api/apple-reviews`);
   console.log(`Cache service initialized with ${process.env.REDIS_URL ? 'Redis' : 'in-memory'} storage`);
+  
+  // Log Apple credentials status
+  const configuredApps = getConfiguredApps();
+  console.log('\n=== Apple App Store Credentials ===');
+  if (configuredApps.length > 0) {
+    console.log('✓ Configured apps:');
+    configuredApps.forEach(app => {
+      const hasCredentials = !!(app.issuerId && app.keyId && app.privateKey);
+      console.log(`  - ${app.name} (${app.id}): ${hasCredentials ? 'credentials configured' : 'no credentials'}`);
+    });
+  } else {
+    console.log('✗ No apps configured');
+    console.log('  - Set APPLE_APP1_ID and APPLE_APP1_NAME environment variables');
+  }
   
   // Log Reddit service status
   const redditStatus = redditService.getStatus();
