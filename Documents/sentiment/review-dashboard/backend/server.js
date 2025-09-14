@@ -1333,7 +1333,7 @@ app.post('/api/apple-reviews/hybrid', upload.single('privateKey'), async (req, r
   console.log('Timestamp:', new Date().toISOString());
   
   try {
-    const { appId, issuerId, keyId, useServerCredentials, countries = ['us'] } = req.body;
+    const { appId, issuerId, keyId, useServerCredentials, countries = ['us', 'gb', 'ca', 'au', 'de', 'fr', 'jp', 'it', 'es', 'nl'] } = req.body;
     let privateKey = req.body.privateKey;
     
     if (!appId) {

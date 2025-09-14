@@ -371,14 +371,6 @@ const AppleImport = ({ onImport }) => {
             </div>
             <small>Select a date range to fetch reviews from Apple App Store</small>
             
-            {/* Apple Data Delay Notice */}
-            <div className="info-message" style={{ marginTop: '10px', padding: '10px', backgroundColor: '#f0f7ff', borderRadius: '6px', border: '1px solid #d0e4ff' }}>
-              <Info size={16} style={{ color: '#2563eb', verticalAlign: 'middle', marginRight: '8px' }} />
-              <small style={{ color: '#1e40af' }}>
-                Note: Apple typically has a 4-7 day delay before reviews appear in their API. 
-                The most recent reviews available are usually from {new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toLocaleDateString()}.
-              </small>
-            </div>
           </div>
         )}
 

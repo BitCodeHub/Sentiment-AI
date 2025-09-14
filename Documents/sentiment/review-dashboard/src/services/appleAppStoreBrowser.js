@@ -594,7 +594,7 @@ class AppleAppStoreBrowserService {
           
           // Add countries for hybrid endpoint
           if (useHybrid) {
-            formData.append('countries', JSON.stringify(['us', 'gb', 'ca', 'au']));
+            formData.append('countries', JSON.stringify(['us', 'gb', 'ca', 'au', 'de', 'fr', 'jp', 'it', 'es', 'nl']));
           }
           
           // Add date range parameters if provided

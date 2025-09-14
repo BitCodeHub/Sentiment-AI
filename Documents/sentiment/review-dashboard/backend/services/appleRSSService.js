@@ -124,7 +124,7 @@ class AppleRSSService {
   /**
    * Fetch reviews from multiple countries
    */
-  async fetchMultiCountryReviews(appId, countries = ['us', 'gb', 'ca'], limit = 50) {
+  async fetchMultiCountryReviews(appId, countries = ['us', 'gb', 'ca', 'au', 'de', 'fr', 'jp', 'it', 'es', 'nl'], limit = 50) {
     const allReviews = [];
     const results = {};
 
