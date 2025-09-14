@@ -1586,6 +1586,30 @@ app.post('/api/apple-reviews/hybrid', upload.single('privateKey'), async (req, r
     
     console.log(`[Hybrid] Total unique reviews after deduplication: ${uniqueReviews.length}`);
     
+    // Filter by date range if provided
+    let filteredReviews = uniqueReviews;
+    if (startDate || endDate) {
+      const startDateObj = startDate ? new Date(startDate) : null;
+      const endDateObj = endDate ? new Date(endDate) : null;
+      
+      filteredReviews = uniqueReviews.filter(review => {
+        const reviewDate = new Date(review.Date);
+        
+        if (startDateObj && reviewDate < startDateObj) return false;
+        if (endDateObj) {
+          // Include all reviews up to end of the end date
+          const endOfDay = new Date(endDateObj);
+          endOfDay.setHours(23, 59, 59, 999);
+          if (reviewDate > endOfDay) return false;
+        }
+        
+        return true;
+      });
+      
+      console.log(`[Hybrid] Filtered by date range: ${startDate || 'any'} to ${endDate || 'any'}`);
+      console.log(`[Hybrid] Reviews after date filtering: ${filteredReviews.length} (from ${uniqueReviews.length})`);
+    }
+    
     // Log date range
     if (uniqueReviews.length > 0) {
       const newest = new Date(uniqueReviews[0].Date);
@@ -1596,8 +1620,8 @@ app.post('/api/apple-reviews/hybrid', upload.single('privateKey'), async (req, r
     
     res.json({
       success: true,
-      reviews: uniqueReviews,
-      totalCount: uniqueReviews.length,
+      reviews: filteredReviews,
+      totalCount: filteredReviews.length,
       sources: {
         rss: {
           success: results.rss.success,
@@ -1610,10 +1634,11 @@ app.post('/api/apple-reviews/hybrid', upload.single('privateKey'), async (req, r
           error: results.api.error
         }
       },
-      dateRange: uniqueReviews.length > 0 ? {
-        newest: uniqueReviews[0].Date,
-        oldest: uniqueReviews[uniqueReviews.length - 1].Date
-      } : null
+      dateRange: filteredReviews.length > 0 ? {
+        newest: filteredReviews[0].Date,
+        oldest: filteredReviews[filteredReviews.length - 1].Date
+      } : null,
+      dateRangeFilter: (startDate || endDate) ? { startDate, endDate } : null
     });
     
   } catch (error) {
