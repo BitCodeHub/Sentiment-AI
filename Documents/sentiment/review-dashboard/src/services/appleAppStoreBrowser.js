@@ -339,7 +339,8 @@ class AppleAppStoreBrowserService {
       formData.append('appId', appId);
       formData.append('useServerCredentials', useServerCredentials.toString());
       
-      if (!useServerCredentials) {
+      // Always send credentials as fallback (backend will prefer server credentials if available)
+      if (issuerId && keyId && privateKeyContent) {
         formData.append('issuerId', issuerId);
         formData.append('keyId', keyId);
         
@@ -363,8 +364,9 @@ class AppleAppStoreBrowserService {
             console.log(`  - ${key}:`, value);
           }
         }
+        console.log('[appleAppStoreBrowser] Credentials sent as fallback even with useServerCredentials:', useServerCredentials);
       } else {
-        console.log('[appleAppStoreBrowser] Using server credentials, only appId sent');
+        console.log('[appleAppStoreBrowser] Using server credentials only, no fallback credentials provided');
       }
 
       console.log('[appleAppStoreBrowser] Making axios POST request...');
@@ -621,8 +623,8 @@ class AppleAppStoreBrowserService {
             console.log('[importReviews] End date:', endDateStr);
           }
           
-          // Only send credentials if not using server credentials
-          if (!useServerCredentials) {
+          // Always send credentials as fallback (backend will prefer server credentials if available)
+          if (issuerId && keyId && privateKeyContent) {
             formData.append('issuerId', issuerId);
             formData.append('keyId', keyId);
             
@@ -634,6 +636,7 @@ class AppleAppStoreBrowserService {
             
             formData.append('privateKey', privateKeyContent);
             console.log('[importReviews] Private key added to form data, length:', privateKeyContent.length);
+            console.log('[importReviews] Credentials sent as fallback even with useServerCredentials:', useServerCredentials);
           }
           
           const response = await axios.post(endpoint, formData, {

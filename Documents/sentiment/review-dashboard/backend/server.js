@@ -1309,13 +1309,26 @@ app.get('/api/test', (req, res) => {
 });
 
 // Apple RSS Feed endpoint - for more recent reviews
-app.post('/api/apple-reviews/rss', async (req, res) => {
+app.post('/api/apple-reviews/rss', upload.none(), async (req, res) => {
   console.log('\n=== Apple RSS Feed Request ===');
   console.log('Timestamp:', new Date().toISOString());
   console.log('Request body:', req.body);
   
   try {
-    const { appId, countries = ['us'], limit = 200 } = req.body;
+    const { appId, limit = 200 } = req.body;
+    
+    // Parse countries if it's a JSON string
+    let countries = req.body.countries;
+    if (countries) {
+      try {
+        countries = typeof countries === 'string' ? JSON.parse(countries) : countries;
+      } catch (e) {
+        console.log('[RSS] Failed to parse countries, using default:', e.message);
+        countries = ['us'];
+      }
+    } else {
+      countries = ['us'];
+    }
     
     if (!appId) {
       return res.status(400).json({
@@ -1366,8 +1379,21 @@ app.post('/api/apple-reviews/hybrid', upload.single('privateKey'), async (req, r
   console.log('Timestamp:', new Date().toISOString());
   
   try {
-    const { appId, issuerId, keyId, useServerCredentials, countries = ['us'], daysToFetch = 5475, startDate, endDate } = req.body; // Default to 15 years, US only
+    let { appId, issuerId, keyId, useServerCredentials, daysToFetch = 5475, startDate, endDate } = req.body; // Default to 15 years
     let privateKey = req.body.privateKey;
+    
+    // Parse countries if it's a JSON string
+    let countries = req.body.countries;
+    if (countries) {
+      try {
+        countries = typeof countries === 'string' ? JSON.parse(countries) : countries;
+      } catch (e) {
+        console.log('[Hybrid] Failed to parse countries, using default:', e.message);
+        countries = ['us']; // Default to US only
+      }
+    } else {
+      countries = ['us']; // Default to US only
+    }
     
     console.log('[Hybrid] Request body params:', {
       appId,
@@ -1377,7 +1403,8 @@ app.post('/api/apple-reviews/hybrid', upload.single('privateKey'), async (req, r
       privateKeyLength: privateKey?.length,
       useServerCredentials,
       useServerCredentialsType: typeof useServerCredentials,
-      countries,
+      countries: countries, // Now properly parsed
+      countriesType: typeof countries, // Should be object/array
       daysToFetch,
       startDate,
       endDate
@@ -1421,6 +1448,7 @@ app.post('/api/apple-reviews/hybrid', upload.single('privateKey'), async (req, r
         
         // Get configured apps for server credentials
         const configuredApps = getConfiguredApps();
+        console.log('[Hybrid] Configured apps:', configuredApps.map(app => ({ id: app.id, hasCredentials: !!(app.issuerId && app.keyId && app.privateKey) })));
         const hasServerCredentials = configuredApps.some(app => app.id === appId);
         
         // Set up credentials
@@ -1429,9 +1457,27 @@ app.post('/api/apple-reviews/hybrid', upload.single('privateKey'), async (req, r
           issuerId = config.issuerId;
           privateKey = config.privateKey;
           keyId = config.keyId;
-        } else if (!privateKey && req.file) {
-          privateKey = req.file.buffer.toString('utf8');
+          console.log('[Hybrid] Using server credentials for app:', appId);
+        } else {
+          if (shouldUseServerCredentials && !hasServerCredentials) {
+            console.log('[Hybrid] WARNING: Server credentials requested but not available for app:', appId);
+            console.log('[Hybrid] Falling back to user-provided credentials if available');
+          }
+          
+          if (!privateKey && req.file) {
+            privateKey = req.file.buffer.toString('utf8');
+            console.log('[Hybrid] Using uploaded private key file, size:', req.file.buffer.length);
+          }
         }
+        
+        console.log('[Hybrid] Credential setup complete:', {
+          hasIssuerId: !!issuerId,
+          hasKeyId: !!keyId,
+          hasPrivateKey: !!privateKey,
+          privateKeyLength: privateKey?.length,
+          shouldUseServerCredentials,
+          hasServerCredentials
+        });
         
         if (issuerId && privateKey) {
           const extractedKeyId = keyId || privateKey.match(/AuthKey_([A-Z0-9]+)\.p8/)?.[1];
