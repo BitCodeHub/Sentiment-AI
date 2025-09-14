@@ -238,8 +238,8 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange 
         privateKey,
         config.useServerCredentials,
         {
-          useCache: true,
-          forceRefresh: false, // Use cache when available for better performance
+          useCache: false, // Temporarily disable cache to ensure fresh data
+          forceRefresh: true, // Force refresh to get latest data
           startDate: selectedDateRange.start,
           endDate: selectedDateRange.end
         }
