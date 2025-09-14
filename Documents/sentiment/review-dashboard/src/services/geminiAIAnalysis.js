@@ -12,6 +12,11 @@ if (!apiKey || apiKey === 'your-gemini-api-key-here') {
 
 const genAI = new GoogleGenerativeAI(apiKey);
 
+// Export function to get the API key
+export const getGeminiApiKey = () => {
+  return apiKey;
+};
+
 // Helper function to clean JSON response from Gemini
 const cleanJsonResponse = (text) => {
   // Remove markdown code blocks if present
