@@ -488,11 +488,56 @@ class AppleAppStoreBrowserService {
   }
 
   /**
+   * Fetch recent reviews using RSS feed (no authentication required)
+   * This can provide more current reviews than the App Store Connect API
+   */
+  async fetchRecentReviewsViaRSS(appId, countries = ['us', 'gb', 'ca', 'au']) {
+    try {
+      console.log('[RSS] Fetching recent reviews via RSS feed...');
+      
+      if (!this.isBackendAvailable) {
+        await this.checkBackendAvailability();
+      }
+      
+      if (!this.isBackendAvailable) {
+        console.warn('[RSS] Backend not available for RSS fetch');
+        return [];
+      }
+      
+      const rssUrl = this.backendURL.replace('/apple-reviews', '/apple-reviews/rss');
+      console.log('[RSS] Using RSS endpoint:', rssUrl);
+      
+      const response = await axios.post(rssUrl, {
+        appId,
+        countries,
+        limit: 50
+      }, {
+        timeout: 30000
+      });
+      
+      if (response.data.success) {
+        console.log(`[RSS] Fetched ${response.data.reviews.length} reviews`);
+        if (response.data.reviews.length > 0) {
+          const newest = new Date(response.data.reviews[0].Date);
+          const daysAgo = Math.floor((Date.now() - newest) / (1000 * 60 * 60 * 24));
+          console.log(`[RSS] Most recent review: ${daysAgo} days ago`);
+        }
+        return response.data.reviews;
+      }
+      
+      return [];
+    } catch (error) {
+      console.error('[RSS] Error fetching RSS reviews:', error);
+      return [];
+    }
+  }
+
+  /**
    * Main method to import reviews from Apple App Store
    * Calls backend API if available, otherwise returns mock data
    */
   async importReviews(appId, issuerId, keyId, privateKeyContent, useServerCredentials = false, options = {}) {
-    const { useCache = true, forceRefresh = false, startDate = null, endDate = null } = options;
+    const { useCache = true, forceRefresh = false, startDate = null, endDate = null, useHybrid = true } = options;
     
     try {
       console.log('Importing Apple App Store reviews...');
@@ -534,11 +579,23 @@ class AppleAppStoreBrowserService {
       
       if (this.isBackendAvailable) {
         try {
+          // Use hybrid endpoint if enabled and no specific date range
+          const endpoint = useHybrid && !startDate && !endDate 
+            ? this.backendURL.replace('/apple-reviews', '/apple-reviews/hybrid')
+            : this.backendURL;
+          
+          console.log(`[importReviews] Using endpoint: ${endpoint}`);
+          
           // Always use FormData because backend has multer middleware
           const formData = new FormData();
           formData.append('appId', appId);
           formData.append('useCache', useCache.toString());
           formData.append('forceRefresh', forceRefresh.toString());
+          
+          // Add countries for hybrid endpoint
+          if (useHybrid) {
+            formData.append('countries', JSON.stringify(['us', 'gb', 'ca', 'au']));
+          }
           
           // Add date range parameters if provided
           if (startDate) {
@@ -573,7 +630,7 @@ class AppleAppStoreBrowserService {
             console.log('[importReviews] Private key added to form data, length:', privateKeyContent.length);
           }
           
-          const response = await axios.post(this.backendURL, formData, {
+          const response = await axios.post(endpoint, formData, {
             headers: {
               'Content-Type': 'multipart/form-data'
             },
@@ -584,6 +641,16 @@ class AppleAppStoreBrowserService {
             const reviews = response.data.reviews;
             console.log(`Successfully fetched ${reviews.length} reviews from Apple App Store`);
             console.log(`From cache: ${response.data.fromCache}, Incremental update: ${response.data.incrementalUpdate}`);
+            
+            // Log source information if using hybrid
+            if (response.data.sources) {
+              console.log('Review sources:', response.data.sources);
+              if (response.data.dateRange) {
+                const newest = new Date(response.data.dateRange.newest);
+                const daysAgo = Math.floor((Date.now() - newest) / (1000 * 60 * 60 * 24));
+                console.log(`Most recent review: ${daysAgo} days ago (${newest.toLocaleDateString()})`);
+              }
+            }
             
             // Cache the reviews in frontend if not from backend cache
             if (!response.data.fromCache) {

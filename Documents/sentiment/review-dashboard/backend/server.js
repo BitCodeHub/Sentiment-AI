@@ -15,6 +15,8 @@ const cacheService = require('./services/cacheService');
 console.log('Cache service loaded');
 const redditService = require('./services/redditService');
 console.log('Reddit service loaded');
+const appleRSSService = require('./services/appleRSSService');
+console.log('Apple RSS service loaded');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -1269,6 +1271,198 @@ app.get('/api/test', (req, res) => {
       userAgent: req.headers['user-agent']
     }
   });
+});
+
+// Apple RSS Feed endpoint - for more recent reviews
+app.post('/api/apple-reviews/rss', async (req, res) => {
+  console.log('\n=== Apple RSS Feed Request ===');
+  console.log('Timestamp:', new Date().toISOString());
+  console.log('Request body:', req.body);
+  
+  try {
+    const { appId, countries = ['us'], limit = 50 } = req.body;
+    
+    if (!appId) {
+      return res.status(400).json({
+        error: 'App ID is required'
+      });
+    }
+    
+    // Fetch reviews from RSS feeds
+    const startTime = Date.now();
+    const result = await appleRSSService.fetchMultiCountryReviews(
+      appId,
+      countries,
+      limit
+    );
+    const fetchTime = Date.now() - startTime;
+    
+    console.log(`[RSS] Fetched ${result.reviews.length} reviews in ${fetchTime}ms`);
+    console.log('[RSS] Country results:', result.countryResults);
+    
+    // Check if we have recent reviews
+    if (result.reviews.length > 0) {
+      const mostRecent = new Date(result.reviews[0].Date);
+      const daysAgo = Math.floor((Date.now() - mostRecent) / (1000 * 60 * 60 * 24));
+      console.log(`[RSS] Most recent review: ${daysAgo} days ago`);
+    }
+    
+    res.json({
+      success: true,
+      reviews: result.reviews,
+      totalCount: result.totalCount,
+      countryResults: result.countryResults,
+      fetchTime,
+      source: 'RSS'
+    });
+    
+  } catch (error) {
+    console.error('[RSS] Error:', error);
+    res.status(500).json({
+      error: 'Failed to fetch RSS reviews',
+      details: error.message
+    });
+  }
+});
+
+// Hybrid endpoint - combines App Store Connect API and RSS feeds
+app.post('/api/apple-reviews/hybrid', upload.single('privateKey'), async (req, res) => {
+  console.log('\n=== Apple Hybrid Reviews Request ===');
+  console.log('Timestamp:', new Date().toISOString());
+  
+  try {
+    const { appId, issuerId, keyId, useServerCredentials, countries = ['us'] } = req.body;
+    let privateKey = req.body.privateKey;
+    
+    if (!appId) {
+      return res.status(400).json({
+        error: 'App ID is required'
+      });
+    }
+    
+    const results = {
+      rss: { success: false, reviews: [], error: null },
+      api: { success: false, reviews: [], error: null }
+    };
+    
+    // Try RSS feed first (doesn't require auth)
+    try {
+      console.log('[Hybrid] Fetching from RSS feeds...');
+      const rssResult = await appleRSSService.fetchMultiCountryReviews(appId, countries, 50);
+      results.rss = {
+        success: true,
+        reviews: rssResult.reviews,
+        error: null
+      };
+      console.log(`[Hybrid] RSS: ${rssResult.reviews.length} reviews`);
+    } catch (rssError) {
+      console.error('[Hybrid] RSS error:', rssError.message);
+      results.rss.error = rssError.message;
+    }
+    
+    // Try App Store Connect API if credentials provided
+    if (issuerId || useServerCredentials) {
+      try {
+        console.log('[Hybrid] Fetching from App Store Connect API...');
+        
+        // Get configured apps for server credentials
+        const configuredApps = getConfiguredApps();
+        const hasServerCredentials = configuredApps.some(app => app.id === appId);
+        
+        // Set up credentials
+        if (useServerCredentials === 'true' && hasServerCredentials) {
+          const config = configuredApps.find(app => app.id === appId);
+          issuerId = config.issuerId;
+          privateKey = config.privateKey;
+          keyId = config.keyId;
+        } else if (!privateKey && req.file) {
+          privateKey = req.file.buffer.toString('utf8');
+        }
+        
+        if (issuerId && privateKey) {
+          const extractedKeyId = keyId || privateKey.match(/AuthKey_([A-Z0-9]+)\.p8/)?.[1];
+          const token = generateAppleToken(extractedKeyId, issuerId, privateKey);
+          
+          // Fetch from API with date range for last 30 days
+          const endDate = new Date();
+          const startDate = new Date();
+          startDate.setDate(startDate.getDate() - 30);
+          
+          const apiReviews = await fetchAllReviews(token, appId, 'USA', null, {
+            startDate: startDate.toISOString().split('T')[0],
+            endDate: endDate.toISOString().split('T')[0]
+          });
+          
+          const transformedReviews = apiReviews.map(transformReview);
+          results.api = {
+            success: true,
+            reviews: transformedReviews,
+            error: null
+          };
+          console.log(`[Hybrid] API: ${transformedReviews.length} reviews`);
+        }
+      } catch (apiError) {
+        console.error('[Hybrid] API error:', apiError.message);
+        results.api.error = apiError.message;
+      }
+    }
+    
+    // Merge and deduplicate reviews
+    const allReviews = [...results.rss.reviews, ...results.api.reviews];
+    const uniqueReviews = [];
+    const seenIds = new Set();
+    
+    for (const review of allReviews) {
+      // Create a unique key based on author, date, and rating
+      const key = `${review.Author}_${review.Date}_${review.Rating}`;
+      if (!seenIds.has(key)) {
+        seenIds.add(key);
+        uniqueReviews.push(review);
+      }
+    }
+    
+    // Sort by date (newest first)
+    uniqueReviews.sort((a, b) => new Date(b.Date) - new Date(a.Date));
+    
+    console.log(`[Hybrid] Total unique reviews: ${uniqueReviews.length}`);
+    
+    // Log date range
+    if (uniqueReviews.length > 0) {
+      const newest = new Date(uniqueReviews[0].Date);
+      const oldest = new Date(uniqueReviews[uniqueReviews.length - 1].Date);
+      const newestDaysAgo = Math.floor((Date.now() - newest) / (1000 * 60 * 60 * 24));
+      console.log(`[Hybrid] Date range: ${newestDaysAgo} days ago to ${oldest.toISOString()}`);
+    }
+    
+    res.json({
+      success: true,
+      reviews: uniqueReviews,
+      totalCount: uniqueReviews.length,
+      sources: {
+        rss: {
+          success: results.rss.success,
+          count: results.rss.reviews.length,
+          error: results.rss.error
+        },
+        api: {
+          success: results.api.success,
+          count: results.api.reviews.length,
+          error: results.api.error
+        }
+      },
+      dateRange: uniqueReviews.length > 0 ? {
+        newest: uniqueReviews[0].Date,
+        oldest: uniqueReviews[uniqueReviews.length - 1].Date
+      } : null
+    });
+    
+  } catch (error) {
+    console.error('[Hybrid] Error:', error);
+    res.status(500).json({
+      error: 'Failed to fetch hybrid reviews',
+      details: error.message
+    });
+  }
 });
 
 // Start server
