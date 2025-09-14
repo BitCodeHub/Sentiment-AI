@@ -280,7 +280,9 @@ async function fetchAllReviews(token, appId, territory = 'USA', sinceDate = null
     - Parsed endDate: ${endDate ? endDate.toISOString() : 'null'}`);
   
   let pageCount = 0;
-  while (hasMore) {
+  const maxPages = 100; // Increase max pages to handle more reviews
+  
+  while (hasMore && pageCount < maxPages) {
     pageCount++;
     console.log(`[fetchAllReviews] Fetching page ${pageCount}...`);
     
@@ -1290,7 +1292,7 @@ app.post('/api/apple-reviews/rss', async (req, res) => {
   console.log('Request body:', req.body);
   
   try {
-    const { appId, countries = ['us', 'gb', 'ca', 'au', 'de', 'fr', 'jp', 'it', 'es', 'nl'], limit = 200 } = req.body;
+    const { appId, countries = ['us'], limit = 200 } = req.body;
     
     if (!appId) {
       return res.status(400).json({
@@ -1341,7 +1343,7 @@ app.post('/api/apple-reviews/hybrid', upload.single('privateKey'), async (req, r
   console.log('Timestamp:', new Date().toISOString());
   
   try {
-    const { appId, issuerId, keyId, useServerCredentials, countries = ['us', 'gb', 'ca', 'au', 'de', 'fr', 'jp', 'it', 'es', 'nl'], daysToFetch = 90 } = req.body;
+    const { appId, issuerId, keyId, useServerCredentials, countries = ['us'], daysToFetch = 1825, startDate, endDate } = req.body;
     let privateKey = req.body.privateKey;
     
     if (!appId) {
@@ -1393,14 +1395,25 @@ app.post('/api/apple-reviews/hybrid', upload.single('privateKey'), async (req, r
           const extractedKeyId = keyId || privateKey.match(/AuthKey_([A-Z0-9]+)\.p8/)?.[1];
           const token = generateAppleToken(extractedKeyId, issuerId, privateKey);
           
-          // Fetch from API with date range for specified days
-          const endDate = new Date();
-          const startDate = new Date();
-          startDate.setDate(startDate.getDate() - daysToFetch); // Use configurable days
+          // Fetch from API with date range
+          let apiStartDate, apiEndDate;
+          
+          if (startDate || endDate) {
+            // Use user-provided date range
+            apiStartDate = startDate;
+            apiEndDate = endDate || new Date().toISOString().split('T')[0];
+          } else {
+            // Default to daysToFetch (up to 5 years)
+            apiEndDate = new Date();
+            apiStartDate = new Date();
+            apiStartDate.setDate(apiStartDate.getDate() - Math.min(daysToFetch, 1825)); // Max 5 years
+            apiStartDate = apiStartDate.toISOString().split('T')[0];
+            apiEndDate = apiEndDate.toISOString().split('T')[0];
+          }
           
           const apiReviews = await fetchAllReviews(token, appId, 'USA', null, {
-            startDate: startDate.toISOString().split('T')[0],
-            endDate: endDate.toISOString().split('T')[0]
+            startDate: apiStartDate,
+            endDate: apiEndDate
           });
           
           const transformedReviews = apiReviews.map(transformReview);

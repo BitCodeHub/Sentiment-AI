@@ -491,7 +491,7 @@ class AppleAppStoreBrowserService {
    * Fetch recent reviews using RSS feed (no authentication required)
    * This can provide more current reviews than the App Store Connect API
    */
-  async fetchRecentReviewsViaRSS(appId, countries = ['us', 'gb', 'ca', 'au']) {
+  async fetchRecentReviewsViaRSS(appId, countries = ['us']) {
     try {
       console.log('[RSS] Fetching recent reviews via RSS feed...');
       
@@ -579,8 +579,8 @@ class AppleAppStoreBrowserService {
       
       if (this.isBackendAvailable) {
         try {
-          // Use hybrid endpoint if enabled and no specific date range
-          const endpoint = useHybrid && !startDate && !endDate 
+          // Use hybrid endpoint if enabled
+          const endpoint = useHybrid 
             ? this.backendURL.replace('/apple-reviews', '/apple-reviews/hybrid')
             : this.backendURL;
           
@@ -594,9 +594,9 @@ class AppleAppStoreBrowserService {
           
           // Add countries and days to fetch for hybrid endpoint
           if (useHybrid) {
-            formData.append('countries', JSON.stringify(['us', 'gb', 'ca', 'au', 'de', 'fr', 'jp', 'it', 'es', 'nl']));
-            // Fetch 90 days of data by default (or more if specified in options)
-            formData.append('daysToFetch', (options.daysToFetch || 90).toString());
+            formData.append('countries', JSON.stringify(['us'])); // Only US reviews
+            // Fetch up to 5 years of data by default (or more if specified in options)
+            formData.append('daysToFetch', (options.daysToFetch || 1825).toString());
           }
           
           // Add date range parameters if provided
