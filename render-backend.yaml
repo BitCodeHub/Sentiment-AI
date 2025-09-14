@@ -3,6 +3,7 @@ services:
   - type: web
     name: sentiment-review-backend
     env: node
+    branch: main
     buildCommand: cd Documents/sentiment/review-dashboard/backend && npm install
     startCommand: cd Documents/sentiment/review-dashboard/backend && npm run start:production
     envVars:
@@ -28,6 +29,7 @@ services:
   - type: web
     name: sentiment-review-dashboard
     env: node
+    branch: main
     buildCommand: cd Documents/sentiment/review-dashboard && npm install && npm run build
     startCommand: cd Documents/sentiment/review-dashboard && npx serve -s dist -p $PORT
     envVars:
