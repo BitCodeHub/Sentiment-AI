@@ -592,9 +592,11 @@ class AppleAppStoreBrowserService {
           formData.append('useCache', useCache.toString());
           formData.append('forceRefresh', forceRefresh.toString());
           
-          // Add countries for hybrid endpoint
+          // Add countries and days to fetch for hybrid endpoint
           if (useHybrid) {
             formData.append('countries', JSON.stringify(['us', 'gb', 'ca', 'au', 'de', 'fr', 'jp', 'it', 'es', 'nl']));
+            // Fetch 90 days of data by default (or more if specified in options)
+            formData.append('daysToFetch', (options.daysToFetch || 90).toString());
           }
           
           // Add date range parameters if provided

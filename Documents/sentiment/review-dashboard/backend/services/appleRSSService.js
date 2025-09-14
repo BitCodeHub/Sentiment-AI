@@ -10,11 +10,11 @@ class AppleRSSService {
    * Fetch recent reviews from Apple's RSS feed
    * RSS feeds typically have more current data than the App Store Connect API
    */
-  async fetchRecentReviewsFromRSS(appId, country = 'us', limit = 50) {
+  async fetchRecentReviewsFromRSS(appId, country = 'us', limit = 200, page = 1) {
     try {
       // Apple RSS feed URL format
-      // Example: https://itunes.apple.com/us/rss/customerreviews/id=284882215/sortby=mostrecent/xml
-      const url = `${this.baseURL}/${country}/rss/customerreviews/id=${appId}/sortby=mostrecent/xml`;
+      // Example: https://itunes.apple.com/us/rss/customerreviews/id=284882215/sortby=mostrecent/page=1/xml
+      const url = `${this.baseURL}/${country}/rss/customerreviews/page=${page}/id=${appId}/sortby=mostrecent/xml`;
       
       console.log(`[AppleRSS] Fetching from: ${url}`);
       
@@ -124,21 +124,44 @@ class AppleRSSService {
   /**
    * Fetch reviews from multiple countries
    */
-  async fetchMultiCountryReviews(appId, countries = ['us', 'gb', 'ca', 'au', 'de', 'fr', 'jp', 'it', 'es', 'nl'], limit = 50) {
+  async fetchMultiCountryReviews(appId, countries = ['us', 'gb', 'ca', 'au', 'de', 'fr', 'jp', 'it', 'es', 'nl'], limit = 200) {
     const allReviews = [];
     const results = {};
 
     for (const country of countries) {
       try {
         console.log(`[AppleRSS] Fetching reviews for country: ${country}`);
-        const reviews = await this.fetchRecentReviewsFromRSS(appId, country, limit);
-        const transformedReviews = reviews.map(r => this.transformRSSReview(r, appId, country));
+        
+        // Fetch up to 3 pages per country to get more reviews
+        const maxPages = 3;
+        let countryReviews = [];
+        
+        for (let page = 1; page <= maxPages; page++) {
+          try {
+            const pageReviews = await this.fetchRecentReviewsFromRSS(appId, country, limit, page);
+            if (pageReviews.length === 0) break; // No more reviews
+            
+            countryReviews.push(...pageReviews);
+            console.log(`[AppleRSS] Country ${country}, page ${page}: ${pageReviews.length} reviews`);
+            
+            // Small delay between pages
+            if (page < maxPages) {
+              await new Promise(resolve => setTimeout(resolve, 50));
+            }
+          } catch (pageError) {
+            // If page doesn't exist, just continue
+            console.log(`[AppleRSS] No page ${page} for ${country}`);
+            break;
+          }
+        }
+        
+        const transformedReviews = countryReviews.map(r => this.transformRSSReview(r, appId, country));
         
         allReviews.push(...transformedReviews);
         results[country] = {
           success: true,
-          count: reviews.length,
-          mostRecent: reviews[0]?.updated
+          count: countryReviews.length,
+          mostRecent: countryReviews[0]?.updated
         };
       } catch (error) {
         console.error(`[AppleRSS] Failed to fetch ${country}:`, error.message);

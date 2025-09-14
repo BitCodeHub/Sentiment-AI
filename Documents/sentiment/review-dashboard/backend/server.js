@@ -279,9 +279,15 @@ async function fetchAllReviews(token, appId, territory = 'USA', sinceDate = null
     - Parsed startDate: ${startDate ? startDate.toISOString() : 'null'}
     - Parsed endDate: ${endDate ? endDate.toISOString() : 'null'}`);
   
+  let pageCount = 0;
   while (hasMore) {
+    pageCount++;
+    console.log(`[fetchAllReviews] Fetching page ${pageCount}...`);
+    
     const response = await fetchAppleReviews(token, appId, territory, limit, nextLink);
     const reviews = response.data || [];
+    
+    console.log(`[fetchAllReviews] Page ${pageCount}: received ${reviews.length} reviews`);
     
     // Early exit if no reviews
     if (reviews.length === 0) {
@@ -371,6 +377,8 @@ async function fetchAllReviews(token, appId, territory = 'USA', sinceDate = null
       await new Promise(resolve => setTimeout(resolve, 100));
     }
   }
+  
+  console.log(`[fetchAllReviews] Completed: fetched ${allReviews.length} reviews across ${pageCount} pages`);
   
   return allReviews;
 }
@@ -1282,7 +1290,7 @@ app.post('/api/apple-reviews/rss', async (req, res) => {
   console.log('Request body:', req.body);
   
   try {
-    const { appId, countries = ['us'], limit = 50 } = req.body;
+    const { appId, countries = ['us', 'gb', 'ca', 'au', 'de', 'fr', 'jp', 'it', 'es', 'nl'], limit = 200 } = req.body;
     
     if (!appId) {
       return res.status(400).json({
@@ -1333,7 +1341,7 @@ app.post('/api/apple-reviews/hybrid', upload.single('privateKey'), async (req, r
   console.log('Timestamp:', new Date().toISOString());
   
   try {
-    const { appId, issuerId, keyId, useServerCredentials, countries = ['us', 'gb', 'ca', 'au', 'de', 'fr', 'jp', 'it', 'es', 'nl'] } = req.body;
+    const { appId, issuerId, keyId, useServerCredentials, countries = ['us', 'gb', 'ca', 'au', 'de', 'fr', 'jp', 'it', 'es', 'nl'], daysToFetch = 90 } = req.body;
     let privateKey = req.body.privateKey;
     
     if (!appId) {
@@ -1350,7 +1358,7 @@ app.post('/api/apple-reviews/hybrid', upload.single('privateKey'), async (req, r
     // Try RSS feed first (doesn't require auth)
     try {
       console.log('[Hybrid] Fetching from RSS feeds...');
-      const rssResult = await appleRSSService.fetchMultiCountryReviews(appId, countries, 50);
+      const rssResult = await appleRSSService.fetchMultiCountryReviews(appId, countries, 200);
       results.rss = {
         success: true,
         reviews: rssResult.reviews,
@@ -1385,10 +1393,10 @@ app.post('/api/apple-reviews/hybrid', upload.single('privateKey'), async (req, r
           const extractedKeyId = keyId || privateKey.match(/AuthKey_([A-Z0-9]+)\.p8/)?.[1];
           const token = generateAppleToken(extractedKeyId, issuerId, privateKey);
           
-          // Fetch from API with date range for last 30 days
+          // Fetch from API with date range for specified days
           const endDate = new Date();
           const startDate = new Date();
-          startDate.setDate(startDate.getDate() - 30);
+          startDate.setDate(startDate.getDate() - daysToFetch); // Use configurable days
           
           const apiReviews = await fetchAllReviews(token, appId, 'USA', null, {
             startDate: startDate.toISOString().split('T')[0],
