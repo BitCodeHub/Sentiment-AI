@@ -56,9 +56,7 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange 
     device: 'all',
     version: 'all',
     os: 'all',
-    platform: 'all',
-    country: 'all',
-    language: 'all'
+    platform: 'all'
   });
   // Removed modal states - Analysis now shows inline
   const [expandedSections, setExpandedSections] = useState({
@@ -281,9 +279,7 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange 
       device: 'all',
       version: 'all',
       os: 'all',
-      platform: 'all',
-      country: 'all',
-      language: 'all'
+      platform: 'all'
     });
   }, []);
 
@@ -296,9 +292,7 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange 
       device: new Set(['all']),
       version: new Set(['all']),
       os: new Set(['all']),
-      platform: new Set(['all']),
-      country: new Set(['all']),
-      language: new Set(['all'])
+      platform: new Set(['all'])
     };
     
     data.reviews.forEach((review, index) => {
@@ -309,8 +303,6 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange 
       if (review['App Version'] && review['App Version'].trim()) options.version.add(review['App Version']);
       if (review.os && review.os.trim()) options.os.add(review.os);
       if (review.platform && review.platform.trim()) options.platform.add(review.platform);
-      if (review.Country && review.Country.trim()) options.country.add(review.Country);
-      if (review.Language && review.Language.trim()) options.language.add(review.Language);
     });
     
     // Convert sets to sorted arrays
@@ -1053,46 +1045,6 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange 
                       <option value="all">All OS</option>
                       {metadataOptions.os.slice(1).map(os => (
                         <option key={os} value={os}>{os}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-                
-                {metadataOptions.country && metadataOptions.country.length > 1 && (
-                  <div className="secondary-filter-item">
-                    <label className="filter-label secondary">
-                      <Globe size={14} />
-                      Country
-                    </label>
-                    <select
-                      value={metadataFilters.country}
-                      onChange={(e) => setMetadataFilters(prev => ({ ...prev, country: e.target.value }))}
-                      className="filter-select secondary"
-                      title="Filter by country"
-                    >
-                      <option value="all">All Countries</option>
-                      {metadataOptions.country.slice(1).map(country => (
-                        <option key={country} value={country}>{country}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-                
-                {metadataOptions.language && metadataOptions.language.length > 1 && (
-                  <div className="secondary-filter-item">
-                    <label className="filter-label secondary">
-                      <MessageSquare size={14} />
-                      Language
-                    </label>
-                    <select
-                      value={metadataFilters.language}
-                      onChange={(e) => setMetadataFilters(prev => ({ ...prev, language: e.target.value }))}
-                      className="filter-select secondary"
-                      title="Filter by language"
-                    >
-                      <option value="all">All Languages</option>
-                      {metadataOptions.language.slice(1).map(language => (
-                        <option key={language} value={language}>{language}</option>
                       ))}
                     </select>
                   </div>
