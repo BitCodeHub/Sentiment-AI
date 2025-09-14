@@ -1060,7 +1060,25 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
 
       {!loading && filteredReviews.length === 0 && (
         <div className="empty-state">
+          <AlertCircle size={32} style={{ color: '#6b7280', marginBottom: '12px' }} />
           <p>No reviews found matching the selected filters.</p>
+          {reviews.length === 0 ? (
+            <div style={{ marginTop: '16px', color: '#6b7280' }}>
+              <p style={{ marginBottom: '8px' }}>This could be because:</p>
+              <ul style={{ textAlign: 'left', maxWidth: '500px', margin: '0 auto', lineHeight: '1.6' }}>
+                <li>No reviews exist for the selected date range</li>
+                <li>Apple typically has a 4-7 day delay before reviews appear in their API</li>
+                <li>The selected filters are too restrictive</li>
+              </ul>
+              <p style={{ marginTop: '16px', fontSize: '14px' }}>
+                Try selecting an earlier date range or adjusting your filters.
+              </p>
+            </div>
+          ) : (
+            <p style={{ marginTop: '8px', fontSize: '14px', color: '#6b7280' }}>
+              Try adjusting your filters to see more reviews.
+            </p>
+          )}
         </div>
       )}
 

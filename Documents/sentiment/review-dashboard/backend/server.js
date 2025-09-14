@@ -291,10 +291,16 @@ async function fetchAllReviews(token, appId, territory = 'USA', sinceDate = null
     
     // Log the most recent reviews for debugging
     if (!nextLink) {
+      const daysAgo = Math.floor((Date.now() - newestReview) / (1000 * 60 * 60 * 24));
       console.log(`[fetchAllReviews] Batch ${allReviews.length > 0 ? 'next' : 'first'}:`);
-      console.log(`  - Newest review: ${newestReview.toISOString()} (${Math.floor((Date.now() - newestReview) / (1000 * 60 * 60 * 24))} days ago)`);
+      console.log(`  - Newest review: ${newestReview.toISOString()} (${daysAgo} days ago)`);
       console.log(`  - Oldest review: ${oldestReview.toISOString()}`);
       console.log(`  - Date filter: ${startDate ? startDate.toISOString() : 'none'} to ${endDate ? endDate.toISOString() : 'none'}`);
+      
+      // Log warning about Apple's typical delay
+      if (daysAgo >= 4) {
+        console.log(`  - WARNING: Apple API shows ${daysAgo}-day delay. This is typical for Apple's review API.`);
+      }
     }
     
     // Early stopping: if we have a startDate and the newest review in this batch is before it, stop

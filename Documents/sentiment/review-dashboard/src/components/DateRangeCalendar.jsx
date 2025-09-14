@@ -18,10 +18,11 @@ const DateRangeCalendar = ({ reviews, onDateRangeChange, initialRange, showDispl
 
   // Calculate date range from reviews data
   const dataDateRange = useMemo(() => {
+    const now = new Date();
+    const fiveYearsAgo = new Date(now.getFullYear() - 5, now.getMonth(), now.getDate());
+    
     if (!reviews || reviews.length === 0) {
-      const now = new Date();
       // For empty reviews (like in Apple import), allow selection from 5 years ago to today
-      const fiveYearsAgo = new Date(now.getFullYear() - 5, now.getMonth(), now.getDate());
       return { min: fiveYearsAgo, max: now };
     }
 
@@ -35,16 +36,18 @@ const DateRangeCalendar = ({ reviews, onDateRangeChange, initialRange, showDispl
     }).filter(date => date !== null);
     
     if (dates.length === 0) {
-      const now = new Date();
       // If no valid dates found, allow 5 years range
-      const fiveYearsAgo = new Date(now.getFullYear() - 5, now.getMonth(), now.getDate());
       return { min: fiveYearsAgo, max: now };
     }
     
     const minDate = new Date(Math.min(...dates));
     const maxDate = new Date(Math.max(...dates));
     
-    return { min: minDate, max: maxDate };
+    // IMPORTANT: Always allow selection up to today, even if latest review is older
+    // This handles Apple's typical 4-7 day data delay
+    const effectiveMaxDate = maxDate > now ? maxDate : now;
+    
+    return { min: minDate, max: effectiveMaxDate };
   }, [reviews]);
 
   // Set initial current month to current date when opening
