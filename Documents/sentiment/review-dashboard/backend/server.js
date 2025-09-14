@@ -17,6 +17,8 @@ const redditService = require('./services/redditService');
 console.log('Reddit service loaded');
 const appleRSSService = require('./services/appleRSSService');
 console.log('Apple RSS service loaded');
+const competitorService = require('./services/competitorService');
+console.log('Competitor service loaded');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -1460,6 +1462,227 @@ app.post('/api/apple-reviews/hybrid', upload.single('privateKey'), async (req, r
     console.error('[Hybrid] Error:', error);
     res.status(500).json({
       error: 'Failed to fetch hybrid reviews',
+      details: error.message
+    });
+  }
+});
+
+// ============== COMPETITIVE ANALYSIS ENDPOINTS ==============
+
+// Fetch competitor app info from iTunes API
+app.post('/api/competitors/info', async (req, res) => {
+  console.log('\n=== Competitor Info Request ===');
+  console.log('Timestamp:', new Date().toISOString());
+  console.log('Request body:', req.body);
+  
+  try {
+    const { appIds, country = 'us' } = req.body;
+    
+    if (!appIds || !Array.isArray(appIds) || appIds.length === 0) {
+      return res.status(400).json({
+        error: 'appIds array is required'
+      });
+    }
+    
+    const { results, errors } = await competitorService.fetchMultipleCompetitorInfo(appIds, country);
+    
+    res.json({
+      success: true,
+      results,
+      errors,
+      count: Object.keys(results).length,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('[Competitor Info] Error:', error);
+    res.status(500).json({
+      error: 'Failed to fetch competitor info',
+      details: error.message
+    });
+  }
+});
+
+// Fetch competitor reviews from RSS feeds
+app.post('/api/competitors/reviews', async (req, res) => {
+  console.log('\n=== Competitor Reviews Request ===');
+  console.log('Timestamp:', new Date().toISOString());
+  console.log('Request body:', req.body);
+  
+  try {
+    const { appId, countries = ['us'], limit = 50 } = req.body;
+    
+    if (!appId) {
+      return res.status(400).json({
+        error: 'appId is required'
+      });
+    }
+    
+    const reviewData = await competitorService.fetchCompetitorReviews(appId, countries, limit);
+    
+    res.json({
+      success: true,
+      ...reviewData,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('[Competitor Reviews] Error:', error);
+    res.status(500).json({
+      error: 'Failed to fetch competitor reviews',
+      details: error.message
+    });
+  }
+});
+
+// Fetch competitor Reddit mentions
+app.post('/api/competitors/reddit', async (req, res) => {
+  console.log('\n=== Competitor Reddit Request ===');
+  console.log('Timestamp:', new Date().toISOString());
+  console.log('Request body:', req.body);
+  
+  try {
+    const { appName, timeFilter = 'month', limit = 100, subreddit = 'all' } = req.body;
+    
+    if (!appName) {
+      return res.status(400).json({
+        error: 'appName is required'
+      });
+    }
+    
+    const redditData = await competitorService.fetchCompetitorRedditMentions(appName, {
+      timeFilter,
+      limit,
+      subreddit
+    });
+    
+    res.json({
+      success: true,
+      ...redditData,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('[Competitor Reddit] Error:', error);
+    res.status(500).json({
+      error: 'Failed to fetch competitor Reddit mentions',
+      details: error.message
+    });
+  }
+});
+
+// Get comprehensive competitor analysis
+app.post('/api/competitors/analysis', async (req, res) => {
+  console.log('\n=== Competitor Analysis Request ===');
+  console.log('Timestamp:', new Date().toISOString());
+  console.log('Request body:', req.body);
+  
+  try {
+    const { appId, options = {} } = req.body;
+    
+    if (!appId) {
+      return res.status(400).json({
+        error: 'appId is required'
+      });
+    }
+    
+    const analysis = await competitorService.getCompetitorAnalysis(appId, options);
+    
+    res.json({
+      success: true,
+      analysis,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('[Competitor Analysis] Error:', error);
+    res.status(500).json({
+      error: 'Failed to get competitor analysis',
+      details: error.message
+    });
+  }
+});
+
+// Compare multiple competitors
+app.post('/api/competitors/compare', async (req, res) => {
+  console.log('\n=== Competitor Comparison Request ===');
+  console.log('Timestamp:', new Date().toISOString());
+  console.log('Request body:', req.body);
+  
+  try {
+    const { appIds, options = {} } = req.body;
+    
+    if (!appIds || !Array.isArray(appIds) || appIds.length === 0) {
+      return res.status(400).json({
+        error: 'appIds array is required'
+      });
+    }
+    
+    const comparison = await competitorService.compareCompetitors(appIds, options);
+    
+    res.json({
+      success: true,
+      ...comparison,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('[Competitor Comparison] Error:', error);
+    res.status(500).json({
+      error: 'Failed to compare competitors',
+      details: error.message
+    });
+  }
+});
+
+// Get trending topics across competitors
+app.post('/api/competitors/trending', async (req, res) => {
+  console.log('\n=== Competitor Trending Topics Request ===');
+  console.log('Timestamp:', new Date().toISOString());
+  console.log('Request body:', req.body);
+  
+  try {
+    const { appNames, options = {} } = req.body;
+    
+    if (!appNames || !Array.isArray(appNames) || appNames.length === 0) {
+      return res.status(400).json({
+        error: 'appNames array is required'
+      });
+    }
+    
+    const trending = await competitorService.getTrendingTopics(appNames, options);
+    
+    res.json({
+      success: true,
+      ...trending,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('[Competitor Trending] Error:', error);
+    res.status(500).json({
+      error: 'Failed to get trending topics',
+      details: error.message
+    });
+  }
+});
+
+// Clear competitor cache
+app.delete('/api/competitors/cache/:appId?', async (req, res) => {
+  try {
+    const { appId } = req.params;
+    await competitorService.clearCache(appId);
+    
+    res.json({
+      success: true,
+      message: appId ? `Cache cleared for competitor ${appId}` : 'All competitor cache cleared',
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('[Competitor Cache] Error:', error);
+    res.status(500).json({
+      error: 'Failed to clear competitor cache',
       details: error.message
     });
   }

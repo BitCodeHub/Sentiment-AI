@@ -10,7 +10,8 @@ export const automotiveOEMs = [
     founded: 1937,
     categories: ['Mass Market', 'Luxury', 'Hybrid Leader'],
     strengths: ['Reliability', 'Hybrid Technology', 'Production Efficiency'],
-    appNames: ['Toyota', 'Lexus', 'myToyota']
+    appNames: ['Toyota', 'Lexus', 'myToyota'],
+    appStoreId: '1474532798' // Toyota app
   },
   {
     id: 'volkswagen',
@@ -21,7 +22,8 @@ export const automotiveOEMs = [
     founded: 1937,
     categories: ['Mass Market', 'Luxury', 'Performance'],
     strengths: ['Engineering', 'Brand Portfolio', 'European Market Share'],
-    appNames: ['We Connect', 'myAudi', 'Porsche Connect']
+    appNames: ['We Connect', 'myAudi', 'Porsche Connect'],
+    appStoreId: '1439547464' // We Connect ID.
   },
   {
     id: 'stellantis',
@@ -43,7 +45,8 @@ export const automotiveOEMs = [
     founded: 1908,
     categories: ['Mass Market', 'Trucks', 'EV Transition'],
     strengths: ['Truck Market', 'EV Platform', 'North American Presence'],
-    appNames: ['myChevrolet', 'myCadillac', 'myGMC']
+    appNames: ['myChevrolet', 'myCadillac', 'myGMC'],
+    appStoreId: '1133106177' // myChevrolet
   },
   {
     id: 'ford',
@@ -54,7 +57,8 @@ export const automotiveOEMs = [
     founded: 1903,
     categories: ['Mass Market', 'Trucks', 'Performance'],
     strengths: ['F-Series Dominance', 'Mustang Brand', 'Commercial Vehicles'],
-    appNames: ['FordPass', 'Lincoln Way']
+    appNames: ['FordPass', 'Lincoln Way'],
+    appStoreId: '1095418609' // FordPass
   },
   {
     id: 'mercedes',
@@ -65,7 +69,8 @@ export const automotiveOEMs = [
     founded: 1926,
     categories: ['Luxury', 'Performance', 'Innovation'],
     strengths: ['Luxury Technology', 'Brand Prestige', 'Safety Innovation'],
-    appNames: ['Mercedes me', 'Mercedes-Benz']
+    appNames: ['Mercedes me', 'Mercedes-Benz'],
+    appStoreId: '579578017' // Mercedes me
   },
   {
     id: 'bmw',
@@ -76,7 +81,8 @@ export const automotiveOEMs = [
     founded: 1916,
     categories: ['Luxury', 'Performance', 'Premium'],
     strengths: ['Driving Dynamics', 'Premium Brand', 'Engineering Excellence'],
-    appNames: ['My BMW', 'MINI', 'BMW Connected']
+    appNames: ['My BMW', 'MINI', 'BMW Connected'],
+    appStoreId: '1519490736' // My BMW
   },
   {
     id: 'honda',
@@ -87,7 +93,8 @@ export const automotiveOEMs = [
     founded: 1948,
     categories: ['Mass Market', 'Reliability', 'Motorcycles'],
     strengths: ['Engine Technology', 'Fuel Efficiency', 'Reliability'],
-    appNames: ['HondaLink', 'AcuraLink']
+    appNames: ['HondaLink', 'AcuraLink'],
+    appStoreId: '910251309' // HondaLink
   },
   {
     id: 'nissan',
@@ -98,7 +105,8 @@ export const automotiveOEMs = [
     founded: 1933,
     categories: ['Mass Market', 'EV Pioneer', 'Value'],
     strengths: ['Early EV Adoption', 'Value Proposition', 'Global Alliance'],
-    appNames: ['NissanConnect', 'INFINITI InTouch']
+    appNames: ['NissanConnect', 'INFINITI InTouch'],
+    appStoreId: '1031998388' // NissanConnect EV & Services
   },
   {
     id: 'hyundai-kia',
@@ -109,7 +117,8 @@ export const automotiveOEMs = [
     founded: 1967,
     categories: ['Mass Market', 'Value', 'Design'],
     strengths: ['Design Innovation', 'Warranty', 'Value for Money'],
-    appNames: ['Hyundai Bluelink', 'Kia Connect', 'Genesis Connected Services']
+    appNames: ['Hyundai Bluelink', 'Kia Connect', 'Genesis Connected Services'],
+    appStoreId: '1479552869' // MyHyundai with Bluelink
   },
   
   // EV-Focused OEMs
@@ -122,7 +131,8 @@ export const automotiveOEMs = [
     founded: 2003,
     categories: ['Pure EV', 'Technology', 'Autonomous'],
     strengths: ['EV Technology', 'Software', 'Charging Network', 'Brand Loyalty'],
-    appNames: ['Tesla']
+    appNames: ['Tesla'],
+    appStoreId: '582594009' // Tesla
   },
   {
     id: 'rivian',

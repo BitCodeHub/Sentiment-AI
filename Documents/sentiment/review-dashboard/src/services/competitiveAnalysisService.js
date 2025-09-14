@@ -2,6 +2,9 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getGeminiApiKey } from './geminiAIAnalysis';
 import { automotiveOEMs } from '../data/automotiveOEMs';
 
+// Backend API base URL
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+
 // Initialize Gemini AI
 let genAI = null;
 
@@ -70,57 +73,229 @@ export const analyzeCompetitors = async (currentApp, competitorData) => {
   }
 };
 
-// Get competitor app review data (simulated for now)
+// Get competitor app review data from backend
 export const getCompetitorReviewData = async (oemId) => {
-  // In a real implementation, this would fetch actual review data
-  // from app stores and review aggregators
-  
   const oem = automotiveOEMs.find(o => o.id === oemId);
-  if (!oem) return null;
+  if (!oem || !oem.appStoreId) return null;
   
-  // Simulate review data
+  try {
+    // Fetch comprehensive competitor analysis
+    const response = await fetch('http://localhost:3001/api/competitors/analysis', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        appId: oem.appStoreId,
+        options: {
+          countries: ['us'],
+          reviewLimit: 100,
+          redditTimeFilter: 'month',
+          includeReviews: true,
+          includeReddit: true
+        }
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch competitor data');
+    }
+
+    const data = await response.json();
+    const analysis = data.analysis;
+    
+    // Transform the data to match expected format
+    const sentimentBreakdown = analysis.reviews?.reviews ? 
+      calculateSentimentFromReviews(analysis.reviews.reviews) : 
+      { positive: 50, neutral: 30, negative: 20 };
+    
+    const complaints = analysis.reviews?.reviews ? 
+      extractTopIssues(analysis.reviews.reviews, 'negative') : 
+      ["No complaint data available"];
+      
+    const praises = analysis.reviews?.reviews ? 
+      extractTopIssues(analysis.reviews.reviews, 'positive') : 
+      ["No praise data available"];
+    
+    return {
+      appRating: analysis.appInfo.rating.overall || 0,
+      totalReviews: analysis.appInfo.rating.overallCount || 0,
+      recentReviews: analysis.reviews?.totalCount || 0,
+      sentimentBreakdown,
+      topComplaints: complaints.slice(0, 5),
+      topPraises: praises.slice(0, 5),
+      lastUpdated: analysis.appInfo.lastUpdated,
+      redditMentions: analysis.metrics.redditMentions || 0,
+      redditSentiment: analysis.metrics.redditSentiment || 0
+    };
+  } catch (error) {
+    console.error('Error fetching competitor review data:', error);
+    // Return fallback data
+    return {
+      appRating: 0,
+      totalReviews: 0,
+      recentReviews: 0,
+      sentimentBreakdown: { positive: 0, neutral: 0, negative: 0 },
+      topComplaints: ["Unable to fetch data"],
+      topPraises: ["Unable to fetch data"],
+      error: error.message
+    };
+  }
+};
+
+// Helper function to calculate sentiment from reviews
+const calculateSentimentFromReviews = (reviews) => {
+  if (!reviews || reviews.length === 0) {
+    return { positive: 0, neutral: 0, negative: 0 };
+  }
+  
+  let positive = 0, neutral = 0, negative = 0;
+  
+  reviews.forEach(review => {
+    const rating = review.Rating || review.rating;
+    if (rating >= 4) positive++;
+    else if (rating === 3) neutral++;
+    else negative++;
+  });
+  
+  const total = reviews.length;
   return {
-    appRating: 3.5 + Math.random() * 1.5,
-    totalReviews: Math.floor(10000 + Math.random() * 90000),
-    recentReviews: Math.floor(100 + Math.random() * 900),
-    sentimentBreakdown: {
-      positive: Math.floor(40 + Math.random() * 30),
-      neutral: Math.floor(20 + Math.random() * 20),
-      negative: Math.floor(10 + Math.random() * 20)
-    },
-    topComplaints: [
-      "App crashes frequently",
-      "Login issues",
-      "Slow performance",
-      "Battery drain",
-      "UI not intuitive"
-    ].slice(0, Math.floor(2 + Math.random() * 3)),
-    topPraises: [
-      "Remote start works great",
-      "Love the vehicle tracking",
-      "Charging status is helpful",
-      "Clean interface",
-      "Regular updates"
-    ].slice(0, Math.floor(2 + Math.random() * 3))
+    positive: Math.round((positive / total) * 100),
+    neutral: Math.round((neutral / total) * 100),
+    negative: Math.round((negative / total) * 100)
   };
+};
+
+// Helper function to extract top issues from reviews
+const extractTopIssues = (reviews, sentiment) => {
+  if (!reviews || reviews.length === 0) return [];
+  
+  const targetRatings = sentiment === 'positive' ? [4, 5] : [1, 2];
+  const relevantReviews = reviews.filter(r => {
+    const rating = r.Rating || r.rating;
+    return targetRatings.includes(rating);
+  });
+  
+  // Extract common themes (simplified version)
+  const themes = new Map();
+  const commonPhrases = sentiment === 'positive' ? 
+    ['great', 'love', 'excellent', 'works well', 'easy', 'helpful', 'best', 'perfect'] :
+    ['crash', 'slow', 'bug', 'issue', 'problem', 'fail', 'broken', 'terrible'];
+  
+  relevantReviews.forEach(review => {
+    const text = (review['Review Text'] || review.content || '').toLowerCase();
+    commonPhrases.forEach(phrase => {
+      if (text.includes(phrase)) {
+        themes.set(phrase, (themes.get(phrase) || 0) + 1);
+      }
+    });
+  });
+  
+  // Return top themes
+  return Array.from(themes.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([theme]) => `${theme.charAt(0).toUpperCase() + theme.slice(1)} mentioned frequently`);
 };
 
 // Get Reddit sentiment for competitors
 export const getCompetitorRedditSentiment = async (oemName) => {
-  // In a real implementation, this would fetch actual Reddit data
-  // using the Reddit API through the backend
+  try {
+    const response = await fetch('http://localhost:3001/api/competitors/reddit', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        appName: oemName,
+        timeFilter: 'month',
+        limit: 100,
+        subreddit: 'all'
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch Reddit data');
+    }
+
+    const data = await response.json();
+    
+    // Extract trending topics from posts
+    const trendingTopics = extractTrendingTopics(data.posts || []);
+    
+    return {
+      totalMentions: data.totalMentions || 0,
+      sentimentScore: data.sentiment?.score || 0,
+      trendingTopics: trendingTopics.slice(0, 4),
+      recentPosts: data.posts?.length || 0,
+      sentimentBreakdown: data.sentiment || { positive: 0, neutral: 0, negative: 0 },
+      topPosts: data.posts?.slice(0, 3).map(post => ({
+        title: post.title,
+        score: post.score,
+        url: post.permalink,
+        created: post.created
+      })) || []
+    };
+  } catch (error) {
+    console.error('Error fetching Reddit sentiment:', error);
+    // Return fallback data
+    return {
+      totalMentions: 0,
+      sentimentScore: 0,
+      trendingTopics: [],
+      recentPosts: 0,
+      error: error.message
+    };
+  }
+};
+
+// Helper function to extract trending topics from Reddit posts
+const extractTrendingTopics = (posts) => {
+  if (!posts || posts.length === 0) return [];
   
-  return {
-    totalMentions: Math.floor(50 + Math.random() * 450),
-    sentimentScore: 0.3 + Math.random() * 0.6,
-    trendingTopics: [
-      `${oemName} app update`,
-      `${oemName} connectivity issues`,
-      `${oemName} vs competitors`,
-      `${oemName} new features`
-    ].slice(0, Math.floor(2 + Math.random() * 2)),
-    recentPosts: Math.floor(5 + Math.random() * 20)
-  };
+  const topicCounts = new Map();
+  const commonWords = new Set(['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for']);
+  
+  posts.forEach(post => {
+    const words = `${post.title} ${post.selftext || ''}`.toLowerCase()
+      .split(/\W+/)
+      .filter(word => word.length > 3 && !commonWords.has(word));
+    
+    words.forEach(word => {
+      topicCounts.set(word, (topicCounts.get(word) || 0) + 1);
+    });
+  });
+  
+  return Array.from(topicCounts.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10)
+    .map(([topic]) => topic);
+};
+
+// Fetch multiple competitor info for comparison
+export const fetchCompetitorInfo = async (appIds) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/competitors/info`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        appIds,
+        country: 'us'
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch competitor info');
+    }
+
+    const data = await response.json();
+    return data.results;
+  } catch (error) {
+    console.error('Error fetching competitor info:', error);
+    return {};
+  }
 };
 
 // Compare specific features across competitors
@@ -167,6 +342,67 @@ export const compareFeatures = async (currentApp, competitors) => {
   } catch (error) {
     console.error('Error comparing features:', error);
     throw error;
+  }
+};
+
+// Get trending topics across competitors
+export const getCompetitorTrendingTopics = async (appNames) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/competitors/trending`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        appNames,
+        options: {
+          timeFilter: 'month',
+          limit: 200
+        }
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch trending topics');
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching trending topics:', error);
+    return { topics: [], totalPosts: 0 };
+  }
+};
+
+// Compare multiple competitors
+export const compareCompetitors = async (appIds) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/competitors/compare`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        appIds,
+        options: {
+          countries: ['us'],
+          reviewLimit: 50,
+          redditTimeFilter: 'month',
+          includeReviews: true,
+          includeReddit: true
+        }
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to compare competitors');
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error comparing competitors:', error);
+    return { comparisons: {}, rankings: {}, errors: {} };
   }
 };
 

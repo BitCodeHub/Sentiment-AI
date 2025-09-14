@@ -145,6 +145,28 @@ class CacheService {
     this.memoryCache.clear();
   }
 
+  // Delete keys matching a pattern
+  async deletePattern(pattern) {
+    if (this.useRedis && this.redisClient) {
+      try {
+        const keys = await this.redisClient.keys(pattern);
+        if (keys.length > 0) {
+          await this.redisClient.del(keys);
+        }
+      } catch (error) {
+        console.error('Redis delete pattern error:', error);
+      }
+    }
+    
+    // For memory cache, convert pattern to regex
+    const regex = new RegExp('^' + pattern.replace(/\*/g, '.*') + '$');
+    for (const key of this.memoryCache.keys()) {
+      if (regex.test(key)) {
+        this.memoryCache.delete(key);
+      }
+    }
+  }
+
   // Get cache metadata for an app
   async getAppMetadata(appId) {
     const metaKey = this.generateMetaKey(appId);

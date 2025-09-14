@@ -14,7 +14,12 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Alert, AlertDescription } from './ui/alert';
 import { automotiveOEMs, getOEMById, getCompetitors, oemCategories } from '../data/automotiveOEMs';
-import { analyzeCompetitors } from '../services/competitiveAnalysisService';
+import { 
+  analyzeCompetitors, 
+  getCompetitorReviewData,
+  getCompetitorRedditSentiment,
+  compareCompetitors 
+} from '../services/competitiveAnalysisService';
 import './CompetitiveAnalysis.css';
 
 const COLORS = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f'];
@@ -78,14 +83,48 @@ const CompetitiveAnalysis = ({ currentOEM, currentAppName, onAskAI }) => {
     setError(null);
     
     try {
-      // In a real implementation, this would fetch real data from Reddit, app stores, etc.
-      // For now, we'll simulate with mock data
-      const mockData = {};
+      const competitorDataMap = {};
       
-      for (const competitorId of selectedCompetitors) {
+      // Fetch data for each selected competitor
+      const promises = selectedCompetitors.map(async (competitorId) => {
         const oem = getOEMById(competitorId);
-        if (oem) {
-          mockData[competitorId] = {
+        if (!oem) return null;
+        
+        try {
+          // Fetch review data if app store ID is available
+          let reviewData = null;
+          let redditData = null;
+          
+          if (oem.appStoreId) {
+            reviewData = await getCompetitorReviewData(competitorId);
+          }
+          
+          // Fetch Reddit sentiment
+          redditData = await getCompetitorRedditSentiment(oem.name);
+          
+          competitorDataMap[competitorId] = {
+            name: oem.name,
+            metrics: {
+              appRating: reviewData?.appRating || 0,
+              reviewCount: reviewData?.totalReviews || 0,
+              sentimentScore: redditData?.sentimentScore || 0,
+              redditMentions: redditData?.totalMentions || 0,
+              marketShare: Math.random() * 30, // Still mock for market share
+              innovationScore: 0.6 + Math.random() * 0.4, // Still mock
+              customerSatisfaction: reviewData?.sentimentBreakdown ? 
+                (reviewData.sentimentBreakdown.positive / 100) : 0.7,
+              brandStrength: 0.7 + Math.random() * 0.3 // Still mock
+            },
+            trends: generateTrendData(), // Still using mock trends for now
+            strengths: oem.strengths,
+            appNames: oem.appNames,
+            reviewData,
+            redditData
+          };
+        } catch (error) {
+          console.error(`Error fetching data for ${oem.name}:`, error);
+          // Use fallback data if API fails
+          competitorDataMap[competitorId] = {
             name: oem.name,
             metrics: {
               appRating: 3.5 + Math.random() * 1.5,
@@ -99,16 +138,24 @@ const CompetitiveAnalysis = ({ currentOEM, currentAppName, onAskAI }) => {
             },
             trends: generateTrendData(),
             strengths: oem.strengths,
-            appNames: oem.appNames
+            appNames: oem.appNames,
+            error: error.message
           };
         }
+      });
+      
+      await Promise.all(promises);
+      
+      setCompetitorData(competitorDataMap);
+      
+      // Perform AI analysis if Gemini is configured
+      try {
+        const analysis = await analyzeCompetitors(currentAppName || 'Your App', competitorDataMap);
+        setAnalysisResults(analysis);
+      } catch (aiError) {
+        console.error('AI analysis error:', aiError);
+        // Continue without AI analysis
       }
-      
-      setCompetitorData(mockData);
-      
-      // Perform AI analysis
-      const analysis = await analyzeCompetitors(currentAppName, mockData);
-      setAnalysisResults(analysis);
       
     } catch (err) {
       console.error('Error fetching competitor data:', err);
