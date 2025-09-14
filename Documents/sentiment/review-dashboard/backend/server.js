@@ -258,6 +258,15 @@ async function fetchAppleReviewSummarizations(token, appId, territory = 'USA') {
 
 // Fetch all reviews with pagination
 async function fetchAllReviews(token, appId, territory = 'USA', sinceDate = null, dateRange = null) {
+  console.log('\n[fetchAllReviews] STARTING with parameters:', {
+    appId,
+    territory,
+    sinceDate,
+    dateRange,
+    hasToken: !!token,
+    tokenLength: token?.length
+  });
+  
   const allReviews = [];
   let nextLink = null;
   let hasMore = true;
@@ -1360,6 +1369,20 @@ app.post('/api/apple-reviews/hybrid', upload.single('privateKey'), async (req, r
     const { appId, issuerId, keyId, useServerCredentials, countries = ['us'], daysToFetch = 5475, startDate, endDate } = req.body; // Default to 15 years, US only
     let privateKey = req.body.privateKey;
     
+    console.log('[Hybrid] Request body params:', {
+      appId,
+      hasIssuerId: !!issuerId,
+      hasKeyId: !!keyId,
+      hasPrivateKey: !!privateKey,
+      privateKeyLength: privateKey?.length,
+      useServerCredentials,
+      useServerCredentialsType: typeof useServerCredentials,
+      countries,
+      daysToFetch,
+      startDate,
+      endDate
+    });
+    
     if (!appId) {
       return res.status(400).json({
         error: 'App ID is required'
@@ -1387,9 +1410,12 @@ app.post('/api/apple-reviews/hybrid', upload.single('privateKey'), async (req, r
     }
     
     // Try App Store Connect API if credentials provided
-    if (issuerId || useServerCredentials) {
+    // Check if useServerCredentials is truthy (handle both string "true" and boolean true)
+    const shouldUseServerCredentials = useServerCredentials === 'true' || useServerCredentials === true;
+    
+    if (issuerId || shouldUseServerCredentials) {
       console.log('[Hybrid] Attempting to use Apple API with credentials');
-      console.log(`[Hybrid] Has issuer ID: ${!!issuerId}, Use server credentials: ${useServerCredentials}`);
+      console.log(`[Hybrid] Has issuer ID: ${!!issuerId}, Use server credentials: ${shouldUseServerCredentials}`);
       try {
         console.log('[Hybrid] Fetching from App Store Connect API...');
         
@@ -1398,7 +1424,7 @@ app.post('/api/apple-reviews/hybrid', upload.single('privateKey'), async (req, r
         const hasServerCredentials = configuredApps.some(app => app.id === appId);
         
         // Set up credentials
-        if (useServerCredentials === 'true' && hasServerCredentials) {
+        if (shouldUseServerCredentials && hasServerCredentials) {
           const config = configuredApps.find(app => app.id === appId);
           issuerId = config.issuerId;
           privateKey = config.privateKey;
@@ -1409,6 +1435,14 @@ app.post('/api/apple-reviews/hybrid', upload.single('privateKey'), async (req, r
         
         if (issuerId && privateKey) {
           const extractedKeyId = keyId || privateKey.match(/AuthKey_([A-Z0-9]+)\.p8/)?.[1];
+          
+          console.log('[Hybrid] Generating JWT token with:', {
+            keyId: extractedKeyId,
+            issuerId: issuerId,
+            hasPrivateKey: !!privateKey,
+            privateKeyLength: privateKey?.length
+          });
+          
           const token = generateAppleToken(extractedKeyId, issuerId, privateKey);
           
           // Fetch from API with date range
@@ -1427,10 +1461,21 @@ app.post('/api/apple-reviews/hybrid', upload.single('privateKey'), async (req, r
             apiEndDate = apiEndDate.toISOString().split('T')[0];
           }
           
+          console.log('[Hybrid] Calling fetchAllReviews with:', {
+            appId,
+            territory: 'USA',
+            dateRange: { startDate: apiStartDate, endDate: apiEndDate }
+          });
+          
           const apiReviews = await fetchAllReviews(token, appId, 'USA', null, {
             startDate: apiStartDate,
             endDate: apiEndDate
           });
+          
+          console.log(`[Hybrid] Raw API reviews count: ${apiReviews.length}`);
+          if (apiReviews.length > 0) {
+            console.log('[Hybrid] First raw review sample:', JSON.stringify(apiReviews[0], null, 2));
+          }
           
           const transformedReviews = apiReviews.map(transformReview);
           results.api = {

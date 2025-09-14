@@ -10,7 +10,7 @@ class AppleRSSService {
    * Fetch recent reviews from Apple's RSS feed
    * RSS feeds typically have more current data than the App Store Connect API
    */
-  async fetchRecentReviewsFromRSS(appId, country = 'us', limit = 200, page = 1) {
+  async fetchRecentReviewsFromRSS(appId, country = 'us', limit = 500, page = 1) {
     try {
       // Apple RSS feed URL format
       // Example: https://itunes.apple.com/us/rss/customerreviews/id=284882215/sortby=mostrecent/page=1/xml
@@ -124,7 +124,7 @@ class AppleRSSService {
   /**
    * Fetch reviews from multiple countries
    */
-  async fetchMultiCountryReviews(appId, countries = ['us'], limit = 200) {
+  async fetchMultiCountryReviews(appId, countries = ['us'], limit = 500) {
     const allReviews = [];
     const results = {};
 
@@ -132,8 +132,8 @@ class AppleRSSService {
       try {
         console.log(`[AppleRSS] Fetching reviews for country: ${country}`);
         
-        // Fetch up to 10 pages per country to get more reviews
-        const maxPages = 10;
+        // Fetch up to 50 pages per country to get more reviews
+        const maxPages = 50;
         let countryReviews = [];
         
         for (let page = 1; page <= maxPages; page++) {

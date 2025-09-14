@@ -585,12 +585,14 @@ class AppleAppStoreBrowserService {
             : this.backendURL;
           
           console.log(`[importReviews] Using endpoint: ${endpoint}`);
+          console.log(`[importReviews] useServerCredentials: ${useServerCredentials}`);
           
           // Always use FormData because backend has multer middleware
           const formData = new FormData();
           formData.append('appId', appId);
           formData.append('useCache', useCache.toString());
           formData.append('forceRefresh', forceRefresh.toString());
+          formData.append('useServerCredentials', useServerCredentials.toString());
           
           // Add countries and days to fetch for hybrid endpoint
           if (useHybrid) {
