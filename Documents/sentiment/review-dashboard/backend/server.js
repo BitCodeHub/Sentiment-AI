@@ -1343,7 +1343,7 @@ app.post('/api/apple-reviews/hybrid', upload.single('privateKey'), async (req, r
   console.log('Timestamp:', new Date().toISOString());
   
   try {
-    const { appId, issuerId, keyId, useServerCredentials, countries = ['us'], daysToFetch = 1825, startDate, endDate } = req.body;
+    const { appId, issuerId, keyId, useServerCredentials, countries = ['us'], daysToFetch = 5475, startDate, endDate } = req.body; // Default to 15 years
     let privateKey = req.body.privateKey;
     
     if (!appId) {
@@ -1403,10 +1403,10 @@ app.post('/api/apple-reviews/hybrid', upload.single('privateKey'), async (req, r
             apiStartDate = startDate;
             apiEndDate = endDate || new Date().toISOString().split('T')[0];
           } else {
-            // Default to daysToFetch (up to 5 years)
+            // Default to daysToFetch (no limitation)
             apiEndDate = new Date();
             apiStartDate = new Date();
-            apiStartDate.setDate(apiStartDate.getDate() - Math.min(daysToFetch, 1825)); // Max 5 years
+            apiStartDate.setDate(apiStartDate.getDate() - daysToFetch); // No limitation - fetch all requested days
             apiStartDate = apiStartDate.toISOString().split('T')[0];
             apiEndDate = apiEndDate.toISOString().split('T')[0];
           }

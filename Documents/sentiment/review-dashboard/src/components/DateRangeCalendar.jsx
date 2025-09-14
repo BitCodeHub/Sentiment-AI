@@ -19,11 +19,12 @@ const DateRangeCalendar = ({ reviews, onDateRangeChange, initialRange, showDispl
   // Calculate date range from reviews data
   const dataDateRange = useMemo(() => {
     const now = new Date();
-    const fiveYearsAgo = new Date(now.getFullYear() - 5, now.getMonth(), now.getDate());
+    // Allow selection from App Store launch (July 10, 2008) to today
+    const appStoreLaunch = new Date(2008, 6, 10); // July 10, 2008
     
     if (!reviews || reviews.length === 0) {
-      // For empty reviews (like in Apple import), allow selection from 5 years ago to today
-      return { min: fiveYearsAgo, max: now };
+      // For empty reviews (like in Apple import), allow selection from App Store launch to today
+      return { min: appStoreLaunch, max: now };
     }
 
     const dates = reviews.map(review => {
@@ -36,8 +37,8 @@ const DateRangeCalendar = ({ reviews, onDateRangeChange, initialRange, showDispl
     }).filter(date => date !== null);
     
     if (dates.length === 0) {
-      // If no valid dates found, allow 5 years range
-      return { min: fiveYearsAgo, max: now };
+      // If no valid dates found, allow full historical range
+      return { min: appStoreLaunch, max: now };
     }
     
     const minDate = new Date(Math.min(...dates));
