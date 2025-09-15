@@ -13,8 +13,17 @@ const IntelligenceBriefingHandler = ({ reviews, dateRange, onRequestBriefing }) 
   const [messages, setMessages] = useState([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentBriefing, setCurrentBriefing] = useState(null);
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true); // Start expanded to be visible
   const messagesEndRef = useRef(null);
+  
+  // Debug logging
+  useEffect(() => {
+    console.log('[IntelligenceBriefingHandler] Component mounted/updated', {
+      reviewsCount: reviews?.length || 0,
+      dateRange,
+      isExpanded
+    });
+  }, [reviews, dateRange, isExpanded]);
   
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -310,6 +319,8 @@ const IntelligenceBriefingHandler = ({ reviews, dateRange, onRequestBriefing }) 
       setIsProcessing(false);
     }
   };
+  
+  console.log('[IntelligenceBriefingHandler] Rendering component', { isExpanded, messagesCount: messages.length });
   
   return (
     <div className={`intelligence-briefing-handler ${isExpanded ? 'expanded' : ''}`}>

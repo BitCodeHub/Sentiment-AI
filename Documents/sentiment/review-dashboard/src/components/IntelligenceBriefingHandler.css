@@ -1,12 +1,16 @@
 /* Intelligence Briefing Handler - Dark Theme Styles */
 .intelligence-briefing-handler {
   background: #1a1d2e;
-  border: 1px solid #2a2d3e;
+  border: 2px solid #3b82f6;
   border-radius: 12px;
   overflow: hidden;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), 0 0 20px rgba(59, 130, 246, 0.3);
   margin-bottom: 20px;
+  width: 100%;
+  min-height: 60px;
+  display: block;
+  position: relative;
 }
 
 .intelligence-briefing-handler.expanded {

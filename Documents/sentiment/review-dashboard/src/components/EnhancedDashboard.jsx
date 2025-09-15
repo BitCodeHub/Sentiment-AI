@@ -127,6 +127,11 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange,
     console.log('Current View:', currentView);
   }, [currentView]);
   
+  // Debug briefing handler state
+  useEffect(() => {
+    console.log('[EnhancedDashboard] showBriefingHandler state changed to:', showBriefingHandler);
+  }, [showBriefingHandler]);
+  
   // Debounced date range change handler
   const debouncedDateRangeChangeRef = useRef(null);
   
@@ -935,7 +940,10 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange,
           <button 
             className={`toolbar-btn ${showBriefingHandler ? 'active' : ''}`}
             title="Intelligence Briefing Assistant"
-            onClick={() => setShowBriefingHandler(!showBriefingHandler)}
+            onClick={() => {
+              console.log('[EnhancedDashboard] Toggling briefing handler from', showBriefingHandler, 'to', !showBriefingHandler);
+              setShowBriefingHandler(!showBriefingHandler);
+            }}
           >
             <MessageSquare size={18} />
             <span>Briefing</span>
@@ -1288,11 +1296,22 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange,
 
       {/* Intelligence Briefing Handler */}
       {showBriefingHandler && (
-        <IntelligenceBriefingHandler 
-          reviews={filteredReviews}
-          dateRange={selectedDateRange}
-          onRequestBriefing={handleIntelligenceBriefingRequest}
-        />
+        <div style={{ 
+          marginTop: '20px', 
+          marginBottom: '20px',
+          position: 'relative',
+          zIndex: 100,
+          width: '100%',
+          backgroundColor: 'rgba(255, 0, 0, 0.1)', // Temporary red background to make it visible
+          padding: '20px',
+          border: '3px dashed red' // Temporary border to make it very visible
+        }}>
+          <IntelligenceBriefingHandler 
+            reviews={filteredReviews}
+            dateRange={selectedDateRange}
+            onRequestBriefing={handleIntelligenceBriefingRequest}
+          />
+        </div>
       )}
 
       {/* Charts Grid */}
