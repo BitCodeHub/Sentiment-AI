@@ -111,7 +111,7 @@
                 const genAI = new GoogleGenerativeAI(apiKey);
                 
                 // Test different models
-                const models = ['gemini-2.0-flash-exp', 'gemini-1.5-flash', 'gemini-pro'];
+                const models = ['gemini-2.5-flash']; // ONLY model to use
                 
                 for (const modelName of models) {
                     log(`\nTesting model: ${modelName}`);
@@ -205,7 +205,7 @@ Generate this JSON structure:
                 log('Sending prompt to Gemini...');
                 
                 const model = genAI.getGenerativeModel({
-                    model: 'gemini-1.5-flash',
+                    model: 'gemini-2.5-flash',
                     generationConfig: {
                         temperature: 0.7,
                         responseMimeType: "application/json"

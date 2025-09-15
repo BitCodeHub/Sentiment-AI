@@ -84,10 +84,7 @@ The AI generates comprehensive briefings with:
 
 ## Technical Details
 
-- **AI Models** (in order of preference):
-  - Primary: Gemini 1.5 Flash - Fast and efficient for most tasks
-  - Secondary: Gemini 1.5 Pro - More capable for complex tasks
-  - Fallback: Gemini Pro - Stable fallback option
+- **AI Model**: Gemini 2.5 Flash - The only model used (no fallbacks)
 - **Data Source**: Filtered reviews from your dashboard
 - **Date Parsing**: Natural language understanding
 - **Real-time Analysis**: Based on current review data

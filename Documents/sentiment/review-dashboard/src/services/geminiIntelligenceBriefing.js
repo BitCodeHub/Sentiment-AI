@@ -4,53 +4,36 @@ import { aiAnalysisCache } from './cacheService';
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY || 'AIzaSyCgpECc-whrISaCwlwxXiZV_YppN4dTQT4';
 const genAI = new GoogleGenerativeAI(apiKey);
 
-// Model configuration with fallback
+// Model configuration - ONLY use gemini-2.5-flash
 const MODEL_CONFIGS = {
-  primary: 'gemini-2.0-flash-exp',  // Latest flash model
-  secondary: 'gemini-1.5-flash',  // Stable flash model
-  fallback: 'gemini-pro'  // Final fallback
+  primary: 'gemini-2.5-flash',  // ONLY model to use
+  secondary: 'gemini-2.5-flash',  // Same model, no fallback
+  fallback: 'gemini-2.5-flash'  // Same model, no exceptions
 };
 
 // Track which model is being used
 let currentModelIndex = 0;
 const modelOrder = ['primary', 'secondary', 'fallback'];
 
-// Helper function to get model with fallback
+// Helper function to get model - simplified for single model
 async function getModelWithFallback(forceIndex = null) {
-  const startIndex = forceIndex !== null ? forceIndex : currentModelIndex;
+  const modelName = 'gemini-2.5-flash'; // ONLY model to use
   
-  for (let i = startIndex; i < modelOrder.length; i++) {
-    const modelKey = modelOrder[i];
-    const modelName = MODEL_CONFIGS[modelKey];
-    
-    try {
-      console.log(`[IntelligenceBriefing] Attempting to use ${modelKey} model:`, modelName);
-      // Note: responseMimeType might not be supported by all models
-      const config = {
-        model: modelName,
-        generationConfig: {
-          temperature: 0.7,
-          topP: 0.95,
-          topK: 40,
-          maxOutputTokens: 8192
-        }
-      };
-      
-      // Only add responseMimeType for models that support it
-      if (modelName.includes('flash')) {
-        config.generationConfig.responseMimeType = "application/json";
+  try {
+    console.log(`[IntelligenceBriefing] Using model:`, modelName);
+    const model = genAI.getGenerativeModel({
+      model: modelName,
+      generationConfig: {
+        temperature: 0.7,
+        topP: 0.95,
+        topK: 40,
+        maxOutputTokens: 8192
       }
-      
-      const model = genAI.getGenerativeModel(config);
-      currentModelIndex = i; // Remember which model worked
-      return { model, modelKey, modelName };
-    } catch (error) {
-      console.warn(`[IntelligenceBriefing] ${modelKey} model failed:`, error.message);
-      if (i === modelOrder.length - 1) {
-        // All models failed
-        throw new Error('All Gemini models failed to initialize. Please check your API key and try again.');
-      }
-    }
+    });
+    return { model, modelKey: 'primary', modelName };
+  } catch (error) {
+    console.error(`[IntelligenceBriefing] Failed to initialize ${modelName}:`, error.message);
+    throw new Error(`Failed to initialize ${modelName}. Please check your API key and model availability.`);
   }
 }
 
