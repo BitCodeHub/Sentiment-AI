@@ -135,15 +135,6 @@ const UploadPage = ({ onFileUpload, onAppleImport, isLoading, error }) => {
           </div>
         </div>
 
-        {/* Stats Bar */}
-        <div className="stats-bar">
-          {stats.map((stat, index) => (
-            <div key={index} className="stat-item">
-              <div className="stat-number">{stat.number}</div>
-              <div className="stat-label">{stat.label}</div>
-            </div>
-          ))}
-        </div>
 
         {/* Trusted By Section */}
         <div className="trusted-by-section">
