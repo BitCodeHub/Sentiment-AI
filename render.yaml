@@ -5,7 +5,7 @@ services:
     runtime: node
     repo: https://github.com/BitCodeHub/Sentiment-AI
     branch: main
-    rootDir: Documents/sentiment/review-dashboard
+    rootDir: .
     buildCommand: npm install && npm run build
     startCommand: npx serve -s dist -p $PORT
     envVars:
@@ -24,7 +24,7 @@ services:
     runtime: node
     repo: https://github.com/BitCodeHub/Sentiment-AI
     branch: main
-    rootDir: Documents/sentiment/review-dashboard/backend
+    rootDir: backend
     buildCommand: npm install
     startCommand: npm run start:production
     envVars:
