@@ -35,12 +35,14 @@ import AISentimentSummary from './AISentimentSummary';
 import RedditInfluence from './RedditInfluence';
 import IntelligenceBriefingHandler from './IntelligenceBriefingHandler';
 import CompetitiveAnalysis from './CompetitiveAnalysis';
+import appleAppStoreBrowserService from '../services/appleAppStoreBrowser';
+import { parseAndTransformData, aggregateData } from '../utils/excelParser';
 import './EnhancedDashboard.css';
 
 const TABLEAU_COLORS = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'];
 const COLORS = TABLEAU_COLORS.slice(0, 5); // Use first 5 Tableau colors
 
-const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange }) => {
+const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange, onUpdateData }) => {
   const navigate = useNavigate();
   const [aiInsights, setAiInsights] = useState(null);
   const [deepInsights, setDeepInsights] = useState(null);
@@ -610,8 +612,73 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange 
     };
   }, [showDatePicker]);
 
+  // Function to fetch Apple reviews with date range
+  const fetchAppleReviewsWithDateRange = useCallback(async (dateRange) => {
+    try {
+      const configStr = sessionStorage.getItem('appleAppConfig');
+      if (!configStr) {
+        console.error('[fetchAppleReviewsWithDateRange] No Apple config found');
+        return;
+      }
+      
+      const config = JSON.parse(configStr);
+      const privateKey = sessionStorage.getItem('applePrivateKey');
+      
+      console.log('[fetchAppleReviewsWithDateRange] Fetching reviews with config:', {
+        appId: config.appId,
+        dateRange,
+        useServerCredentials: config.useServerCredentials
+      });
+      
+      const reviews = await appleAppStoreBrowserService.importReviews(
+        config.appId,
+        config.useServerCredentials ? '' : config.issuerId,
+        config.useServerCredentials ? '' : config.keyId || '',
+        config.useServerCredentials ? '' : (privateKey || config.privateKey),
+        config.useServerCredentials,
+        {
+          startDate: dateRange.start,
+          endDate: dateRange.end,
+          useCache: false,
+          forceRefresh: true
+        }
+      );
+      
+      if (reviews && reviews.length > 0) {
+        // Transform and aggregate the reviews
+        const transformedReviews = parseAndTransformData(reviews);
+        const aggregatedData = aggregateData(transformedReviews);
+        
+        // Ensure proper structure
+        if (!aggregatedData.summary || !aggregatedData.summary.distribution) {
+          aggregatedData.summary.distribution = aggregatedData.ratingDistribution || {};
+        }
+        if (!aggregatedData.sentimentBreakdown) {
+          aggregatedData.sentimentBreakdown = aggregatedData.sentimentDistribution || {};
+        }
+        
+        aggregatedData.isAppleData = true;
+        aggregatedData.isEmpty = false;
+        aggregatedData.appName = config.appName || '';
+        aggregatedData.dateRangeFilter = dateRange; // Mark that this data is filtered by date range
+        
+        // Update the data
+        if (onUpdateData) {
+          onUpdateData(aggregatedData);
+        }
+      } else {
+        // No reviews found for date range
+        console.log('[fetchAppleReviewsWithDateRange] No reviews found for date range');
+        setError('No reviews found for the selected date range');
+      }
+    } catch (error) {
+      console.error('[fetchAppleReviewsWithDateRange] Error:', error);
+      throw error;
+    }
+  }, [onUpdateData]);
+
   // Handle date range changes
-  const handleDateRangeChange = useCallback((dateRange) => {
+  const handleDateRangeChange = useCallback(async (dateRange) => {
     setSelectedDateRange(dateRange);
     // Only close the popup if both start and end dates are selected or it's a preset
     if (dateRange.start && dateRange.end) {
@@ -619,8 +686,23 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange 
       setTimeout(() => {
         setShowDatePicker(false);
       }, 100);
+      
+      // For Apple data, fetch new reviews with the selected date range
+      if (data?.isAppleData) {
+        console.log('[EnhancedDashboard] Fetching Apple reviews for date range:', dateRange);
+        setIsDateRangeLoading(true);
+        
+        try {
+          await fetchAppleReviewsWithDateRange(dateRange);
+        } catch (error) {
+          console.error('[EnhancedDashboard] Error fetching reviews:', error);
+          setError('Failed to fetch reviews for selected date range');
+        } finally {
+          setIsDateRangeLoading(false);
+        }
+      }
     }
-  }, []);
+  }, [data?.isAppleData, fetchAppleReviewsWithDateRange]);
 
   const handleDateRangeClick = useCallback((e) => {
     e.stopPropagation();
@@ -628,7 +710,7 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange 
     setShowDatePicker(!showDatePicker);
   }, [showDatePicker]);
 
-  const clearDateRange = useCallback(() => {
+  const clearDateRange = useCallback(async () => {
     setSelectedDateRange({ start: null, end: null });
     setShowDatePicker(false);
     setIsDateRangeLoading(false);
@@ -636,7 +718,23 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange 
     if (debouncedDateRangeChangeRef.current) {
       clearTimeout(debouncedDateRangeChangeRef.current);
     }
-  }, []);
+    
+    // For Apple data, fetch all reviews when clearing date range
+    if (data?.isAppleData) {
+      console.log('[EnhancedDashboard] Clearing date range, fetching all Apple reviews');
+      setIsDateRangeLoading(true);
+      
+      try {
+        // Fetch all reviews without date range
+        await fetchAppleReviewsWithDateRange({ start: null, end: null });
+      } catch (error) {
+        console.error('[EnhancedDashboard] Error fetching reviews:', error);
+        setError('Failed to fetch reviews');
+      } finally {
+        setIsDateRangeLoading(false);
+      }
+    }
+  }, [data?.isAppleData, fetchAppleReviewsWithDateRange]);
 
   const triggerAIAnalysis = useCallback(async () => {
     if (!filteredReviews || filteredReviews.length === 0) return;
