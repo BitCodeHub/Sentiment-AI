@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Frontend Date Range</title>
+</head>
+<body>
+    <h1>Debug Frontend Date Range</h1>
+    <p>Open the browser console and check sessionStorage for date range settings.</p>
+    
+    <script>
+        console.log('=== Checking sessionStorage ===');
+        
+        // Check appleAppConfig
+        const configStr = sessionStorage.getItem('appleAppConfig');
+        if (configStr) {
+            const config = JSON.parse(configStr);
+            console.log('Apple App Config:', config);
+            if (config.startDate || config.endDate) {
+                console.log('Date range in config:');
+                console.log('- Start:', config.startDate);
+                console.log('- End:', config.endDate);
+            }
+        } else {
+            console.log('No appleAppConfig in sessionStorage');
+        }
+        
+        // Check for any other date-related items
+        console.log('\nAll sessionStorage keys:');
+        for (let i = 0; i < sessionStorage.length; i++) {
+            const key = sessionStorage.key(i);
+            const value = sessionStorage.getItem(key);
+            if (key.toLowerCase().includes('date') || key.toLowerCase().includes('range')) {
+                console.log(`${key}:`, value);
+            }
+        }
+        
+        // Calculate what date range gives 174 reviews
+        const today = new Date();
+        const date85DaysAgo = new Date();
+        date85DaysAgo.setDate(date85DaysAgo.getDate() - 85);
+        
+        console.log('\n174 reviews date range:');
+        console.log('- From:', date85DaysAgo.toISOString().split('T')[0]);
+        console.log('- To:', today.toISOString().split('T')[0]);
+        
+        // Show on page
+        document.body.innerHTML += `
+            <h2>Results:</h2>
+            <p>Check browser console for details.</p>
+            <p>The date range that gives 174 reviews is:</p>
+            <ul>
+                <li>From: ${date85DaysAgo.toISOString().split('T')[0]}</li>
+                <li>To: ${today.toISOString().split('T')[0]}</li>
+            </ul>
+        `;
+    </script>
+</body>
+</html>
