@@ -1288,7 +1288,11 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange,
 
       {/* Intelligence Briefing Handler */}
       {showBriefingHandler && (
-        <IntelligenceBriefingHandler />
+        <IntelligenceBriefingHandler 
+          reviews={filteredReviews}
+          dateRange={selectedDateRange}
+          onRequestBriefing={handleIntelligenceBriefingRequest}
+        />
       )}
 
       {/* Charts Grid */}
