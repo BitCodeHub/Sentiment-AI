@@ -135,7 +135,8 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange 
   useEffect(() => {
     if (selectedDateRange.start || selectedDateRange.end) {
       // Only set loading state if we have data already (not on initial load) and not during initial setup
-      if (data && !data.isEmpty && !isInitialLoad) {
+      // Also check if we're already fetching to prevent duplicate loading states
+      if (data && !data.isEmpty && !isInitialLoad && !isDateRangeLoading) {
         setIsDateRangeLoading(true);
       }
       
@@ -168,9 +169,24 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange 
   // Clear date range loading state when data changes
   useEffect(() => {
     if (data && isDateRangeLoading) {
-      setIsDateRangeLoading(false);
+      // Add a small delay to ensure data is fully loaded
+      const timer = setTimeout(() => {
+        setIsDateRangeLoading(false);
+      }, 100);
+      return () => clearTimeout(timer);
     }
-  }, [data]);
+  }, [data, isDateRangeLoading]);
+
+  // Failsafe: Clear loading state after 5 seconds to prevent infinite loading
+  useEffect(() => {
+    if (isDateRangeLoading) {
+      const failsafeTimer = setTimeout(() => {
+        console.warn('[EnhancedDashboard] Clearing date range loading state due to timeout');
+        setIsDateRangeLoading(false);
+      }, 5000);
+      return () => clearTimeout(failsafeTimer);
+    }
+  }, [isDateRangeLoading]);
   
   // Fetch all ratings data when Apple data is available
   useEffect(() => {
@@ -759,7 +775,7 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange 
     };
   }, [handleIntelligenceBriefingRequest]);
 
-  if (isLoading || (isDateRangeLoading && !data?.isEmpty)) {
+  if (isLoading || (isDateRangeLoading && (!data || !data.reviews))) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">

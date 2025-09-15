@@ -119,13 +119,16 @@ const AppleImport = ({ onImport }) => {
     setError('');
     setSuccess(false);
     setIsMockData(false);
-    setImportProgress({ status: 'Connecting to Apple App Store...', percentage: 10 });
+    setImportProgress({ status: 'Fetching reviews...', percentage: 20 });
 
     try {
       // Use file if available, otherwise use text content
       const keyContent = privateKeyFile || privateKey;
       
-      setImportProgress({ status: 'Authenticating...', percentage: 30 });
+      // Only show authentication progress if not using server credentials
+      if (!useServerCredentials) {
+        setImportProgress({ status: 'Authenticating...', percentage: 30 });
+      }
       
       // Save config to session storage for dashboard to use
       const config = {
