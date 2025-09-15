@@ -272,15 +272,9 @@ async function fetchAllReviews(token, appId, territory = 'USA', sinceDate = null
   let hasMore = true;
   const limit = 200; // Max allowed by API
   
-  // Parse date range if provided
-  const startDate = dateRange?.startDate ? new Date(dateRange.startDate) : null;
-  let endDate = dateRange?.endDate ? new Date(dateRange.endDate) : null;
-  
-  // If endDate is provided, set it to end of day (23:59:59.999) to include all reviews from that day
-  if (endDate) {
-    endDate = new Date(endDate);
-    endDate.setHours(23, 59, 59, 999);
-  }
+  // Parse date range if provided - ensure UTC handling
+  const startDate = dateRange?.startDate ? new Date(dateRange.startDate + 'T00:00:00.000Z') : null;
+  let endDate = dateRange?.endDate ? new Date(dateRange.endDate + 'T23:59:59.999Z') : null;
   
   // Debug logging for date range
   console.log(`[fetchAllReviews] Date range parsing:
@@ -330,12 +324,13 @@ async function fetchAllReviews(token, appId, territory = 'USA', sinceDate = null
       }
     }
     
-    // Early stopping: if we have a startDate and the newest review in this batch is before it, stop
-    if (startDate && newestReview < startDate) {
-      console.log(`[fetchAllReviews] Stopping early: newest review in batch is before start date`);
-      hasMore = false;
-      break;
-    }
+    // REMOVED EARLY STOPPING: Apple API might not return reviews in perfect chronological order
+    // so we need to fetch all pages to ensure we don't miss any reviews
+    // if (startDate && newestReview < startDate) {
+    //   console.log(`[fetchAllReviews] Stopping early: newest review in batch is before start date`);
+    //   hasMore = false;
+    //   break;
+    // }
     
     // Filter reviews based on date criteria
     let filtered = reviews;
@@ -361,26 +356,34 @@ async function fetchAllReviews(token, appId, territory = 'USA', sinceDate = null
       });
       
       // Debug logging for filtering
-      if (reviews.length > 0 && filtered.length === 0) {
-        console.log(`[fetchAllReviews] WARNING: All ${reviews.length} reviews filtered out!`);
-        console.log(`  - Sample review date: ${new Date(reviews[0].attributes.createdDate).toISOString()}`);
-        console.log(`  - Date range: ${startDate ? startDate.toISOString() : 'none'} to ${endDate ? endDate.toISOString() : 'none'}`);
+      if (reviews.length > 0) {
+        const filteredCount = reviews.length - filtered.length;
+        if (filteredCount > 0) {
+          console.log(`[fetchAllReviews] Filtered out ${filteredCount} of ${reviews.length} reviews`);
+          if (filtered.length === 0) {
+            console.log(`  - WARNING: All reviews filtered out!`);
+          }
+          console.log(`  - First review date: ${new Date(reviews[0].attributes.createdDate).toISOString()}`);
+          console.log(`  - Last review date: ${new Date(reviews[reviews.length - 1].attributes.createdDate).toISOString()}`);
+          console.log(`  - Date filter: ${startDate ? startDate.toISOString() : 'none'} to ${endDate ? endDate.toISOString() : 'none'}`);
+        }
       }
       
       allReviews.push(...filtered);
       
-      // Stop early if we've reached reviews outside our date range
-      if (filtered.length < reviews.length) {
-        // Check if we should stop based on the oldest review in this batch
-        const oldestReview = reviews[reviews.length - 1];
-        const oldestDate = new Date(oldestReview.attributes.createdDate);
-        
-        // Stop if the oldest review is before our start date or sinceDate
-        if ((startDate && oldestDate < startDate) || (sinceDate && oldestDate <= new Date(sinceDate))) {
-          hasMore = false;
-          break;
-        }
-      }
+      // REMOVED EARLY STOPPING: We need to fetch all pages to ensure no reviews are missed
+      // Apple's API might not return reviews in perfect chronological order
+      // if (filtered.length < reviews.length) {
+      //   // Check if we should stop based on the oldest review in this batch
+      //   const oldestReview = reviews[reviews.length - 1];
+      //   const oldestDate = new Date(oldestReview.attributes.createdDate);
+      //   
+      //   // Stop if the oldest review is before our start date or sinceDate
+      //   if ((startDate && oldestDate < startDate) || (sinceDate && oldestDate <= new Date(sinceDate))) {
+      //     hasMore = false;
+      //     break;
+      //   }
+      // }
     } else {
       allReviews.push(...reviews);
     }
@@ -475,6 +478,7 @@ function transformReview(review) {
     'Review Text': attributes.body || '',
     'Author': attributes.reviewerNickname || 'Anonymous',
     'Date': attributes.createdDate ? new Date(attributes.createdDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+    'DateUTC': attributes.createdDate ? new Date(attributes.createdDate).toISOString() : new Date().toISOString(), // Full UTC timestamp for accurate filtering
     'App Version': attributes.appVersionString || '',
     'Device Model': 'iPhone', // Apple doesn't provide specific model
     'Platform': 'iOS',
@@ -1529,19 +1533,47 @@ app.post('/api/apple-reviews/hybrid', upload.single('privateKey'), async (req, r
     console.log(`  - API reviews: ${results.api.reviews.length}`);
     console.log(`  - Total before deduplication: ${allReviews.length}`);
     
+    // Track deduplication stats
+    let duplicatesRemoved = 0;
+    let duplicatesByType = { reviewId: 0, composite: 0 };
+    
     for (const review of allReviews) {
-      // Create a unique key based on author, date, rating, and title
-      // Include first 50 chars of title to better distinguish reviews
-      const titlePart = (review['Review Title'] || '').substring(0, 50);
-      const key = `${review.Author}_${review.Date}_${review.Rating}_${titlePart}`;
+      // Create a unique key - prefer Review ID if available, otherwise use composite key
+      let key;
+      if (review['Review ID']) {
+        // If we have a review ID, use it for deduplication
+        key = `ID_${review['Review ID']}`;
+      } else {
+        // Fallback to composite key based on author, date, rating, and title
+        // Include first 50 chars of title to better distinguish reviews
+        const titlePart = (review['Review Title'] || '').substring(0, 50);
+        key = `${review.Author}_${review.Date}_${review.Rating}_${titlePart}`;
+      }
+      
       if (!seenIds.has(key)) {
         seenIds.add(key);
         uniqueReviews.push(review);
+      } else {
+        duplicatesRemoved++;
+        if (review['Review ID']) {
+          duplicatesByType.reviewId++;
+        } else {
+          duplicatesByType.composite++;
+        }
       }
     }
     
     // Sort by date (newest first)
     uniqueReviews.sort((a, b) => new Date(b.Date) - new Date(a.Date));
+    
+    // Log deduplication results
+    console.log(`[Hybrid] Deduplication results:`);
+    console.log(`  - Unique reviews: ${uniqueReviews.length}`);
+    console.log(`  - Duplicates removed: ${duplicatesRemoved}`);
+    if (duplicatesRemoved > 0) {
+      console.log(`  - Duplicates by Review ID: ${duplicatesByType.reviewId}`);
+      console.log(`  - Duplicates by composite key: ${duplicatesByType.composite}`);
+    }
     
     console.log(`[Hybrid] Total unique reviews after deduplication: ${uniqueReviews.length}`);
     
@@ -1565,8 +1597,20 @@ app.post('/api/apple-reviews/hybrid', upload.single('privateKey'), async (req, r
         return true;
       });
       
-      console.log(`[Hybrid] Filtered by date range: ${startDate || 'any'} to ${endDate || 'any'}`);
-      console.log(`[Hybrid] Reviews after date filtering: ${filteredReviews.length} (from ${uniqueReviews.length})`);
+      console.log(`[Hybrid] Date range filtering:`);
+      console.log(`  - Filter: ${startDate || 'any'} to ${endDate || 'any'}`);
+      console.log(`  - Before: ${uniqueReviews.length} reviews`);
+      console.log(`  - After: ${filteredReviews.length} reviews`);
+      console.log(`  - Filtered out: ${uniqueReviews.length - filteredReviews.length} reviews`);
+      
+      // Log sample of filtered out reviews for debugging
+      if (uniqueReviews.length - filteredReviews.length > 0) {
+        const filteredOut = uniqueReviews.filter(r => !filteredReviews.includes(r)).slice(0, 5);
+        console.log(`[Hybrid] Sample of filtered out reviews:`);
+        filteredOut.forEach((r, i) => {
+          console.log(`    ${i+1}. Date: ${r.Date}, UTC: ${r.DateUTC || 'N/A'}, Author: ${r.Author.substring(0, 20)}, Rating: ${r.Rating}`);
+        });
+      }
     }
     
     // Log date range
