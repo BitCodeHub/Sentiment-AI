@@ -14,7 +14,7 @@ const features = [
   {
     icon: <Brain className="feature-icon" />,
     title: "AI-Powered Intelligence",
-    subtitle: "Powered by Gemini AI",
+    subtitle: "Powered by AI",
     description: "Transform thousands of reviews into actionable insights with advanced sentiment analysis and trend detection. Get executive briefings in seconds.",
     benefits: ["Executive-ready reports", "Sentiment trends", "Issue prioritization"]
   },
@@ -38,6 +38,20 @@ const features = [
     subtitle: "Bank-level Protection",
     description: "Your data stays secure with enterprise-grade encryption and privacy controls. GDPR compliant with full audit trails.",
     benefits: ["End-to-end encryption", "GDPR compliant", "Audit trails"]
+  },
+  {
+    icon: <Users className="feature-icon" />,
+    title: "Rivue AI Chatbot",
+    subtitle: "Intelligent Analysis",
+    description: "Ask anything about your customer review data with our AI-powered chatbot. Get instant answers about trends, issues, sentiment patterns, and customer insights.",
+    benefits: ["Natural language queries", "Instant data insights", "Smart recommendations"]
+  },
+  {
+    icon: <Target className="feature-icon" />,
+    title: "Competitive Analysis",
+    subtitle: "OEM App Comparison",
+    description: "Compare your app performance against different OEM applications. Understand competitive positioning, feature gaps, and market opportunities through review analysis.",
+    benefits: ["Multi-app comparison", "Market positioning", "Feature gap analysis"]
   }
 ];
 
