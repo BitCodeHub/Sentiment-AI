@@ -84,7 +84,10 @@ The AI generates comprehensive briefings with:
 
 ## Technical Details
 
-- **AI Model**: Gemini 2.5 Flash (with automatic fallback to 1.5 Flash)
+- **AI Models** (in order of preference):
+  - Primary: Gemini 2.5 Flash - Best price-performance model
+  - Secondary: Gemini 2.5 Flash Lite - Optimized for efficiency
+  - Fallback: Gemini 2.0 Flash - Next-gen features
 - **Data Source**: Filtered reviews from your dashboard
 - **Date Parsing**: Natural language understanding
 - **Real-time Analysis**: Based on current review data

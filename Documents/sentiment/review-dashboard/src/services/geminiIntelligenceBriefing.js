@@ -6,14 +6,14 @@ const genAI = new GoogleGenerativeAI(apiKey);
 
 // Model configuration with fallback (matching geminiChatService.js)
 const MODEL_CONFIGS = {
-  primary: 'gemini-2.5-flash',  // Best performance for general AI features
-  experimental: 'gemini-1.5-flash-latest',
-  fallback: 'gemini-1.5-flash'
+  primary: 'gemini-2.5-flash',  // Best model in terms of price-performance
+  secondary: 'gemini-2.5-flash-lite',  // Optimized for cost efficiency
+  fallback: 'gemini-2.0-flash'  // Next-gen features with improved capabilities
 };
 
 // Track which model is being used
 let currentModelIndex = 0;
-const modelOrder = ['primary', 'experimental', 'fallback'];
+const modelOrder = ['primary', 'secondary', 'fallback'];
 
 // Helper function to get model with fallback
 async function getModelWithFallback(forceIndex = null) {
