@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Intelligence Briefing</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .output {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+        .success {
+            color: green;
+            font-weight: bold;
+        }
+        input {
+            padding: 8px;
+            margin-right: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 400px;
+        }
+        .api-key-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f0f9ff;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Test Intelligence Briefing</h1>
+        
+        <div class="api-key-section">
+            <label for="apiKey">Gemini API Key (optional - uses default if empty):</label>
+            <br>
+            <input type="text" id="apiKey" placeholder="Enter your Gemini API key">
+        </div>
+        
+        <button onclick="testDirectAPI()">Test Direct Gemini API Call</button>
+        <button onclick="testWithSampleData()">Test with Sample Review Data</button>
+        <button onclick="clearOutput()">Clear Output</button>
+        
+        <div id="output" class="output"></div>
+    </div>
+
+    <script type="module">
+        import { GoogleGenerativeAI } from 'https://esm.run/@google/generative-ai';
+        
+        window.log = function(message, type = 'info') {
+            const output = document.getElementById('output');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : '';
+            output.innerHTML += `[${timestamp}] <span class="${className}">${message}</span>\n`;
+            output.scrollTop = output.scrollHeight;
+        };
+        
+        window.clearOutput = function() {
+            document.getElementById('output').innerHTML = '';
+        };
+        
+        window.testDirectAPI = async function() {
+            try {
+                log('Starting direct API test...');
+                
+                const apiKey = document.getElementById('apiKey').value || 'AIzaSyCgpECc-whrISaCwlwxXiZV_YppN4dTQT4';
+                log('Using API key: ' + (apiKey.substring(0, 10) + '...'));
+                
+                const genAI = new GoogleGenerativeAI(apiKey);
+                
+                // Test different models
+                const models = ['gemini-2.0-flash-exp', 'gemini-1.5-flash', 'gemini-pro'];
+                
+                for (const modelName of models) {
+                    log(`\nTesting model: ${modelName}`);
+                    
+                    try {
+                        const model = genAI.getGenerativeModel({
+                            model: modelName,
+                            generationConfig: {
+                                temperature: 0.7,
+                                responseMimeType: "application/json"
+                            }
+                        });
+                        
+                        const prompt = `Return a JSON object with this exact structure:
+{
+  "status": "success",
+  "model": "${modelName}",
+  "message": "Test successful",
+  "timestamp": "${new Date().toISOString()}"
+}`;
+                        
+                        const result = await model.generateContent(prompt);
+                        const response = result.response.text();
+                        
+                        log(`Raw response: ${response}`);
+                        
+                        try {
+                            const parsed = JSON.parse(response);
+                            log(`Parsed successfully: ${JSON.stringify(parsed, null, 2)}`, 'success');
+                        } catch (parseError) {
+                            log(`Parse error: ${parseError.message}`, 'error');
+                        }
+                        
+                    } catch (modelError) {
+                        log(`Model ${modelName} failed: ${modelError.message}`, 'error');
+                    }
+                }
+                
+            } catch (error) {
+                log(`Test failed: ${error.message}`, 'error');
+                log(`Stack: ${error.stack}`, 'error');
+            }
+        };
+        
+        window.testWithSampleData = async function() {
+            try {
+                log('Testing with sample review data...');
+                
+                const apiKey = document.getElementById('apiKey').value || 'AIzaSyCgpECc-whrISaCwlwxXiZV_YppN4dTQT4';
+                const genAI = new GoogleGenerativeAI(apiKey);
+                
+                // Sample review data
+                const reviews = [
+                    { rating: 5, content: "Great app! Works perfectly.", sentiment: "positive", category: "General" },
+                    { rating: 1, content: "Crashes constantly. Very frustrating.", sentiment: "negative", category: "Stability" },
+                    { rating: 4, content: "Good features but could use better UI.", sentiment: "positive", category: "UI/UX" },
+                    { rating: 2, content: "Too slow and buggy.", sentiment: "negative", category: "Performance" },
+                    { rating: 5, content: "Excellent customer support!", sentiment: "positive", category: "Support" }
+                ];
+                
+                const insights = {
+                    totalReviews: 5,
+                    sentimentCounts: { positive: 3, negative: 2, neutral: 0 },
+                    topIssues: [
+                        { category: "Performance", count: 2 },
+                        { category: "UI/UX", count: 1 }
+                    ]
+                };
+                
+                const prompt = `IMPORTANT: Return only a valid JSON object.
+
+You are analyzing customer reviews. Based on this data:
+- Total Reviews: ${insights.totalReviews}
+- Positive: ${insights.sentimentCounts.positive}, Negative: ${insights.sentimentCounts.negative}
+- Top Issues: ${insights.topIssues.map(i => `${i.category} (${i.count})`).join(', ')}
+
+Generate this JSON structure:
+{
+  "headline": "Brief summary of the review analysis",
+  "keyFindings": [
+    {
+      "finding": "Main insight from the data",
+      "impact": "Business impact",
+      "evidence": "Supporting data",
+      "priority": "high"
+    }
+  ],
+  "executiveSummary": "Summary of the analysis"
+}`;
+                
+                log('Sending prompt to Gemini...');
+                
+                const model = genAI.getGenerativeModel({
+                    model: 'gemini-1.5-flash',
+                    generationConfig: {
+                        temperature: 0.7,
+                        responseMimeType: "application/json"
+                    }
+                });
+                
+                const result = await model.generateContent(prompt);
+                const response = result.response.text();
+                
+                log(`\nRaw response length: ${response.length}`);
+                log(`Raw response:\n${response}`);
+                
+                try {
+                    const parsed = JSON.parse(response);
+                    log(`\nParsed successfully!`, 'success');
+                    log(`Formatted response:\n${JSON.stringify(parsed, null, 2)}`);
+                } catch (parseError) {
+                    log(`\nParse error: ${parseError.message}`, 'error');
+                    
+                    // Try to extract JSON
+                    const jsonMatch = response.match(/\{[\s\S]*\}/);
+                    if (jsonMatch) {
+                        try {
+                            const extracted = JSON.parse(jsonMatch[0]);
+                            log(`\nExtracted JSON successfully:`, 'success');
+                            log(JSON.stringify(extracted, null, 2));
+                        } catch (e) {
+                            log(`Failed to extract JSON: ${e.message}`, 'error');
+                        }
+                    }
+                }
+                
+            } catch (error) {
+                log(`Test failed: ${error.message}`, 'error');
+                log(`Stack: ${error.stack}`, 'error');
+            }
+        };
+    </script>
+</body>
+</html>
