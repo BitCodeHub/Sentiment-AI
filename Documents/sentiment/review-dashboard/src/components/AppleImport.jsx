@@ -343,18 +343,21 @@ const AppleImport = ({ onImport }) => {
               : 'Select date range (optional)'}
           </button>
           {showDatePicker && (
-            <div className="date-picker-popup">
-              <DateRangeCalendar 
-                onDateRangeChange={(range) => {
-                  console.log('[AppleImport] Date range selected:', range);
-                  setDateRange(range);
-                  setShowDatePicker(false);
-                }}
-                initialRange={dateRange}
-                inline={true}
-                showDisplay={false}
-              />
-            </div>
+            <>
+              <div className="date-picker-backdrop" onClick={() => setShowDatePicker(false)} />
+              <div className="date-picker-popup">
+                <DateRangeCalendar 
+                  onDateRangeChange={(range) => {
+                    console.log('[AppleImport] Date range selected:', range);
+                    setDateRange(range);
+                    setShowDatePicker(false);
+                  }}
+                  initialRange={dateRange}
+                  inline={true}
+                  showDisplay={false}
+                />
+              </div>
+            </>
           )}
         </div>
 

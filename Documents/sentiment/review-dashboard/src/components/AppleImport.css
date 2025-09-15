@@ -64,24 +64,46 @@
   border-color: rgba(71, 85, 105, 0.7);
 }
 
-.date-picker-popup {
-  position: absolute;
-  z-index: 1000;
-  top: 100%;
-  margin-top: 8px;
+.date-picker-backdrop {
+  position: fixed;
+  top: 0;
   left: 0;
   right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 9999;
+}
+
+.date-picker-popup {
+  position: fixed;
+  z-index: 10000;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   max-width: 580px;
-  width: calc(100% - 20px);
-  margin-left: auto;
-  margin-right: auto;
-  background: rgba(15, 23, 42, 0.95);
+  width: calc(100vw - 40px);
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+  background: rgba(15, 23, 42, 0.98);
   border: 1px solid rgba(51, 65, 85, 0.7);
   border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(10px);
-  padding: 16px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(20px);
+  padding: 20px;
   box-sizing: border-box;
+  animation: fadeInScale 0.2s ease-out;
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
 }
 
 .date-range-selector .date-range-display {
@@ -657,11 +679,9 @@ input[type="file"] {
   }
   
   .date-picker-popup {
-    width: calc(100vw - 40px);
+    width: calc(100vw - 20px);
     max-width: none;
-    left: 50%;
-    right: auto;
-    transform: translateX(-50%);
+    padding: 16px;
   }
 }
 
