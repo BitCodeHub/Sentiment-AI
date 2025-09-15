@@ -132,6 +132,28 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange,
   useEffect(() => {
     console.log('[EnhancedDashboard] showBriefingHandler state changed to:', showBriefingHandler);
   }, [showBriefingHandler]);
+
+  // 🚀 Listen for background Apple reviews loading
+  useEffect(() => {
+    const handleAppleReviewsLoaded = (event) => {
+      const { reviews, isMockData } = event.detail;
+      console.log('🎯 Dashboard received background-loaded reviews:', reviews.length);
+      
+      // Update dashboard with the loaded reviews
+      if (onFetchReviews && reviews.length > 0) {
+        console.log('🔄 Updating dashboard data with background-loaded reviews');
+        onFetchReviews(reviews);
+      }
+    };
+
+    // Listen for the custom event
+    window.addEventListener('appleReviewsLoaded', handleAppleReviewsLoaded);
+
+    // Cleanup event listener
+    return () => {
+      window.removeEventListener('appleReviewsLoaded', handleAppleReviewsLoaded);
+    };
+  }, [onFetchReviews]);
   
   // Debounced date range change handler
   const debouncedDateRangeChangeRef = useRef(null);

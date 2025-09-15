@@ -115,20 +115,13 @@ const AppleImport = ({ onImport }) => {
       }
     }
 
-    setIsLoading(true);
     setError('');
     setSuccess(false);
     setIsMockData(false);
-    setImportProgress({ status: 'Fetching reviews...', percentage: 20 });
 
     try {
       // Use file if available, otherwise use text content
       const keyContent = privateKeyFile || privateKey;
-      
-      // Only show authentication progress if not using server credentials
-      if (!useServerCredentials) {
-        setImportProgress({ status: 'Authenticating...', percentage: 30 });
-      }
       
       // Save config to session storage for dashboard to use
       const config = {
@@ -147,10 +140,17 @@ const AppleImport = ({ onImport }) => {
         sessionStorage.setItem('applePrivateKey', keyContent);
       }
       
-      const reviews = await appleAppStoreBrowserService.importReviews(
+      // 🚀 INSTANT DASHBOARD ACCESS: Navigate to dashboard immediately with empty state
+      console.log('🚀 Navigating to dashboard instantly for better UX');
+      onImport([]); // Empty array triggers dashboard with loading state
+      
+      // 🔄 BACKGROUND LOADING: Fetch reviews in background without blocking UI
+      setImportProgress({ status: 'Loading reviews in background...', percentage: 0 });
+      
+      // Start background fetch
+      fetchReviewsInBackground(
         appId.trim(),
         useServerCredentials ? '' : issuerId.trim(),
-        '', // keyId - not used in current implementation
         useServerCredentials ? '' : keyContent,
         useServerCredentials,
         {
@@ -160,40 +160,67 @@ const AppleImport = ({ onImport }) => {
           forceRefresh: true
         }
       );
+      
+    } catch (err) {
+      setError(err.message || 'Failed to start import process');
+      setImportProgress(null);
+    }
+  };
 
-      setImportProgress({ status: 'Processing reviews...', percentage: 80 });
+  // Background review fetching function
+  const fetchReviewsInBackground = async (appId, issuerId, keyContent, useServerCredentials, options) => {
+    try {
+      setImportProgress({ status: 'Fetching reviews...', percentage: 25 });
+      
+      const reviews = await appleAppStoreBrowserService.importReviews(
+        appId,
+        issuerId,
+        '', // keyId - not used in current implementation
+        keyContent,
+        useServerCredentials,
+        options
+      );
+
+      setImportProgress({ status: 'Processing reviews...', percentage: 75 });
 
       if (reviews && reviews.length > 0) {
         // Check if this is mock data
+        let actualReviews = reviews;
         if (reviews[0]._isMockData) {
           setIsMockData(true);
-          delete reviews[0]._isMockData;
+          actualReviews = reviews.map(review => {
+            const { _isMockData, ...cleanReview } = review;
+            return cleanReview;
+          });
         }
         
-        setImportProgress({ status: `Imported ${reviews.length} reviews`, percentage: 100 });
-        onImport(reviews);
+        setImportProgress({ status: `✅ Loaded ${actualReviews.length} reviews`, percentage: 100 });
+        
+        // 🎯 UPDATE DASHBOARD: Send reviews to dashboard for live update
+        console.log('🔄 Updating dashboard with fetched reviews:', actualReviews.length);
+        
+        // Dispatch custom event to update dashboard with new data
+        const updateEvent = new CustomEvent('appleReviewsLoaded', { 
+          detail: { reviews: actualReviews, isMockData: reviews[0]?._isMockData || false } 
+        });
+        window.dispatchEvent(updateEvent);
+        
         setSuccess(true);
         
-        // Clear form after successful import
+        // Clear progress after delay
         setTimeout(() => {
-          setSuccess(false);
           setImportProgress(null);
-          if (!isMockData) {
-            setAppId('');
-            setIssuerId('');
-            setPrivateKey('');
-            setPrivateKeyFile(null);
-          }
-        }, 5000);
+          setSuccess(false);
+        }, 3000);
+        
       } else {
-        setError('No reviews found for the specified app');
-        setImportProgress(null);
+        setImportProgress({ status: '⚠️ No reviews found', percentage: 100 });
+        setTimeout(() => setImportProgress(null), 3000);
       }
     } catch (err) {
-      setError(err.message || 'Failed to import reviews from Apple App Store');
-      setImportProgress(null);
-    } finally {
-      setIsLoading(false);
+      console.error('Background fetch error:', err);
+      setImportProgress({ status: `❌ Error: ${err.message}`, percentage: 100 });
+      setTimeout(() => setImportProgress(null), 5000);
     }
   };
 
@@ -374,9 +401,9 @@ const AppleImport = ({ onImport }) => {
           <button
             className="import-btn primary"
             onClick={handleImport}
-            disabled={isLoading || !appId || (!useServerCredentials && (!issuerId || !privateKey))}
+            disabled={!appId || (!useServerCredentials && (!issuerId || !privateKey))}
           >
-            {isLoading ? 'Importing...' : 'Import Reviews'}
+            🚀 Go to Dashboard
           </button>
 
           <button
