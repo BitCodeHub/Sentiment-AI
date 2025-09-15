@@ -1301,10 +1301,7 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange,
           marginBottom: '20px',
           position: 'relative',
           zIndex: 100,
-          width: '100%',
-          backgroundColor: 'rgba(255, 0, 0, 0.1)', // Temporary red background to make it visible
-          padding: '20px',
-          border: '3px dashed red' // Temporary border to make it very visible
+          width: '100%'
         }}>
           <IntelligenceBriefingHandler 
             reviews={filteredReviews}

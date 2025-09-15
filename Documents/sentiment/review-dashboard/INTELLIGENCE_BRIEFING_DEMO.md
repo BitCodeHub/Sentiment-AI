@@ -84,7 +84,7 @@ The AI generates comprehensive briefings with:
 
 ## Technical Details
 
-- **AI Model**: Gemini 1.5 Flash
+- **AI Model**: Gemini 2.5 Flash (with automatic fallback to 1.5 Flash)
 - **Data Source**: Filtered reviews from your dashboard
 - **Date Parsing**: Natural language understanding
 - **Real-time Analysis**: Based on current review data

@@ -4,6 +4,48 @@ import { aiAnalysisCache } from './cacheService';
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY || 'AIzaSyCgpECc-whrISaCwlwxXiZV_YppN4dTQT4';
 const genAI = new GoogleGenerativeAI(apiKey);
 
+// Model configuration with fallback (matching geminiChatService.js)
+const MODEL_CONFIGS = {
+  primary: 'gemini-2.5-flash',  // Best performance for general AI features
+  experimental: 'gemini-1.5-flash-latest',
+  fallback: 'gemini-1.5-flash'
+};
+
+// Track which model is being used
+let currentModelIndex = 0;
+const modelOrder = ['primary', 'experimental', 'fallback'];
+
+// Helper function to get model with fallback
+async function getModelWithFallback(forceIndex = null) {
+  const startIndex = forceIndex !== null ? forceIndex : currentModelIndex;
+  
+  for (let i = startIndex; i < modelOrder.length; i++) {
+    const modelKey = modelOrder[i];
+    const modelName = MODEL_CONFIGS[modelKey];
+    
+    try {
+      console.log(`[IntelligenceBriefing] Attempting to use ${modelKey} model:`, modelName);
+      const model = genAI.getGenerativeModel({ 
+        model: modelName,
+        generationConfig: {
+          temperature: 0.7,
+          topP: 0.95,
+          topK: 40,
+          maxOutputTokens: 8192,
+        }
+      });
+      currentModelIndex = i; // Remember which model worked
+      return { model, modelKey, modelName };
+    } catch (error) {
+      console.warn(`[IntelligenceBriefing] ${modelKey} model failed:`, error.message);
+      if (i === modelOrder.length - 1) {
+        // All models failed
+        throw new Error('All Gemini models failed to initialize. Please check your API key and try again.');
+      }
+    }
+  }
+}
+
 // Helper function to clean JSON response from Gemini
 const cleanJsonResponse = (text) => {
   // Remove markdown code blocks if present
@@ -145,8 +187,9 @@ Generate a JSON briefing with:
 IMPORTANT: Return only valid JSON without any markdown formatting or additional text.
 Focus on actionable intelligence that drives business decisions.`;
 
-    // Use Gemini 1.5 Flash (2.0 Flash is not yet available)
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    // Use Gemini 2.5 Flash with fallback to 1.5 Flash
+    const { model, modelName } = await getModelWithFallback();
+    console.log(`[IntelligenceBriefing] Using model: ${modelName}`);
     
     const response = await model.generateContent(prompt);
     const responseText = response.text();
@@ -171,7 +214,7 @@ Focus on actionable intelligence that drives business decisions.`;
 // Generate a quick summary briefing
 export const generateQuickBriefing = async (reviews, topic) => {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const { model } = await getModelWithFallback();
     
     const prompt = `Generate a quick 2-3 sentence briefing about ${topic} based on these ${reviews.length} customer reviews. 
     Focus on the most important finding and its business impact. Be concise and actionable.
@@ -221,7 +264,7 @@ Generate a JSON comparison:
 
 Return only valid JSON.`;
 
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const { model } = await getModelWithFallback();
     const response = await model.generateContent(prompt);
     
     const responseText = response.text();
