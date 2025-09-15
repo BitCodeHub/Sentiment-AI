@@ -345,11 +345,14 @@ const AppleImport = ({ onImport }) => {
           {showDatePicker && (
             <div className="date-picker-popup">
               <DateRangeCalendar 
-                onChange={(range) => {
+                onDateRangeChange={(range) => {
+                  console.log('[AppleImport] Date range selected:', range);
                   setDateRange(range);
                   setShowDatePicker(false);
                 }}
                 initialRange={dateRange}
+                inline={true}
+                showDisplay={false}
               />
             </div>
           )}
