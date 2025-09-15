@@ -7,56 +7,44 @@ import './AppleImport.css';
 const AppleImport = ({ onImport }) => {
   const [appId, setAppId] = useState('');
   const [issuerId, setIssuerId] = useState('');
-  const [keyId, setKeyId] = useState('');
   const [privateKey, setPrivateKey] = useState('');
   const [privateKeyFile, setPrivateKeyFile] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [showInstructions, setShowInstructions] = useState(false);
   const [backendAvailable, setBackendAvailable] = useState(null);
   const [importProgress, setImportProgress] = useState(null);
   const [isMockData, setIsMockData] = useState(false);
-  const [availableApps, setAvailableApps] = useState([]);
-  const [hasServerCredentials, setHasServerCredentials] = useState(false);
-  const [useServerCredentials, setUseServerCredentials] = useState(false); // Let user choose credentials
-  const useCache = true; // Always use cache when available
-  const forceRefresh = false; // Don't force refresh by default
-  const [metadata, setMetadata] = useState(null);
-  const [fetchingMetadata, setFetchingMetadata] = useState(false);
-  const [selectedStartDate, setSelectedStartDate] = useState(null);
-  const [selectedEndDate, setSelectedEndDate] = useState(null);
-  const [selectedAppName, setSelectedAppName] = useState('');
-  const [showDateRange, setShowDateRange] = useState(true);
+  const [dateRange, setDateRange] = useState({ start: null, end: null });
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [useServerCredentials, setUseServerCredentials] = useState(false);
+  const [apps, setApps] = useState([]);
+  const [selectedApp, setSelectedApp] = useState(null);
 
-  // Check backend availability and configured apps on mount
+  // Check backend availability and fetch apps on mount
   useEffect(() => {
     const checkBackend = async () => {
       await appleAppStoreBrowserService.checkBackendAvailability();
       setBackendAvailable(appleAppStoreBrowserService.isBackendAvailable);
       
-      // Fetch configured apps if backend is available
+      // If backend is available, fetch configured apps
       if (appleAppStoreBrowserService.isBackendAvailable) {
         try {
-          const response = await fetch(appleAppStoreBrowserService.backendURL.replace('/apple-reviews', '/apple-apps'));
+          const response = await fetch(`${appleAppStoreBrowserService.backendUrl}/api/apple-reviews/apps`);
           if (response.ok) {
             const data = await response.json();
-            setAvailableApps(data.apps || []);
-            const hasCredentials = data.hasServerCredentials || false;
-            setHasServerCredentials(hasCredentials);
-            
-            // If server credentials are available, use them by default
-            if (hasCredentials) {
-              setUseServerCredentials(true);
-            }
-            
-            // If there are configured apps, select the first one by default
             if (data.apps && data.apps.length > 0) {
-              setAppId(data.apps[0].id);
-              setSelectedAppName(data.apps[0].name || '');
+              setApps(data.apps);
+              setUseServerCredentials(true);
+              // Auto-select first app
+              const firstApp = data.apps[0];
+              setSelectedApp(firstApp);
+              setAppId(firstApp.id);
             }
           }
-        } catch (err) {
-          console.log('Could not fetch configured apps');
+        } catch (error) {
+          console.error('Error fetching apps:', error);
         }
       }
     };
@@ -66,11 +54,10 @@ const AppleImport = ({ onImport }) => {
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (file && file.name.endsWith('.p8')) {
+      setPrivateKeyFile(file);
       const reader = new FileReader();
       reader.onload = (event) => {
-        const content = event.target.result;
-        setPrivateKey(content);
-        setPrivateKeyFile(null); // Clear file reference, we have the content now
+        setPrivateKey(event.target.result);
         setError('');
       };
       reader.readAsText(file);
@@ -94,11 +81,6 @@ const AppleImport = ({ onImport }) => {
       errors.push('Issuer ID should be in UUID format (e.g., xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)');
     }
     
-    // Validate Key ID
-    if (!/^[A-Z0-9]{10}$/.test(keyId.trim())) {
-      errors.push('Key ID should be 10 characters (uppercase letters and numbers)');
-    }
-    
     // Validate private key
     if (!privateKey || !privateKey.includes('BEGIN PRIVATE KEY')) {
       errors.push('Invalid private key format');
@@ -107,97 +89,14 @@ const AppleImport = ({ onImport }) => {
     return errors;
   };
 
-  // Fetch metadata when credentials are complete
-  const fetchMetadata = async () => {
-    if (!appId) return;
-    
-    // Check if we have necessary credentials
-    if (!hasServerCredentials || !useServerCredentials) {
-      if (!issuerId || !keyId || !privateKey) return;
-    }
-    
-    setFetchingMetadata(true);
-    setError('');
-    
-    try {
-      // Always use the text content (privateKey) which is set from file or direct input
-      const keyContent = privateKey;
-      const metadata = await appleAppStoreBrowserService.getReviewMetadata(
-        appId.trim(),
-        issuerId.trim(),
-        keyId.trim(),
-        keyContent,
-        useServerCredentials && hasServerCredentials
-      );
-      setMetadata(metadata);
-      setShowDateRange(true);
-    } catch (err) {
-      setError('Failed to fetch review metadata: ' + err.message);
-    } finally {
-      setFetchingMetadata(false);
-    }
-  };
-
-  const handleDateRangeChange = (range) => {
-    setSelectedStartDate(range.start);
-    setSelectedEndDate(range.end);
-  };
-
-  const handleEnterApp = async () => {
-    // Validate minimum requirements
-    if (!appId) {
-      setError('Please select an app');
+  const handleImport = async () => {
+    if (!appId || (!useServerCredentials && (!issuerId || !privateKey))) {
+      setError('Please fill in all required fields');
       return;
     }
-    
-    // Enter app with empty data - reviews will be fetched on-demand
-    onImport([]);
-    setSuccess(true);
-    setImportProgress({ status: 'Entering dashboard...', percentage: 100 });
-    
-    // Store app credentials in session for later use
-    if (typeof window !== 'undefined') {
-      const config = {
-        appId: appId.trim(),
-        appName: selectedAppName || `App ${appId.trim()}`, // Use selected name or fallback to App ID
-        issuerId: issuerId?.trim(),
-        keyId: keyId?.trim(),
-        useServerCredentials: useServerCredentials && hasServerCredentials,
-        startDate: selectedStartDate,
-        endDate: selectedEndDate
-      };
-      
-      // Store private key separately if not using server credentials
-      if (!useServerCredentials || !hasServerCredentials) {
-        if (privateKey) {
-          sessionStorage.setItem('applePrivateKey', privateKey);
-        }
-      }
-      
-      sessionStorage.setItem('appleAppConfig', JSON.stringify(config));
-    }
-    
-    // Clear progress after a short delay
-    setTimeout(() => {
-      setImportProgress(null);
-    }, 1000);
-  };
 
-  const handleImport = async () => {
-    // If using server credentials, only need app ID
-    if (hasServerCredentials && useServerCredentials) {
-      if (!appId) {
-        setError('Please select an app');
-        return;
-      }
-    } else {
-      // Otherwise, need all credentials
-      if (!appId || !issuerId || !keyId || !privateKey) {
-        setError('Please fill in all required fields');
-        return;
-      }
-
-      // Validate credentials
+    // Validate credentials only if not using server credentials
+    if (!useServerCredentials) {
       const validationErrors = validateCredentials();
       if (validationErrors.length > 0) {
         setError(validationErrors.join('. '));
@@ -212,81 +111,69 @@ const AppleImport = ({ onImport }) => {
     setImportProgress({ status: 'Connecting to Apple App Store...', percentage: 10 });
 
     try {
-      // Always use the text content (privateKey) which is set from file or direct input
-      const keyContent = privateKey;
+      // Use file if available, otherwise use text content
+      const keyContent = privateKeyFile || privateKey;
       
       setImportProgress({ status: 'Authenticating...', percentage: 30 });
       
-      // Set up progress monitoring
-      const progressInterval = setInterval(() => {
-        setImportProgress(prev => ({
-          status: 'Fetching reviews... This may take a minute for apps with many reviews',
-          percentage: Math.min(prev.percentage + 2, 75) // Gradually increase to 75%
-        }));
-      }, 1000);
+      // Save config to session storage for dashboard to use
+      const config = {
+        appId: appId.trim(),
+        issuerId: useServerCredentials ? '' : issuerId.trim(),
+        keyId: '', // This needs to be added to the form
+        privateKey: useServerCredentials ? '' : keyContent,
+        useServerCredentials: useServerCredentials,
+        startDate: dateRange.start,
+        endDate: dateRange.end,
+        appName: selectedApp?.name || 'Unknown App'
+      };
       
-      try {
-        const reviews = await appleAppStoreBrowserService.importReviews(
-          appId.trim(),
-          issuerId.trim(),
-          keyId.trim(),
-          keyContent,
-          useServerCredentials && hasServerCredentials,
-          { 
-            useCache, 
-            forceRefresh,
-            startDate: selectedStartDate,
-            endDate: selectedEndDate
-          }
-        );
-
-        clearInterval(progressInterval);
-        setImportProgress({ status: 'Processing reviews...', percentage: 80 });
-
-        if (reviews && reviews.length > 0) {
-          // Check if this is mock data
-          const firstReview = reviews[0];
-          if (firstReview.hasOwnProperty('isMockData') && firstReview.isMockData) {
-            setIsMockData(true);
-          }
-          
-          onImport(reviews);
-          setSuccess(true);
-          setImportProgress({ status: `Import complete! Fetched ${reviews.length} reviews`, percentage: 100 });
-          
-          // Store app configuration in session for later use
-          if (typeof window !== 'undefined') {
-            const config = {
-              appId: appId.trim(),
-              appName: selectedAppName || `App ${appId.trim()}`, // Use selected name or fallback to App ID
-              issuerId: issuerId?.trim(),
-              keyId: keyId?.trim(),
-              useServerCredentials: useServerCredentials && hasServerCredentials,
-              startDate: selectedStartDate,
-              endDate: selectedEndDate
-            };
-            
-            // Store private key separately if not using server credentials
-            if (!useServerCredentials || !hasServerCredentials) {
-              if (privateKey) {
-                sessionStorage.setItem('applePrivateKey', privateKey);
-              }
-            }
-            
-            sessionStorage.setItem('appleAppConfig', JSON.stringify(config));
-          }
-          
-          // Clear progress after success
-          setTimeout(() => {
-            setImportProgress(null);
-          }, 5000);
-        } else {
-          setError('No reviews found for the specified app');
-          setImportProgress(null);
+      sessionStorage.setItem('appleAppConfig', JSON.stringify(config));
+      if (!useServerCredentials && keyContent) {
+        sessionStorage.setItem('applePrivateKey', keyContent);
+      }
+      
+      const reviews = await appleAppStoreBrowserService.importReviews(
+        appId.trim(),
+        useServerCredentials ? '' : issuerId.trim(),
+        '', // keyId - not used in current implementation
+        useServerCredentials ? '' : keyContent,
+        useServerCredentials,
+        {
+          startDate: dateRange.start,
+          endDate: dateRange.end,
+          useCache: false,
+          forceRefresh: true
         }
-      } catch (importError) {
-        clearInterval(progressInterval);
-        throw importError;
+      );
+
+      setImportProgress({ status: 'Processing reviews...', percentage: 80 });
+
+      if (reviews && reviews.length > 0) {
+        // Check if this is mock data
+        if (reviews[0]._isMockData) {
+          setIsMockData(true);
+          delete reviews[0]._isMockData;
+        }
+        
+        setImportProgress({ status: `Imported ${reviews.length} reviews`, percentage: 100 });
+        onImport(reviews);
+        setSuccess(true);
+        
+        // Clear form after successful import
+        setTimeout(() => {
+          setSuccess(false);
+          setImportProgress(null);
+          if (!isMockData) {
+            setAppId('');
+            setIssuerId('');
+            setPrivateKey('');
+            setPrivateKeyFile(null);
+          }
+        }, 5000);
+      } else {
+        setError('No reviews found for the specified app');
+        setImportProgress(null);
       }
     } catch (err) {
       setError(err.message || 'Failed to import reviews from Apple App Store');
@@ -304,79 +191,32 @@ const AppleImport = ({ onImport }) => {
       </div>
 
       <div className="import-form">
-        {/* Show app selector if multiple apps are configured */}
-        {hasServerCredentials && availableApps.length > 0 && (
+        {/* Show app selection if server has configured apps */}
+        {useServerCredentials && apps.length > 0 ? (
           <div className="form-group">
-            <label>
+            <label htmlFor="app-select">
               <Apple size={16} />
               Select App
             </label>
             <select
+              id="app-select"
               value={appId}
               onChange={(e) => {
-                setAppId(e.target.value);
-                // Find and store the app name
-                const selectedApp = availableApps.find(app => app.id === e.target.value);
-                if (selectedApp) {
-                  setSelectedAppName(selectedApp.name);
-                } else {
-                  setSelectedAppName('');
-                }
+                const app = apps.find(a => a.id === e.target.value);
+                setSelectedApp(app);
+                setAppId(app.id);
               }}
               disabled={isLoading}
-              className="app-selector"
             >
-              <option value="">-- Select an App --</option>
-              {availableApps.map((app) => (
+              {apps.map(app => (
                 <option key={app.id} value={app.id}>
                   {app.name} ({app.id})
                 </option>
               ))}
             </select>
-            <small>Select from your configured apps</small>
+            <small>Using server-configured credentials</small>
           </div>
-        )}
-
-        {/* Toggle for using server credentials */}
-        {hasServerCredentials && (
-          <div className="form-group">
-            <label className="checkbox-label">
-              <input
-                type="checkbox"
-                checked={useServerCredentials}
-                onChange={(e) => setUseServerCredentials(e.target.checked)}
-                disabled={isLoading}
-              />
-              Use server-configured credentials
-            </label>
-            <small>Uncheck to use your own Apple API credentials</small>
-          </div>
-        )}
-
-        {/* Date Range Selector */}
-        {showDateRange && appId && (
-          <div className="form-group">
-            <label>
-              <Calendar size={16} />
-              Date Range
-            </label>
-            <div className="date-range-selector">
-              <DateRangeCalendar
-                reviews={[]} 
-                onDateRangeChange={handleDateRangeChange}
-                initialRange={{ start: selectedStartDate, end: selectedEndDate }}
-                showDisplay={true}
-                inline={false}
-              />
-            </div>
-            <small>Select a date range to fetch reviews from Apple App Store</small>
-            
-          </div>
-        )}
-
-        
-        {/* Show manual app ID input if no server credentials or user wants to use different credentials */}
-        {(!hasServerCredentials || !useServerCredentials || availableApps.length === 0) && (
+        ) : (
           <>
             <div className="form-group">
               <label htmlFor="app-id">
@@ -393,82 +233,44 @@ const AppleImport = ({ onImport }) => {
               />
               <small>Found in App Store Connect under App Information</small>
             </div>
-            
-            {/* App Name field for Reddit integration */}
-            <div className="form-group">
-              <label htmlFor="app-name">
-                <Apple size={16} />
-                App Name (for Reddit monitoring)
-              </label>
-              <input
-                id="app-name"
-                type="text"
-                placeholder="Enter your app name (e.g., 'Instagram', 'Spotify')"
-                value={selectedAppName}
-                onChange={(e) => setSelectedAppName(e.target.value)}
-                disabled={isLoading}
-              />
-              <small>Used to search for mentions on Reddit</small>
-            </div>
-          </>
-        )}
 
-        {/* Show credential fields only if not using server credentials */}
-        {(!hasServerCredentials || !useServerCredentials) && (
-          <>
-            <div className="form-group">
-              <label htmlFor="issuer-id">
-                <Key size={16} />
-                Issuer ID
-              </label>
-              <input
-                id="issuer-id"
-                type="text"
-                placeholder="Enter your Issuer ID"
-                value={issuerId}
-                onChange={(e) => setIssuerId(e.target.value)}
-                disabled={isLoading}
-              />
-              <small>Found in App Store Connect under Users and Access → Keys</small>
-            </div>
+        <div className="form-group">
+          <label htmlFor="issuer-id">
+            <Key size={16} />
+            Issuer ID
+          </label>
+          <input
+            id="issuer-id"
+            type="text"
+            placeholder="Enter your Issuer ID"
+            value={issuerId}
+            onChange={(e) => setIssuerId(e.target.value)}
+            disabled={isLoading}
+          />
+          <small>Found in App Store Connect under Users and Access → Keys</small>
+        </div>
 
-            <div className="form-group">
-              <label htmlFor="key-id">
-                <Key size={16} />
-                Key ID
-              </label>
-              <input
-                id="key-id"
-                type="text"
-                placeholder="Enter your Key ID (e.g., ABC123DEF4)"
-                value={keyId}
-                onChange={(e) => setKeyId(e.target.value)}
-                disabled={isLoading}
-              />
-              <small>The 10-character identifier for your private key</small>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="private-key">
-                <Key size={16} />
-                Private Key (.p8 file)
-              </label>
-              <div className="file-input-wrapper">
-                <input
-                  id="private-key"
-                  type="file"
-                  accept=".p8"
-                  onChange={handleFileUpload}
-                  disabled={isLoading}
-                  style={{ display: 'none' }}
-                />
-                <label htmlFor="private-key" className="file-input-label">
-                  <Upload size={16} />
-                  {privateKey ? 'Key file loaded' : 'Upload .p8 key file'}
-                </label>
-              </div>
-              <small>Download from App Store Connect API Keys</small>
-            </div>
+        <div className="form-group">
+          <label htmlFor="private-key">
+            <Key size={16} />
+            Private Key (.p8 file)
+          </label>
+          <div className="file-input-wrapper">
+            <input
+              id="private-key"
+              type="file"
+              accept=".p8"
+              onChange={handleFileUpload}
+              disabled={isLoading}
+              style={{ display: 'none' }}
+            />
+            <label htmlFor="private-key" className="file-input-label">
+              <Upload size={16} />
+              {privateKey ? 'Key file loaded' : 'Upload .p8 key file'}
+            </label>
+          </div>
+          <small>Download from App Store Connect API Keys</small>
+        </div>
           </>
         )}
 
@@ -514,27 +316,85 @@ const AppleImport = ({ onImport }) => {
           </div>
         )}
 
-        {/* Analyze Now Button */}
-        {appId && (
-          <div className="analyze-actions">
-            <button
-              className="analyze-btn"
-              onClick={handleEnterApp}
-              disabled={!appId || isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <Loader className="spinner" size={20} />
-                  Analyzing...
-                </>
-              ) : (
-                <>Analyze Now</>  
-              )}
-            </button>
+        {/* Date Range Selection */}
+        <div className="form-group">
+          <label>
+            <Calendar size={16} />
+            Date Range (Optional)
+          </label>
+          <button
+            className="date-range-button"
+            onClick={() => setShowDatePicker(!showDatePicker)}
+            disabled={isLoading}
+          >
+            {dateRange.start && dateRange.end 
+              ? `${new Date(dateRange.start).toLocaleDateString()} - ${new Date(dateRange.end).toLocaleDateString()}`
+              : 'Select date range (optional)'}
+          </button>
+          {showDatePicker && (
+            <div className="date-picker-popup">
+              <DateRangeCalendar 
+                onChange={(range) => {
+                  setDateRange(range);
+                  setShowDatePicker(false);
+                }}
+                initialRange={dateRange}
+              />
+            </div>
+          )}
+        </div>
+
+        <div className="import-actions">
+          <button
+            className="import-btn primary"
+            onClick={handleImport}
+            disabled={isLoading || !appId || (!useServerCredentials && (!issuerId || !privateKey))}
+          >
+            {isLoading ? 'Importing...' : 'Import Reviews'}
+          </button>
+
+          <button
+            className="import-btn secondary"
+            onClick={() => setShowInstructions(!showInstructions)}
+          >
+            {showInstructions ? 'Hide' : 'Show'} Instructions
+          </button>
+        </div>
+
+        {showInstructions && (
+          <div className="instructions">
+            <h4>How to get your Apple App Store credentials:</h4>
+            <ol>
+              <li>
+                <strong>App ID:</strong> Log in to App Store Connect → My Apps → Select your app → App Information → General Information → Apple ID
+              </li>
+              <li>
+                <strong>Issuer ID:</strong> App Store Connect → Users and Access → Keys → Copy your Issuer ID (top of the page)
+              </li>
+              <li>
+                <strong>Private Key:</strong> App Store Connect → Users and Access → Keys → Create a new key with "App Store Connect API" access → Download the .p8 file
+              </li>
+            </ol>
+            <div className="note">
+              <strong>Note:</strong> 
+              {backendAvailable 
+                ? 'Your credentials will be securely sent to the backend service for API authentication.'
+                : 'Backend service not detected. Using demo mode with sample data. To fetch real reviews, start the backend service (see documentation).'}
+            </div>
+            
+            {!backendAvailable && (
+              <div className="backend-setup">
+                <h5>Quick Backend Setup:</h5>
+                <ol>
+                  <li>Navigate to the <code>backend</code> folder</li>
+                  <li>Run <code>npm install</code></li>
+                  <li>Run <code>npm start</code></li>
+                  <li>Refresh this page to connect</li>
+                </ol>
+              </div>
+            )}
           </div>
         )}
-
-
       </div>
     </div>
   );

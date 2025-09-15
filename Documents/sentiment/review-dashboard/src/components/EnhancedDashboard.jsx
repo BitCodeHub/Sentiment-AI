@@ -75,6 +75,7 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange 
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDateRange, setSelectedDateRange] = useState({ start: null, end: null });
   const [isDateRangeLoading, setIsDateRangeLoading] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const dateRangeRef = useRef(null);
   // Add state for current view selection
   const [currentView, setCurrentView] = useState('dashboard');
@@ -107,12 +108,16 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange 
               (data?.lastUpdated && new Date() - new Date(data.lastUpdated) > 30 * 60 * 1000);
             
             if (shouldRefresh) {
+              // Don't set loading state on initial auto-fetch
+              setIsDateRangeLoading(false);
               handleFetchAppleReviews();
             }
           }
         }
       }
     }
+    // Mark that initial load is complete
+    setIsInitialLoad(false);
   }, [data?.isAppleData, data?.isEmpty]);
   
   // Debug logging
@@ -129,8 +134,10 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange 
   // Notify parent component when date range changes with debouncing
   useEffect(() => {
     if (selectedDateRange.start || selectedDateRange.end) {
-      // Set loading state immediately
-      setIsDateRangeLoading(true);
+      // Only set loading state if we have data already (not on initial load) and not during initial setup
+      if (data && !data.isEmpty && !isInitialLoad) {
+        setIsDateRangeLoading(true);
+      }
       
       // Clear previous timeout
       if (debouncedDateRangeChangeRef.current) {
@@ -145,7 +152,7 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange 
         }
         
         // Mark that we should fetch when possible
-        if (data?.isAppleData && onFetchReviews) {
+        if (data?.isAppleData && onFetchReviews && !isInitialLoad) {
           shouldFetchOnDateChangeRef.current = true;
         }
       }, 300); // 300ms debounce
@@ -156,7 +163,7 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange 
         clearTimeout(debouncedDateRangeChangeRef.current);
       }
     };
-  }, [selectedDateRange, onDateRangeChange, data?.isAppleData, onFetchReviews]);
+  }, [selectedDateRange, onDateRangeChange, data?.isAppleData, onFetchReviews, data, isInitialLoad]);
 
   // Clear date range loading state when data changes
   useEffect(() => {
@@ -752,7 +759,7 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange 
     };
   }, [handleIntelligenceBriefingRequest]);
 
-  if (isLoading || isDateRangeLoading) {
+  if (isLoading || (isDateRangeLoading && !data?.isEmpty)) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
