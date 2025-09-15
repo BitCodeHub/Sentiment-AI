@@ -6,8 +6,9 @@ services:
     repo: https://github.com/BitCodeHub/Sentiment-AI
     branch: main
     rootDir: Documents/sentiment/review-dashboard
-    buildCommand: npm install && npm run build
+    buildCommand: npm ci && npm run build
     startCommand: npx serve -s dist -p $PORT
+    healthCheckPath: /
     envVars:
       - key: NODE_VERSION
         value: 22.16.0
@@ -25,8 +26,9 @@ services:
     repo: https://github.com/BitCodeHub/Sentiment-AI
     branch: main
     rootDir: Documents/sentiment/review-dashboard/backend
-    buildCommand: npm install
+    buildCommand: npm ci
     startCommand: npm run start:production
+    healthCheckPath: /health
     envVars:
       - key: NODE_VERSION
         value: 22.16.0
