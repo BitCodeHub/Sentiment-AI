@@ -707,6 +707,17 @@ class AppleAppStoreBrowserService {
       throw error;
     }
   }
+
+  /**
+   * Get the base backend URL without the /api/apple-reviews path
+   */
+  get backendUrl() {
+    return this.backendURL;
+  }
+
+  get baseBackendUrl() {
+    return this.backendURL.replace('/api/apple-reviews', '');
+  }
 }
 
 // Create a singleton instance

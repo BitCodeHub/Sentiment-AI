@@ -31,9 +31,15 @@ const AppleImport = ({ onImport }) => {
       // If backend is available, fetch configured apps
       if (appleAppStoreBrowserService.isBackendAvailable) {
         try {
-          const response = await fetch(`${appleAppStoreBrowserService.backendUrl}/api/apple-reviews/apps`);
+          // Use the base backend URL to access the apps endpoint
+          const appsEndpoint = `${appleAppStoreBrowserService.baseBackendUrl}/api/apple-apps`;
+          console.log('[AppleImport] Fetching configured apps from:', appsEndpoint);
+          
+          const response = await fetch(appsEndpoint);
           if (response.ok) {
             const data = await response.json();
+            console.log('[AppleImport] Received apps data:', data);
+            
             if (data.apps && data.apps.length > 0) {
               setApps(data.apps);
               setUseServerCredentials(true);
@@ -41,10 +47,15 @@ const AppleImport = ({ onImport }) => {
               const firstApp = data.apps[0];
               setSelectedApp(firstApp);
               setAppId(firstApp.id);
+              console.log('[AppleImport] Using server credentials, selected app:', firstApp.name);
+            } else {
+              console.log('[AppleImport] No configured apps found on server');
             }
+          } else {
+            console.error('[AppleImport] Failed to fetch apps, status:', response.status);
           }
         } catch (error) {
-          console.error('Error fetching apps:', error);
+          console.error('[AppleImport] Error fetching apps:', error);
         }
       }
     };
