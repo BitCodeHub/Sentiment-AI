@@ -1548,12 +1548,16 @@ app.post('/api/apple-reviews/hybrid', upload.single('privateKey'), async (req, r
       let key;
       if (review['Review ID']) {
         // If we have a review ID, use it for deduplication
-        key = `ID_${review['Review ID']}`;
+        // Also include source to avoid conflicts between RSS and API reviews with same ID
+        key = `ID_${review['Review ID']}_${review.Source || 'API'}`;
       } else {
-        // Fallback to composite key based on author, date, rating, and title
-        // Include first 50 chars of title to better distinguish reviews
-        const titlePart = (review['Review Title'] || '').substring(0, 50);
-        key = `${review.Author}_${review.Date}_${review.Rating}_${titlePart}`;
+        // Fallback to composite key based on author, date, rating, title, and body
+        // Normalize date to avoid format differences
+        const normalizedDate = review.Date ? new Date(review.Date).toISOString().split('T')[0] : '';
+        const titlePart = (review['Review Title'] || '').substring(0, 50).trim();
+        const bodyPart = (review.Body || review['Review Text'] || '').substring(0, 100).trim();
+        // Create a more unique composite key
+        key = `${review.Author}_${normalizedDate}_${review.Rating}_${titlePart}_${bodyPart}`;
       }
       
       if (!seenIds.has(key)) {
@@ -1563,8 +1567,10 @@ app.post('/api/apple-reviews/hybrid', upload.single('privateKey'), async (req, r
         duplicatesRemoved++;
         if (review['Review ID']) {
           duplicatesByType.reviewId++;
+          console.log(`[Hybrid] Duplicate by Review ID found: ${key}`);
         } else {
           duplicatesByType.composite++;
+          console.log(`[Hybrid] Duplicate by composite key found: ${key.substring(0, 100)}...`);
         }
       }
     }
