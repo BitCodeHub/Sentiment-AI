@@ -23,6 +23,7 @@ import { performDeepAnalysis } from '../services/geminiDeepAnalysis';
 import { performExecutiveAnalysis } from '../services/geminiExecutiveAnalysis';
 import { getErrorMessage } from '../utils/errorHandler';
 import { parseDateRequest, isIntelligenceBriefingRequest } from '../utils/dateParser';
+import { usePreprocessedReviews, useOptimizedFiltering, useQuickStats } from '../hooks/useOptimizedFiltering';
 import AIInsights from './AIInsights';
 import CategorizedReviews from './CategorizedReviews';
 import ReviewDisplay from './ReviewDisplay';
@@ -431,162 +432,22 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange,
     };
   }, [data?.reviews]);
 
-  // Filter reviews based on search and filters
-  const filteredReviews = useMemo(() => {
-    if (!data?.reviews) return [];
-    
-    // First deduplicate the reviews before filtering
-    const deduplicatedReviews = (() => {
-      const seen = new Map();
-      const unique = [];
-      
-      for (const review of data.reviews) {
-        // Create a composite key for deduplication
-        const author = (review.author || review.Author || 'Anonymous').toLowerCase().trim();
-        const date = review.date || review.Date || review['Review Date'] || '';
-        const rating = review.rating || review.Rating || 0;
-        const content = (review.content || review['Review Text'] || review.Body || '').toLowerCase().trim();
-        
-        // Create unique key based on author, date, rating, and first 200 chars of content
-        const contentKey = content.substring(0, 200);
-        const key = `${author}_${date}_${rating}_${contentKey}`;
-        
-        // Only add if we haven't seen this review before
-        if (!seen.has(key)) {
-          seen.set(key, true);
-          unique.push(review);
-        }
-      }
-      
-      // Log deduplication stats if duplicates were found
-      if (data.reviews.length > unique.length) {
-        console.log(`[EnhancedDashboard] Removed ${data.reviews.length - unique.length} duplicate reviews before filtering`);
-      }
-      
-      return unique;
-    })();
-    
-    return deduplicatedReviews.filter(review => {
-      const matchesSearch = !searchTerm || 
-        (review.content?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-        (review['Review Text']?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-        (review.Body?.toLowerCase() || '').includes(searchTerm.toLowerCase());
-      
-      // Handle combined rating/sentiment filter
-      const matchesFilter = (() => {
-        if (selectedFilter === 'all') return true;
-        
-        // Check if it's a rating filter (1-5)
-        if (['1', '2', '3', '4', '5'].includes(selectedFilter)) {
-          return review.rating === parseInt(selectedFilter) ||
-                 review.Rating === parseInt(selectedFilter);
-        }
-        
-        // Check if it's a sentiment filter
-        if (['positive', 'neutral', 'negative'].includes(selectedFilter)) {
-          return (review.sentiment?.toLowerCase() || '') === selectedFilter ||
-                 (review.Sentiment?.toLowerCase() || '') === selectedFilter;
-        }
-        
-        return true;
-      })();
-      
-      // Check metadata filters
-      const matchesMetadata = Object.keys(metadataFilters).every(key => {
-        const filterValue = metadataFilters[key];
-        if (filterValue === 'all') return true;
-        
-        // Get the actual value from the review
-        // Handle case differences (e.g., 'Country' vs 'country', 'Language' vs 'language')
-        let reviewValue = review[key] || 
-                         review[key.charAt(0).toUpperCase() + key.slice(1)] ||
-                         review[key.toUpperCase()];
-        
-        // Special handling for version field (can be 'version' or 'App Version')
-        if (key === 'version' && !reviewValue) {
-          reviewValue = review['App Version'];
-        }
-        
-        // If filter is 'all' or review has no value for this field, include it
-        if (!reviewValue || (typeof reviewValue === 'string' && !reviewValue.trim())) return true;
-        
-        return reviewValue === filterValue;
-      });
-      
-      // Date range filtering
-      const matchesDateRange = (() => {
-        // Skip frontend date filtering for Apple data if dates were already filtered on backend
-        if (data?.isAppleData && data?.dateRangeFilter) {
-          return true; // Already filtered by backend
-        }
-        
-        if (!selectedDateRange.start && !selectedDateRange.end) return true;
-        
-        const reviewDate = new Date(review.date || review.Date || review['Review Date']);
-        if (isNaN(reviewDate.getTime())) return true; // Include reviews with invalid dates
-        
-        const startDate = selectedDateRange.start ? new Date(selectedDateRange.start) : null;
-        const endDate = selectedDateRange.end ? new Date(selectedDateRange.end) : null;
-        
-        if (startDate && endDate) {
-          // For end date comparison, set to end of day to include all reviews from that day
-          const endOfDay = new Date(endDate);
-          endOfDay.setHours(23, 59, 59, 999);
-          return reviewDate >= startDate && reviewDate <= endOfDay;
-        } else if (startDate) {
-          return reviewDate >= startDate;
-        } else if (endDate) {
-          const endOfDay = new Date(endDate);
-          endOfDay.setHours(23, 59, 59, 999);
-          return reviewDate <= endOfDay;
-        }
-        
-        return true;
-      })();
-      
-      return matchesSearch && matchesFilter && matchesMetadata && matchesDateRange;
-    });
-  }, [data?.reviews, searchTerm, selectedFilter, metadataFilters, selectedDateRange]);
+  // Pre-process reviews once for better performance
+  const preprocessedReviews = usePreprocessedReviews(data?.reviews);
+  
+  // Use optimized filtering
+  const filteredReviews = useOptimizedFiltering(
+    preprocessedReviews,
+    searchTerm,
+    selectedFilter,
+    selectedTimeRange,
+    selectedDateRange,
+    metadataFilters
+  );
 
-  // Calculate sentiment breakdown for filtered reviews
-  const filteredSentimentBreakdown = useMemo(() => {
-    const breakdown = { positive: 0, neutral: 0, negative: 0 };
-    
-    filteredReviews.forEach(review => {
-      const sentiment = (review.sentiment || review.Sentiment || 'neutral').toLowerCase();
-      if (sentiment === 'positive') breakdown.positive++;
-      else if (sentiment === 'negative') breakdown.negative++;
-      else breakdown.neutral++;
-    });
-    
-    return breakdown;
-  }, [filteredReviews]);
-
-  // Calculate average rating for filtered reviews
-  const filteredAvgRating = useMemo(() => {
-    if (filteredReviews.length === 0) return 0;
-    
-    const totalRating = filteredReviews.reduce((sum, review) => {
-      const rating = review.rating || review.Rating || 0;
-      return sum + rating;
-    }, 0);
-    
-    return totalRating / filteredReviews.length;
-  }, [filteredReviews]);
-
-  // Calculate rating distribution for filtered reviews
-  const filteredRatingDistribution = useMemo(() => {
-    const distribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-    
-    filteredReviews.forEach(review => {
-      const rating = review.rating || review.Rating || 0;
-      if (rating >= 1 && rating <= 5) {
-        distribution[rating]++;
-      }
-    });
-    
-    return distribution;
-  }, [filteredReviews]);
+  // Get pre-computed stats for better performance
+  // Get pre-computed stats for better performance
+  const { totalCount, avgRating: filteredAvgRating, sentimentBreakdown: filteredSentimentBreakdown, ratingDistribution: filteredRatingDistribution } = useQuickStats(filteredReviews);
 
   // Calculate rating distribution for ALL reviews (for quick filter display)
   const allRatingDistribution = useMemo(() => {
@@ -713,17 +574,15 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange,
     }
   }, [onUpdateData]);
 
-  // Handle date range changes
+  // Handle date range changes with optimized batching
   const handleDateRangeChange = useCallback(async (dateRange) => {
-    setSelectedDateRange(dateRange);
-    // Only close the popup if both start and end dates are selected or it's a preset
+    // Batch state updates for better performance
     if (dateRange.start && dateRange.end) {
-      // Small delay to ensure click event completes before closing
-      setTimeout(() => {
-        setShowDatePicker(false);
-      }, 100);
+      // Update all state at once to minimize re-renders
+      setSelectedDateRange(dateRange);
+      setShowDatePicker(false);
       
-      // For Apple data, fetch new reviews with the selected date range
+      // For Apple data, show loading immediately but debounce the actual API call
       if (data?.isAppleData) {
         console.log('[EnhancedDashboard] Fetching Apple reviews for date range:', dateRange);
         setIsDateRangeLoading(true);
@@ -737,6 +596,9 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange,
           setIsDateRangeLoading(false);
         }
       }
+    } else {
+      // For incomplete date ranges, just update the state
+      setSelectedDateRange(dateRange);
     }
   }, [data?.isAppleData, fetchAppleReviewsWithDateRange]);
 
@@ -771,6 +633,19 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange,
       }
     }
   }, [data?.isAppleData, fetchAppleReviewsWithDateRange]);
+
+  // Memoize event handlers to prevent child re-renders
+  const handleSearchChange = useCallback((e) => {
+    setSearchTerm(e.target.value);
+  }, []);
+  
+  const handleFilterChange = useCallback((filter) => {
+    setSelectedFilter(filter);
+  }, []);
+
+  const handleClearSearch = useCallback(() => {
+    setSearchTerm('');
+  }, []);
 
   const triggerAIAnalysis = useCallback(async () => {
     if (!filteredReviews || filteredReviews.length === 0) return;
@@ -1045,13 +920,13 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange,
               type="text"
               placeholder="Search reviews..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={handleSearchChange}
               className="search-input"
             />
             {searchTerm && (
               <button 
                 className="clear-search"
-                onClick={() => setSearchTerm('')}
+                onClick={handleClearSearch}
                 title="Clear search"
               >
                 <X size={16} />
