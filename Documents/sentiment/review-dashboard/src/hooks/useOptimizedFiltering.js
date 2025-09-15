@@ -150,13 +150,7 @@ export const useQuickStats = (filteredReviews) => {
         totalCount: 0,
         avgRating: 0,
         sentimentBreakdown: { positive: 0, negative: 0, neutral: 0 },
-        ratingDistribution: [
-          { rating: 5, count: 0 },
-          { rating: 4, count: 0 },
-          { rating: 3, count: 0 },
-          { rating: 2, count: 0 },
-          { rating: 1, count: 0 }
-        ]
+        ratingDistribution: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 }
       };
     }
     
@@ -176,10 +170,7 @@ export const useQuickStats = (filteredReviews) => {
       totalCount: filteredReviews.length,
       avgRating: filteredReviews.length > 0 ? (totalRating / filteredReviews.length).toFixed(1) : 0,
       sentimentBreakdown: sentimentCounts,
-      ratingDistribution: [5, 4, 3, 2, 1].map(rating => ({
-        rating,
-        count: ratingCounts[rating] || 0
-      }))
+      ratingDistribution: ratingCounts
     };
   }, [filteredReviews]);
 };
