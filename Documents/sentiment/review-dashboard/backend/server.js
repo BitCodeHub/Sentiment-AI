@@ -1530,8 +1530,10 @@ app.post('/api/apple-reviews/hybrid', upload.single('privateKey'), async (req, r
     console.log(`  - Total before deduplication: ${allReviews.length}`);
     
     for (const review of allReviews) {
-      // Create a unique key based on author, date, and rating
-      const key = `${review.Author}_${review.Date}_${review.Rating}`;
+      // Create a unique key based on author, date, rating, and title
+      // Include first 50 chars of title to better distinguish reviews
+      const titlePart = (review['Review Title'] || '').substring(0, 50);
+      const key = `${review.Author}_${review.Date}_${review.Rating}_${titlePart}`;
       if (!seenIds.has(key)) {
         seenIds.add(key);
         uniqueReviews.push(review);

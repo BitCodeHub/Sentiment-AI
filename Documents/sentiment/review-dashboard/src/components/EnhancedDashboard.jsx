@@ -74,6 +74,7 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange 
   const useEnhancedReviewDisplay = true;
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDateRange, setSelectedDateRange] = useState({ start: null, end: null });
+  const [isDateRangeLoading, setIsDateRangeLoading] = useState(false);
   const dateRangeRef = useRef(null);
   // Add state for current view selection
   const [currentView, setCurrentView] = useState('dashboard');
@@ -119,13 +120,51 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange 
     console.log('Current View:', currentView);
   }, [currentView]);
   
-  // Notify parent component when date range changes
+  // Debounced date range change handler
+  const debouncedDateRangeChangeRef = useRef(null);
+  
+  // Store a ref to trigger fetch
+  const shouldFetchOnDateChangeRef = useRef(false);
+  
+  // Notify parent component when date range changes with debouncing
   useEffect(() => {
-    if (onDateRangeChange) {
-      onDateRangeChange(selectedDateRange);
+    if (selectedDateRange.start || selectedDateRange.end) {
+      // Set loading state immediately
+      setIsDateRangeLoading(true);
+      
+      // Clear previous timeout
+      if (debouncedDateRangeChangeRef.current) {
+        clearTimeout(debouncedDateRangeChangeRef.current);
+      }
+      
+      // Set new timeout for debounced call
+      debouncedDateRangeChangeRef.current = setTimeout(() => {
+        // Notify parent if callback exists
+        if (onDateRangeChange) {
+          onDateRangeChange(selectedDateRange);
+        }
+        
+        // Mark that we should fetch when possible
+        if (data?.isAppleData && onFetchReviews) {
+          shouldFetchOnDateChangeRef.current = true;
+        }
+      }, 300); // 300ms debounce
     }
-  }, [selectedDateRange, onDateRangeChange]);
+    
+    return () => {
+      if (debouncedDateRangeChangeRef.current) {
+        clearTimeout(debouncedDateRangeChangeRef.current);
+      }
+    };
+  }, [selectedDateRange, onDateRangeChange, data?.isAppleData, onFetchReviews]);
 
+  // Clear date range loading state when data changes
+  useEffect(() => {
+    if (data && isDateRangeLoading) {
+      setIsDateRangeLoading(false);
+    }
+  }, [data]);
+  
   // Fetch all ratings data when Apple data is available
   useEffect(() => {
     const fetchAllRatingsData = async () => {
@@ -255,6 +294,14 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange 
       setIsFetchingAppleData(false);
     }
   };
+
+  // Trigger fetch when date range changes and we have marked it
+  useEffect(() => {
+    if (shouldFetchOnDateChangeRef.current && !isFetchingAppleData) {
+      shouldFetchOnDateChangeRef.current = false;
+      handleFetchAppleReviews();
+    }
+  }, [shouldFetchOnDateChangeRef.current]);
 
   // Count active filters
   const activeFilterCount = useMemo(() => {
@@ -561,6 +608,11 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange 
   const clearDateRange = useCallback(() => {
     setSelectedDateRange({ start: null, end: null });
     setShowDatePicker(false);
+    setIsDateRangeLoading(false);
+    // Clear any pending debounced calls
+    if (debouncedDateRangeChangeRef.current) {
+      clearTimeout(debouncedDateRangeChangeRef.current);
+    }
   }, []);
 
   const triggerAIAnalysis = useCallback(async () => {
@@ -670,10 +722,8 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange 
             onDateRangeChange({ start: dateRange.start, end: dateRange.end });
           }
           
-          // Wait a bit for the data to update and then trigger executive analysis
-          setTimeout(() => {
-            triggerExecutiveAnalysis();
-          }, 2000);
+          // Trigger executive analysis immediately
+          triggerExecutiveAnalysis();
         } catch (error) {
           console.error('[IntelligenceBriefing] Error setting date range:', error);
           setError('Failed to fetch data for the requested time period');
@@ -702,12 +752,12 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange 
     };
   }, [handleIntelligenceBriefingRequest]);
 
-  if (isLoading) {
+  if (isLoading || isDateRangeLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <RefreshCw className="w-8 h-8 mx-auto mb-4 text-blue-600" style={{ animation: 'spin 1s linear infinite' }} />
-          <p className="text-gray-600">Loading analytics...</p>
+          <p className="text-gray-600">{isDateRangeLoading ? 'Loading data for selected date range...' : 'Loading analytics...'}</p>
         </div>
       </div>
     );
