@@ -37,13 +37,13 @@ let requestWindowStart = Date.now();
 
 // Model configuration with fallback
 const MODEL_CONFIGS = {
-  primary: 'gemini-2.5-flash',  // Best model in terms of price-performance
-  secondary: 'gemini-2.5-flash-lite',  // Optimized for cost efficiency
-  fallback: 'gemini-2.0-flash'  // Next-gen features with improved capabilities
+  primary: 'gemini-2.5-flash',  // Try 2.5-flash first
+  secondary: 'gemini-1.5-flash',  // Fallback to 1.5-flash if 2.5 not available
+  fallback: 'gemini-pro'  // Final fallback
 };
 
 // Separate model for Google Search Grounding
-const GROUNDING_MODEL = 'gemini-2.0-flash-exp'; // Has built-in grounding
+const GROUNDING_MODEL = 'gemini-1.5-flash'; // Using stable model for grounding
 
 // Track which model is being used
 let currentModelIndex = 0;

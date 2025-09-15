@@ -4,11 +4,11 @@ import { aiAnalysisCache } from './cacheService';
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY || 'AIzaSyCgpECc-whrISaCwlwxXiZV_YppN4dTQT4';
 const genAI = new GoogleGenerativeAI(apiKey);
 
-// Model configuration with fallback (matching geminiChatService.js)
+// Model configuration with fallback
 const MODEL_CONFIGS = {
-  primary: 'gemini-2.5-flash',  // Best model in terms of price-performance
-  secondary: 'gemini-2.5-flash-lite',  // Optimized for cost efficiency
-  fallback: 'gemini-2.0-flash'  // Next-gen features with improved capabilities
+  primary: 'gemini-2.5-flash',  // Try 2.5-flash first
+  secondary: 'gemini-1.5-flash',  // Fallback to 1.5-flash if 2.5 not available
+  fallback: 'gemini-pro'  // Final fallback
 };
 
 // Track which model is being used
@@ -119,6 +119,19 @@ const calculateInsights = (reviews) => {
 
 export const generateIntelligenceBriefing = async (reviews, dateRange, requestType) => {
   try {
+    // Log input parameters for debugging
+    console.log('[IntelligenceBriefing] Starting generation with:', {
+      reviewsCount: reviews?.length || 0,
+      dateRange,
+      requestType,
+      apiKeyPresent: !!apiKey,
+      apiKeyLength: apiKey?.length
+    });
+
+    if (!reviews || reviews.length === 0) {
+      throw new Error('No reviews provided for intelligence briefing');
+    }
+
     const insights = calculateInsights(reviews);
     
     // Create a context-aware prompt based on the request type
@@ -191,10 +204,42 @@ Focus on actionable intelligence that drives business decisions.`;
     const { model, modelName } = await getModelWithFallback();
     console.log(`[IntelligenceBriefing] Using model: ${modelName}`);
     
-    const response = await model.generateContent(prompt);
-    const responseText = response.text();
+    const result = await model.generateContent(prompt);
+    const responseText = result.response.text();
+    
+    if (!responseText) {
+      console.error('[IntelligenceBriefing] No response text received from model');
+      throw new Error('No response received from AI model');
+    }
+    
+    console.log('[IntelligenceBriefing] Raw response length:', responseText.length);
+    console.log('[IntelligenceBriefing] Raw response preview:', responseText.substring(0, 200));
+    
     const cleanedResponse = cleanJsonResponse(responseText);
-    const briefing = JSON.parse(cleanedResponse);
+    
+    console.log('[IntelligenceBriefing] Cleaned response length:', cleanedResponse.length);
+    console.log('[IntelligenceBriefing] Attempting to parse JSON...');
+    
+    let briefing;
+    try {
+      briefing = JSON.parse(cleanedResponse);
+    } catch (parseError) {
+      console.error('[IntelligenceBriefing] JSON parse error:', parseError);
+      console.error('[IntelligenceBriefing] Failed to parse:', cleanedResponse.substring(0, 500));
+      
+      // Try to extract JSON from the response if it's wrapped in other text
+      const jsonMatch = cleanedResponse.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        try {
+          briefing = JSON.parse(jsonMatch[0]);
+          console.log('[IntelligenceBriefing] Successfully extracted JSON from response');
+        } catch (secondParseError) {
+          throw new Error(`Failed to parse AI response: ${parseError.message}`);
+        }
+      } else {
+        throw new Error(`Failed to parse AI response: ${parseError.message}`);
+      }
+    }
     
     // Add metadata
     briefing.metadata = {
@@ -204,10 +249,28 @@ Focus on actionable intelligence that drives business decisions.`;
       requestType: requestType || 'general'
     };
     
+    console.log('[IntelligenceBriefing] Successfully generated briefing');
     return briefing;
   } catch (error) {
-    console.error('Error generating intelligence briefing:', error);
-    throw new Error('Failed to generate intelligence briefing');
+    console.error('[IntelligenceBriefing] Detailed error:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+      apiKeyPresent: !!apiKey
+    });
+    
+    // Provide more specific error message
+    if (error.message.includes('API key')) {
+      throw new Error('Invalid or missing Gemini API key. Please check your configuration.');
+    } else if (error.message.includes('parse')) {
+      throw new Error('Failed to parse AI response. The AI might have returned an invalid format.');
+    } else if (error.message.includes('quota')) {
+      throw new Error('API quota exceeded. Please try again later.');
+    } else if (error.message.includes('model')) {
+      throw new Error('Failed to initialize AI model. Please check your API access.');
+    } else {
+      throw new Error(`Failed to generate intelligence briefing: ${error.message}`);
+    }
   }
 };
 
@@ -223,8 +286,8 @@ export const generateQuickBriefing = async (reviews, topic) => {
       `${r.rating || r.Rating}/5: ${(r.content || r['Review Text'] || '').substring(0, 100)}`
     ).join('; ')}`;
     
-    const response = await model.generateContent(prompt);
-    return response.text();
+    const result = await model.generateContent(prompt);
+    return result.response.text();
   } catch (error) {
     console.error('Error generating quick briefing:', error);
     return 'Unable to generate briefing at this time.';
@@ -265,9 +328,9 @@ Generate a JSON comparison:
 Return only valid JSON.`;
 
     const { model } = await getModelWithFallback();
-    const response = await model.generateContent(prompt);
+    const result = await model.generateContent(prompt);
     
-    const responseText = response.text();
+    const responseText = result.response.text();
     const cleanedResponse = cleanJsonResponse(responseText);
     return JSON.parse(cleanedResponse);
   } catch (error) {

@@ -278,7 +278,7 @@ const IntelligenceBriefingHandler = ({ reviews, dateRange, onRequestBriefing }) 
       console.error('Error generating briefing:', error);
       setMessages(prev => [...prev, { 
         type: 'error', 
-        text: 'Failed to generate briefing. Please try again.' 
+        text: error.message || 'Failed to generate briefing. Please try again.' 
       }]);
     }
   };
