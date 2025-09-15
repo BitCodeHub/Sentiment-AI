@@ -1,24 +1,24 @@
-const axios = require('axios');
-const fs = require('fs');
-const path = require('path');
+import axios from 'axios';
+import fs from 'fs';
+import path from 'path';
+import FormData from 'form-data';
 
 // Configuration
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3001';
-const APP_ID = '416839124'; // Hyundai Blue Link app
+const BACKEND_URL = process.env.BACKEND_URL || 'https://sentiment-review-backend.onrender.com';
+const APP_ID = '893514610'; // myHyundai with Bluelink
 
-// Read credentials from environment or files
-const ISSUER_ID = process.env.APPLE_ISSUER_ID || '69a6de92-f10e-47e3-e053-5b8c7c11a4d1';
-const KEY_ID = process.env.APPLE_KEY_ID || '34999638C7';
-const PRIVATE_KEY_PATH = process.env.APPLE_PRIVATE_KEY_PATH || path.join(__dirname, '..', 'AuthKey_34999638C7.p8');
+// Using server credentials
+const USE_SERVER_CREDENTIALS = true;
 
 async function testHybridEndpoint() {
   console.log('=== Testing Apple Hybrid Reviews Endpoint ===\n');
   console.log('Backend URL:', BACKEND_URL);
   console.log('App ID:', APP_ID);
+  console.log('Using server credentials:', USE_SERVER_CREDENTIALS);
   
   try {
     // First, check if backend is running
-    console.log('Checking backend health...');
+    console.log('\nChecking backend health...');
     try {
       const healthResponse = await axios.get(`${BACKEND_URL}/api/health`);
       console.log('Backend is running:', healthResponse.data);
@@ -27,18 +27,16 @@ async function testHybridEndpoint() {
       return;
     }
     
-    // Read private key if path is provided
-    let privateKey = '';
-    if (PRIVATE_KEY_PATH && fs.existsSync(PRIVATE_KEY_PATH)) {
-      privateKey = fs.readFileSync(PRIVATE_KEY_PATH, 'utf8');
-      console.log('Private key loaded from:', PRIVATE_KEY_PATH);
-    }
+    // Check configured apps
+    console.log('\nChecking configured apps...');
+    const appsResponse = await axios.get(`${BACKEND_URL}/api/apple-apps`);
+    console.log('Configured apps:', JSON.stringify(appsResponse.data, null, 2));
     
     // Test RSS-only endpoint first
     console.log('\n--- Testing RSS-only endpoint ---');
     const rssResponse = await axios.post(`${BACKEND_URL}/api/apple-reviews/rss`, {
       appId: APP_ID,
-      countries: ['us', 'gb', 'ca'],
+      countries: ['us'],
       limit: 10
     });
     
@@ -51,42 +49,75 @@ async function testHybridEndpoint() {
       }
     }
     
-    // Test hybrid endpoint
-    console.log('\n--- Testing Hybrid endpoint ---');
+    // Test hybrid endpoint with server credentials
+    console.log('\n--- Testing Hybrid endpoint with server credentials ---');
     const formData = new FormData();
     formData.append('appId', APP_ID);
-    formData.append('issuerId', ISSUER_ID);
-    formData.append('keyId', KEY_ID);
-    formData.append('privateKey', privateKey);
-    formData.append('countries', JSON.stringify(['us', 'gb', 'ca', 'au']));
+    formData.append('useServerCredentials', 'true');
+    formData.append('countries', JSON.stringify(['us']));
+    formData.append('useCache', 'false');
+    formData.append('forceRefresh', 'true');
+    formData.append('daysToFetch', '90');
     
-    // Note: Since we're using Node.js, we need to use a different approach for FormData
-    // Using regular object instead
-    const hybridResponse = await axios.post(`${BACKEND_URL}/api/apple-reviews/hybrid`, {
-      appId: APP_ID,
-      issuerId: ISSUER_ID,
-      keyId: KEY_ID,
-      privateKey: privateKey,
-      countries: ['us', 'gb', 'ca', 'au']
-    }, {
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      timeout: 60000 // 1 minute timeout
+    console.log('\nRequest parameters:');
+    console.log('- appId:', APP_ID);
+    console.log('- useServerCredentials: true');
+    console.log('- countries: ["us"]');
+    console.log('- daysToFetch: 90');
+    console.log('- useCache: false');
+    console.log('- forceRefresh: true');
+    
+    const hybridResponse = await axios.post(`${BACKEND_URL}/api/apple-reviews/hybrid`, formData, {
+      headers: formData.getHeaders(),
+      timeout: 120000 // 2 minute timeout
     });
     
     if (hybridResponse.data.success) {
-      console.log(`\nHybrid endpoint returned ${hybridResponse.data.totalCount} reviews`);
-      console.log('Sources breakdown:');
-      console.log('- RSS:', hybridResponse.data.sources.rss);
-      console.log('- API:', hybridResponse.data.sources.api);
+      console.log('\n=== Response Success ===');
+      console.log('Total reviews:', hybridResponse.data.reviews?.length || 0);
+      console.log('From cache:', hybridResponse.data.fromCache);
+      
+      // Check sources
+      if (hybridResponse.data.sources) {
+        console.log('\nSources breakdown:');
+        console.log('- RSS:', hybridResponse.data.sources.rss || 0);
+        console.log('- API:', hybridResponse.data.sources.api || 0);
+      }
+      
+      // Count by source in reviews
+      if (hybridResponse.data.reviews && hybridResponse.data.reviews.length > 0) {
+        // Check both lowercase and uppercase Source field
+        const rssCount = hybridResponse.data.reviews.filter(r => r.source === 'rss' || r.Source === 'RSS').length;
+        const apiCount = hybridResponse.data.reviews.filter(r => r.source === 'api' || r.Source === 'API').length;
+        console.log('\nActual reviews by source (checking source/Source field):');
+        console.log('- RSS reviews:', rssCount);
+        console.log('- API reviews:', apiCount);
+        
+        // Check the first review to see what fields it has
+        console.log('\nFirst review fields:', Object.keys(hybridResponse.data.reviews[0]));
+        console.log('First review Source field:', hybridResponse.data.reviews[0].Source);
+        console.log('First review source field:', hybridResponse.data.reviews[0].source);
+        
+        // Based on the sources data, show the actual counts
+        const totalFromSources = (hybridResponse.data.sources?.rss?.count || 0) + (hybridResponse.data.sources?.api?.count || 0);
+        console.log('\nTotal from sources data:', totalFromSources);
+        console.log('Total reviews returned:', hybridResponse.data.reviews.length);
+        
+        if (hybridResponse.data.sources?.api?.count > 0) {
+          console.log('\n✅ Apple API returned', hybridResponse.data.sources.api.count, 'reviews');
+          console.log('The backend successfully fetched data from Apple API!');
+        } else {
+          console.log('\n⚠️  WARNING: No reviews from Apple API!');
+          console.log('This indicates Apple API authentication is failing.');
+        }
+      }
       
       if (hybridResponse.data.dateRange) {
         const newest = new Date(hybridResponse.data.dateRange.newest);
         const oldest = new Date(hybridResponse.data.dateRange.oldest);
         const newestDaysAgo = Math.floor((Date.now() - newest) / (1000 * 60 * 60 * 24));
         
-        console.log(`\nDate range: ${newest.toLocaleDateString()} to ${oldest.toLocaleDateString()}`);
+        console.log(`\nDate range: ${oldest.toLocaleDateString()} to ${newest.toLocaleDateString()}`);
         console.log(`Most recent review: ${newestDaysAgo} days ago`);
         
         // Show sample of most recent reviews
@@ -94,9 +125,14 @@ async function testHybridEndpoint() {
         hybridResponse.data.reviews.slice(0, 5).forEach((review, index) => {
           const date = new Date(review.Date);
           const daysAgo = Math.floor((Date.now() - date) / (1000 * 60 * 60 * 24));
-          console.log(`${index + 1}. ${date.toLocaleDateString()} (${daysAgo} days ago) - ${review.Rating}★ - ${review.Country} - Source: ${review.Source || 'API'}`);
+          console.log(`${index + 1}. ${date.toLocaleDateString()} (${daysAgo} days ago) - ${review.Rating}★ - ${review.Country} - Source: ${review.source || 'api'}`);
         });
       }
+    } else {
+      console.log('\n=== Response Failed ===');
+      console.log('Success: false');
+      console.log('Error:', hybridResponse.data.error);
+      console.log('Details:', hybridResponse.data.details);
     }
     
   } catch (error) {
