@@ -1236,7 +1236,13 @@ app.get('/api/reddit/status', async (req, res) => {
   }
 });
 
-// Health check endpoint
+// Health check endpoint for Render
+app.get('/health', (req, res) => {
+  console.log('[Health Check] Request received at /health');
+  res.status(200).send('OK');
+});
+
+// Detailed health check endpoint
 app.get('/api/health', (req, res) => {
   console.log('[Health Check] Request received from:', req.headers.origin || req.headers.referer || 'unknown');
   
