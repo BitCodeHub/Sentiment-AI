@@ -1530,8 +1530,6 @@ app.post('/api/apple-reviews/hybrid', upload.single('privateKey'), async (req, r
     
     // Merge and deduplicate reviews
     const allReviews = [...results.rss.reviews, ...results.api.reviews];
-    const uniqueReviews = [];
-    const seenIds = new Set();
     
     // Log review sources for debugging
     console.log(`[Hybrid] Review sources breakdown:`);
@@ -1539,38 +1537,99 @@ app.post('/api/apple-reviews/hybrid', upload.single('privateKey'), async (req, r
     console.log(`  - API reviews: ${results.api.reviews.length}`);
     console.log(`  - Total before deduplication: ${allReviews.length}`);
     
-    // Track deduplication stats
-    let duplicatesRemoved = 0;
-    let duplicatesByType = { reviewId: 0, composite: 0 };
+    // Improved deduplication logic
+    const uniqueReviews = [];
+    const seenKeys = new Set();
+    const duplicateStats = {
+      total: 0,
+      byId: 0,
+      byComposite: 0,
+      examples: []
+    };
+    
+    // Helper functions for better deduplication
+    const normalizeText = (text) => {
+      if (!text) return '';
+      // Remove extra whitespace, convert to lowercase, remove special chars
+      return text.toString()
+        .toLowerCase()
+        .replace(/\s+/g, ' ')
+        .trim()
+        .replace(/[^\w\s]/g, '');
+    };
+
+    const normalizeDate = (date) => {
+      if (!date) return '';
+      // Convert to ISO date (YYYY-MM-DD) to handle timezone differences
+      try {
+        return new Date(date).toISOString().split('T')[0];
+      } catch (e) {
+        return date;
+      }
+    };
+    
+    // Simple hash function for long strings
+    const hashString = (str) => {
+      if (!str) return '0';
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) {
+        const char = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash; // Convert to 32-bit integer
+      }
+      return Math.abs(hash).toString(36);
+    };
     
     for (const review of allReviews) {
-      // Create a unique key - prefer Review ID if available, otherwise use composite key
       let key;
-      if (review['Review ID']) {
-        // If we have a review ID, use it for deduplication
-        // Also include source to avoid conflicts between RSS and API reviews with same ID
-        key = `ID_${review['Review ID']}_${review.Source || 'API'}`;
+      
+      // If we have a Review ID and it's not a generated RSS ID, use it
+      if (review['Review ID'] && !review['Review ID'].startsWith('rss_')) {
+        // Don't include source in the key - the same review should be deduplicated
+        // regardless of whether it came from RSS or API
+        key = `ID_${review['Review ID']}`;
       } else {
-        // Fallback to composite key based on author, date, rating, title, and body
-        // Normalize date to avoid format differences
-        const normalizedDate = review.Date ? new Date(review.Date).toISOString().split('T')[0] : '';
-        const titlePart = (review['Review Title'] || '').substring(0, 50).trim();
-        const bodyPart = (review.Body || review['Review Text'] || '').substring(0, 100).trim();
-        // Create a more unique composite key
-        key = `${review.Author}_${normalizedDate}_${review.Rating}_${titlePart}_${bodyPart}`;
+        // For reviews without reliable IDs, create a robust composite key
+        // Use more fields and normalize them properly
+        const author = normalizeText(review.Author || 'anonymous');
+        const date = normalizeDate(review.Date || review.DateUTC);
+        const rating = review.Rating || 0;
+        
+        // Use full title and body for better accuracy
+        const title = normalizeText(review['Review Title'] || '');
+        const body = normalizeText(review.Body || review['Review Text'] || '');
+        
+        // Include version and country for additional uniqueness
+        const version = normalizeText(review['App Version'] || '');
+        const country = normalizeText(review.Country || '');
+        
+        // Create a hash of the body to handle long texts efficiently
+        const bodyHash = hashString(body);
+        
+        // Composite key that's more likely to catch true duplicates
+        key = `COMP_${author}_${date}_${rating}_${title}_${bodyHash}_${version}_${country}`;
       }
       
-      if (!seenIds.has(key)) {
-        seenIds.add(key);
+      if (!seenKeys.has(key)) {
+        seenKeys.add(key);
         uniqueReviews.push(review);
       } else {
-        duplicatesRemoved++;
-        if (review['Review ID']) {
-          duplicatesByType.reviewId++;
-          console.log(`[Hybrid] Duplicate by Review ID found: ${key}`);
+        duplicateStats.total++;
+        if (key.startsWith('ID_')) {
+          duplicateStats.byId++;
         } else {
-          duplicatesByType.composite++;
-          console.log(`[Hybrid] Duplicate by composite key found: ${key.substring(0, 100)}...`);
+          duplicateStats.byComposite++;
+        }
+        
+        // Keep first 5 examples for debugging
+        if (duplicateStats.examples.length < 5) {
+          duplicateStats.examples.push({
+            key: key.substring(0, 100),
+            author: review.Author,
+            date: review.Date,
+            rating: review.Rating,
+            source: review.Source || 'Unknown'
+          });
         }
       }
     }
@@ -1581,10 +1640,16 @@ app.post('/api/apple-reviews/hybrid', upload.single('privateKey'), async (req, r
     // Log deduplication results
     console.log(`[Hybrid] Deduplication results:`);
     console.log(`  - Unique reviews: ${uniqueReviews.length}`);
-    console.log(`  - Duplicates removed: ${duplicatesRemoved}`);
-    if (duplicatesRemoved > 0) {
-      console.log(`  - Duplicates by Review ID: ${duplicatesByType.reviewId}`);
-      console.log(`  - Duplicates by composite key: ${duplicatesByType.composite}`);
+    console.log(`  - Duplicates removed: ${duplicateStats.total}`);
+    if (duplicateStats.total > 0) {
+      console.log(`  - Duplicates by Review ID: ${duplicateStats.byId}`);
+      console.log(`  - Duplicates by composite key: ${duplicateStats.byComposite}`);
+      if (duplicateStats.examples.length > 0) {
+        console.log(`  - Example duplicates:`);
+        duplicateStats.examples.forEach((ex, i) => {
+          console.log(`    ${i+1}. ${ex.author} (${ex.date}, Rating: ${ex.rating}, Source: ${ex.source})`);
+        });
+      }
     }
     
     console.log(`[Hybrid] Total unique reviews after deduplication: ${uniqueReviews.length}`);
