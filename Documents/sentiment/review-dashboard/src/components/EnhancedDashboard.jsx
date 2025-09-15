@@ -430,7 +430,38 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange,
   const filteredReviews = useMemo(() => {
     if (!data?.reviews) return [];
     
-    return data.reviews.filter(review => {
+    // First deduplicate the reviews before filtering
+    const deduplicatedReviews = (() => {
+      const seen = new Map();
+      const unique = [];
+      
+      for (const review of data.reviews) {
+        // Create a composite key for deduplication
+        const author = (review.author || review.Author || 'Anonymous').toLowerCase().trim();
+        const date = review.date || review.Date || review['Review Date'] || '';
+        const rating = review.rating || review.Rating || 0;
+        const content = (review.content || review['Review Text'] || review.Body || '').toLowerCase().trim();
+        
+        // Create unique key based on author, date, rating, and first 200 chars of content
+        const contentKey = content.substring(0, 200);
+        const key = `${author}_${date}_${rating}_${contentKey}`;
+        
+        // Only add if we haven't seen this review before
+        if (!seen.has(key)) {
+          seen.set(key, true);
+          unique.push(review);
+        }
+      }
+      
+      // Log deduplication stats if duplicates were found
+      if (data.reviews.length > unique.length) {
+        console.log(`[EnhancedDashboard] Removed ${data.reviews.length - unique.length} duplicate reviews before filtering`);
+      }
+      
+      return unique;
+    })();
+    
+    return deduplicatedReviews.filter(review => {
       const matchesSearch = !searchTerm || 
         (review.content?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
         (review['Review Text']?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||

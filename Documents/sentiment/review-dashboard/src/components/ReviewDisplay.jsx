@@ -591,8 +591,39 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
   // Ensure we only show reviews that are in the current filtered set
   const reviewsToShow = categorizedReviews.slice(0, reviews.length);
   
+  // Deduplicate reviews before filtering to ensure no duplicates are shown
+  const deduplicatedReviews = (() => {
+    const seen = new Map();
+    const unique = [];
+    
+    for (const review of reviewsToShow) {
+      // Create a composite key for deduplication
+      const author = (review.author || review.Author || 'Anonymous').toLowerCase().trim();
+      const date = review.date || review.Date || review['Review Date'] || '';
+      const rating = review.rating || review.Rating || 0;
+      const content = (review.content || review['Review Text'] || review.Body || '').toLowerCase().trim();
+      
+      // Create unique key based on author, date, rating, and first 200 chars of content
+      const contentKey = content.substring(0, 200);
+      const key = `${author}_${date}_${rating}_${contentKey}`;
+      
+      // Only add if we haven't seen this review before
+      if (!seen.has(key)) {
+        seen.set(key, true);
+        unique.push(review);
+      }
+    }
+    
+    // Log deduplication stats if duplicates were found
+    if (reviewsToShow.length > unique.length) {
+      console.log(`[ReviewDisplay] Removed ${reviewsToShow.length - unique.length} duplicate reviews on frontend`);
+    }
+    
+    return unique;
+  })();
+  
   // Apply all filters: category, quick, and advanced filters
-  const filteredReviews = reviewsToShow.filter(review => {
+  const filteredReviews = deduplicatedReviews.filter(review => {
     // First check category filters
     const passesCategory = selectedCategories.length === 0 || 
       selectedCategories.some(cat => 
