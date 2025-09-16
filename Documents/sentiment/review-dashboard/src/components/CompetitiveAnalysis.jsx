@@ -1224,13 +1224,17 @@ const CompetitiveAnalysis = ({ currentOEM, currentAppName, onAskAI }) => {
           return {
             id,
             name: oem.name,
-            brands: oem.brands
+            brands: oem.brands,
+            country: oem.country,
+            categories: oem.categories,
+            specialties: oem.specialties
           };
         })}
         userApp={currentAppName || 'Your App'}
         analysisType={selectedMetric}
         isOpen={showRivueChatbot}
         onClose={() => setShowRivueChatbot(false)}
+        context="competitive"
       />
     </div>
   );

@@ -3,12 +3,22 @@ import { MessageSquare, Send, X, Loader, Bot, User, Globe, Sparkles } from 'luci
 import { answerOEMQuestion } from '../services/geminiOEMAnalysis';
 import './RivueChatbot.css';
 
-const RivueChatbot = ({ competitors, userApp, analysisType, isOpen, onClose }) => {
+const RivueChatbot = ({ competitors, userApp, analysisType, isOpen, onClose, context = 'competitive' }) => {
+  const getInitialMessage = () => {
+    if (context === 'competitive' && competitors?.length > 0) {
+      return `👋 Hi! I'm Rivue, your AI automotive industry assistant. I can help you understand competitive insights about ${competitors.map(c => c.name).join(', ')}. What would you like to know?`;
+    } else if (context === 'dashboard') {
+      return `👋 Hi! I'm Rivue, your AI assistant. I can help you analyze reviews, understand sentiment patterns, and provide insights about your app performance. What would you like to know?`;
+    } else {
+      return `👋 Hi! I'm Rivue, your AI assistant. How can I help you today?`;
+    }
+  };
+
   const [messages, setMessages] = useState([
     {
       id: 1,
       type: 'bot',
-      content: `👋 Hi! I'm Rivue, your AI automotive industry assistant. I can help you understand competitive insights about ${competitors.map(c => c.name).join(', ')}. What would you like to know?`,
+      content: getInitialMessage(),
       timestamp: new Date()
     }
   ]);
@@ -29,14 +39,32 @@ const RivueChatbot = ({ competitors, userApp, analysisType, isOpen, onClose }) =
     }
   }, [isOpen]);
 
-  const suggestedQuestions = [
-    `How does ${userApp} compare to ${competitors[0]?.name} in electric vehicle technology?`,
-    `What are the main customer complaints about ${competitors[0]?.name}?`,
-    `Which OEM has the best customer satisfaction scores?`,
-    `What are the market share trends for these automotive brands?`,
-    `How do these OEMs rank in terms of innovation and R&D investment?`,
-    `What are the key differentiators between these automotive companies?`
-  ];
+  const getSuggestedQuestions = () => {
+    if (context === 'competitive' && competitors?.length > 0) {
+      return [
+        `How does ${userApp} compare to ${competitors[0]?.name} in electric vehicle technology?`,
+        `What are the main customer complaints about ${competitors[0]?.name}?`,
+        `Which OEM has the best customer satisfaction scores?`,
+        `What are the market share trends for these automotive brands?`
+      ];
+    } else if (context === 'dashboard') {
+      return [
+        `What are the main themes in negative reviews?`,
+        `Show me sentiment trends for the last month`,
+        `What features are users requesting most?`,
+        `How has our rating changed over time?`
+      ];
+    } else {
+      return [
+        `What insights can you provide?`,
+        `Help me understand the data`,
+        `What are the key trends?`,
+        `Provide analysis recommendations`
+      ];
+    }
+  };
+
+  const suggestedQuestions = getSuggestedQuestions();
 
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isLoading) return;
@@ -62,10 +90,21 @@ const RivueChatbot = ({ competitors, userApp, analysisType, isOpen, onClose }) =
     setMessages(prev => [...prev, loadingMessage]);
 
     try {
-      const response = await answerOEMQuestion(inputValue, competitors, {
-        userApp,
-        analysisType
-      });
+      let response;
+      
+      if (context === 'competitive' && competitors?.length > 0) {
+        response = await answerOEMQuestion(inputValue, competitors, {
+          userApp,
+          analysisType
+        });
+      } else {
+        // For dashboard context, use a general AI response
+        // In a real implementation, this would call a dashboard-specific AI service
+        response = {
+          answer: `I understand you're asking about: "${inputValue}". In the dashboard context, I would analyze your app's review data, sentiment patterns, and user feedback to provide insights. This feature is currently being implemented.`,
+          sources: ['App Reviews', 'Sentiment Analysis', 'User Feedback']
+        };
+      }
 
       const botMessage = {
         id: messages.length + 2,
@@ -188,7 +227,7 @@ const RivueChatbot = ({ competitors, userApp, analysisType, isOpen, onClose }) =
           ref={inputRef}
           type="text"
           className="chatbot-input"
-          placeholder="Ask about competitor insights, market trends, customer feedback..."
+          placeholder={context === 'competitive' ? "Ask about competitor insights, market trends..." : "Ask about reviews, sentiment, app performance..."}
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           onKeyPress={handleKeyPress}
@@ -206,7 +245,7 @@ const RivueChatbot = ({ competitors, userApp, analysisType, isOpen, onClose }) =
       <div className="chatbot-footer">
         <p>
           <Globe size={12} />
-          Powered by real-time web data and industry reports
+          {context === 'competitive' ? 'Powered by real-time web data and industry reports' : 'Powered by AI analysis of your app data'}
         </p>
       </div>
     </div>
