@@ -3,9 +3,9 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 // Initialize Gemini with API key from environment variables
 const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
 
-// Use Gemini 2.0 Flash for deep OEM analysis
+// Use Gemini 2.5 Flash for deep OEM analysis
 const model = genAI.getGenerativeModel({ 
-  model: "gemini-2.0-flash-exp",
+  model: "gemini-2.5-flash",
   generationConfig: {
     temperature: 0.7,
     topK: 40,
@@ -33,7 +33,7 @@ const model = genAI.getGenerativeModel({
 });
 
 /**
- * Perform deep OEM competitive analysis using Gemini 2.0 Flash
+ * Perform deep OEM competitive analysis using Gemini 2.5 Flash
  */
 export const performDeepOEMAnalysis = async (competitors, userApp, analysisType = 'overall') => {
   try {
@@ -205,7 +205,7 @@ export const performDeepOEMAnalysis = async (competitors, userApp, analysisType 
 };
 
 /**
- * Generate real-time competitive metrics using Gemini 2.0 Flash
+ * Generate real-time competitive metrics using Gemini 2.5 Flash
  */
 export const generateCompetitiveMetrics = async (competitors, metricType) => {
   try {
@@ -257,7 +257,7 @@ export const generateCompetitiveMetrics = async (competitors, metricType) => {
 };
 
 /**
- * Answer OEM-related questions using Gemini 2.0 Flash with web search context
+ * Answer OEM-related questions using Gemini 2.5 Flash with web search context
  */
 export const answerOEMQuestion = async (question, competitors, context = {}) => {
   try {
