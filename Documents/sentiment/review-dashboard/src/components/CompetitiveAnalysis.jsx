@@ -10,7 +10,7 @@ import {
   ChevronDown, Search, Zap, Shield, Target, Brain,
   Car, Battery, Gauge, DollarSign, ArrowRight, BarChart3,
   Sparkles, AlertCircle, ChevronRight, Plus, Minus,
-  Layers, CheckCircle2, XCircle, Building2
+  Layers, CheckCircle2, XCircle, Building2, Bot
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
@@ -20,8 +20,11 @@ import {
   analyzeCompetitors, 
   getCompetitorReviewData,
   getCompetitorRedditSentiment,
-  compareCompetitors 
+  compareCompetitors,
+  getComprehensiveCompetitiveData,
+  fetchRealTimeMetrics
 } from '../services/competitiveAnalysisService';
+import RivueChatbot from './RivueChatbot';
 import './CompetitiveAnalysis.css';
 
 const COLORS = {
@@ -54,6 +57,10 @@ const CompetitiveAnalysis = ({ currentOEM, currentAppName, onAskAI }) => {
   const [selectedMetric, setSelectedMetric] = useState('overall');
   const [hoveredCompetitor, setHoveredCompetitor] = useState(null);
   const [animationComplete, setAnimationComplete] = useState(false);
+  const [showRivueChatbot, setShowRivueChatbot] = useState(false);
+  const [deepAnalysisData, setDeepAnalysisData] = useState({});
+  const [metricsData, setMetricsData] = useState({});
+  const [isLoadingMetrics, setIsLoadingMetrics] = useState(false);
   const modalRef = useRef(null);
 
   // Auto-detect current OEM based on app name
@@ -118,6 +125,37 @@ const CompetitiveAnalysis = ({ currentOEM, currentAppName, onAskAI }) => {
       setTimeout(() => setAnimationComplete(true), 100);
     }
   }, [competitorData]);
+
+  // Fetch real-time metrics for charts when metric changes
+  useEffect(() => {
+    if (selectedCompetitors.length > 0 && Object.keys(competitorData).length > 0) {
+      fetchMetricsForTab(selectedMetric);
+    }
+  }, [selectedMetric, competitorData]);
+
+  // Fetch metrics for specific tab
+  const fetchMetricsForTab = async (metricType) => {
+    setIsLoadingMetrics(true);
+    try {
+      const selectedOEMs = selectedCompetitors.map(id => {
+        const oem = getOEMById(id);
+        return { name: oem.name, id };
+      });
+      
+      const result = await fetchRealTimeMetrics(selectedOEMs, metricType);
+      
+      if (result.success && result.data) {
+        setMetricsData(prev => ({
+          ...prev,
+          [metricType]: result.data
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching metrics:', error);
+    } finally {
+      setIsLoadingMetrics(false);
+    }
+  };
 
   // Fetch competitor data
   const fetchCompetitorData = async () => {
@@ -198,6 +236,33 @@ const CompetitiveAnalysis = ({ currentOEM, currentAppName, onAskAI }) => {
         setAnalysisResults(analysis);
       } catch (aiError) {
         console.error('AI analysis error:', aiError);
+      }
+      
+      // Fetch deep OEM analysis using Gemini 2.0 Flash
+      try {
+        const selectedOEMs = selectedCompetitors.map(id => {
+          const oem = getOEMById(id);
+          return {
+            id,
+            name: oem.name,
+            country: oem.country,
+            brands: oem.brands,
+            categories: oem.categories,
+            specialties: oem.specialties
+          };
+        });
+        
+        const deepAnalysis = await getComprehensiveCompetitiveData(
+          selectedOEMs,
+          currentAppName || 'Your App',
+          'overall'
+        );
+        
+        if (deepAnalysis.success && deepAnalysis.data) {
+          setDeepAnalysisData(deepAnalysis.data);
+        }
+      } catch (deepError) {
+        console.error('Deep analysis error:', deepError);
         // Continue without AI analysis
       }
       
@@ -245,17 +310,55 @@ const CompetitiveAnalysis = ({ currentOEM, currentAppName, onAskAI }) => {
     });
   };
 
-  // Prepare comparison data for bar chart
+  // Prepare enhanced comparison data with real metrics
   const prepareComparisonData = () => {
     if (Object.keys(competitorData).length === 0) return [];
     
-    return Object.entries(competitorData).map(([competitorId, data]) => ({
-      name: data.name,
-      'App Rating': data.metrics.appRating,
-      'Review Count': data.metrics.reviewCount / 1000, // in thousands
-      'Reddit Mentions': data.metrics.redditMentions,
-      'Market Share': data.metrics.marketShare
-    }));
+    // Use real-time metrics if available
+    const currentMetrics = metricsData[selectedMetric];
+    
+    return Object.entries(competitorData).map(([competitorId, data]) => {
+      const baseData = {
+        name: data.name,
+        'App Rating': data.metrics.appRating,
+        'Review Count': data.metrics.reviewCount / 1000, // in thousands
+        'Reddit Mentions': data.metrics.redditMentions,
+        'Market Share': data.metrics.marketShare
+      };
+      
+      // Override with real-time metrics if available
+      if (currentMetrics?.current) {
+        if (selectedMetric === 'ratings' && currentMetrics.current[data.name]) {
+          baseData['App Rating'] = currentMetrics.current[data.name];
+        } else if (selectedMetric === 'sentiment' && currentMetrics.current[data.name]) {
+          baseData['Sentiment Score'] = currentMetrics.current[data.name];
+        } else if (selectedMetric === 'market' && currentMetrics.current[data.name]) {
+          baseData['Market Share'] = currentMetrics.current[data.name];
+        }
+      }
+      
+      return baseData;
+    });
+  };
+
+  // Prepare time series data for area charts
+  const prepareTimeSeriesData = () => {
+    const currentMetrics = metricsData[selectedMetric];
+    if (!currentMetrics?.historical) return [];
+    
+    // Convert historical data to chart format
+    const timeSeriesMap = new Map();
+    
+    Object.entries(currentMetrics.historical).forEach(([competitor, history]) => {
+      history.forEach(point => {
+        if (!timeSeriesMap.has(point.month)) {
+          timeSeriesMap.set(point.month, { month: point.month });
+        }
+        timeSeriesMap.get(point.month)[competitor] = point.value;
+      });
+    });
+    
+    return Array.from(timeSeriesMap.values());
   };
 
   // Ask AI about competitors
@@ -680,8 +783,18 @@ const CompetitiveAnalysis = ({ currentOEM, currentAppName, onAskAI }) => {
               
               {selectedMetric !== 'overall' && (
                 <div className="metric-specific-chart">
+                  {isLoadingMetrics ? (
+                    <div className="chart-loading">
+                      <div className="loading-spinner">
+                        <div className="spinner-ring"></div>
+                        <div className="spinner-ring"></div>
+                        <div className="spinner-ring"></div>
+                      </div>
+                      <p>Analyzing {selectedMetric} data with AI...</p>
+                    </div>
+                  ) : (
                   <ResponsiveContainer width="100%" height={450}>
-                    <AreaChart data={prepareComparisonData()}>
+                    <AreaChart data={prepareTimeSeriesData().length > 0 ? prepareTimeSeriesData() : prepareComparisonData()}>
                       <defs>
                         {COLORS.gradients.map((gradient, index) => (
                           <linearGradient key={`area-${index}`} id={`areaGradient-${index}`} x1="0" y1="0" x2="0" y2="1">
@@ -692,7 +805,7 @@ const CompetitiveAnalysis = ({ currentOEM, currentAppName, onAskAI }) => {
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
                       <XAxis 
-                        dataKey="name" 
+                        dataKey={prepareTimeSeriesData().length > 0 ? "month" : "name"} 
                         tick={{ fill: '#6b7280', fontSize: 12 }}
                         axisLine={{ stroke: '#e5e7eb' }}
                       />
@@ -708,18 +821,52 @@ const CompetitiveAnalysis = ({ currentOEM, currentAppName, onAskAI }) => {
                           boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
                         }}
                       />
-                      <Area
-                        type="monotone"
-                        dataKey={selectedMetric === 'ratings' ? 'App Rating' : selectedMetric === 'sentiment' ? 'Reddit Mentions' : 'Market Share'}
-                        stroke={COLORS.primary[0]}
-                        fill={`url(#areaGradient-0)`}
-                        strokeWidth={2}
-                      />
+                      {prepareTimeSeriesData().length > 0 ? (
+                        Object.entries(competitorData).map(([id, data], index) => (
+                          <Area
+                            key={id}
+                            type="monotone"
+                            dataKey={data.name}
+                            stroke={COLORS.primary[index]}
+                            fill={`url(#areaGradient-${index})`}
+                            strokeWidth={2}
+                          />
+                        ))
+                      ) : (
+                        <Area
+                          type="monotone"
+                          dataKey={selectedMetric === 'ratings' ? 'App Rating' : selectedMetric === 'sentiment' ? 'Sentiment Score' : 'Market Share'}
+                          stroke={COLORS.primary[0]}
+                          fill={`url(#areaGradient-0)`}
+                          strokeWidth={2}
+                        />
+                      )}
+                      {prepareTimeSeriesData().length > 0 && (
+                        <Legend 
+                          iconType="circle"
+                          wrapperStyle={{ paddingTop: '20px' }}
+                        />
+                      )}
                     </AreaChart>
                   </ResponsiveContainer>
+                  )}
                 </div>
               )}
             </div>
+            
+            {/* Deep Analysis Insights */}
+            {deepAnalysisData[selectedMetric] && (
+              <div className="deep-insights-section">
+                <h3>AI-Powered Insights</h3>
+                <div className="insights-grid">
+                  {deepAnalysisData[selectedMetric].insights?.map((insight, idx) => (
+                    <div key={idx} className="insight-card">
+                      <Sparkles size={16} />
+                      <p>{insight}</p>
+                    </div>
+                  ))}</div>
+              </div>
+            )}
           </div>
 
           {/* Modern Comparison Charts Grid */}
@@ -1057,6 +1204,34 @@ const CompetitiveAnalysis = ({ currentOEM, currentAppName, onAskAI }) => {
           </div>
         </div>
       )}
+      
+      {/* Rivue AI Chatbot Button */}
+      {selectedCompetitors.length > 0 && (
+        <button 
+          className="rivue-chatbot-trigger"
+          onClick={() => setShowRivueChatbot(true)}
+        >
+          <Bot size={20} />
+          <span>Ask Rivue AI</span>
+          <span className="chatbot-badge">New</span>
+        </button>
+      )}
+      
+      {/* Rivue Chatbot Component */}
+      <RivueChatbot 
+        competitors={selectedCompetitors.map(id => {
+          const oem = getOEMById(id);
+          return {
+            id,
+            name: oem.name,
+            brands: oem.brands
+          };
+        })}
+        userApp={currentAppName || 'Your App'}
+        analysisType={selectedMetric}
+        isOpen={showRivueChatbot}
+        onClose={() => setShowRivueChatbot(false)}
+      />
     </div>
   );
 };

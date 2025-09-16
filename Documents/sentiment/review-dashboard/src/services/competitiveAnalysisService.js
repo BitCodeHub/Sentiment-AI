@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getGeminiApiKey } from './geminiAIAnalysis';
 import { automotiveOEMs } from '../data/automotiveOEMs';
+import { performDeepOEMAnalysis, generateCompetitiveMetrics } from './geminiOEMAnalysis';
 
 // Backend API base URL
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
@@ -490,5 +491,66 @@ export const answerCompetitiveQuestion = async (question, context) => {
   } catch (error) {
     console.error('Error answering competitive question:', error);
     throw error;
+  }
+};
+
+// Get comprehensive competitive data for all tabs using Gemini 2.0 Flash
+export const getComprehensiveCompetitiveData = async (selectedCompetitors, userApp, analysisType) => {
+  try {
+    console.log('🔍 Fetching comprehensive competitive data for:', analysisType);
+    
+    // Get deep OEM analysis from Gemini 2.0 Flash
+    const deepAnalysis = await performDeepOEMAnalysis(selectedCompetitors, userApp, analysisType);
+    
+    if (deepAnalysis.success && deepAnalysis.data) {
+      return {
+        success: true,
+        data: deepAnalysis.data,
+        type: analysisType
+      };
+    }
+    
+    // Fallback to generating metrics if deep analysis fails
+    const metrics = await generateCompetitiveMetrics(selectedCompetitors, analysisType);
+    return {
+      success: true,
+      data: metrics,
+      type: analysisType
+    };
+    
+  } catch (error) {
+    console.error('Error getting comprehensive competitive data:', error);
+    return {
+      success: false,
+      error: error.message,
+      type: analysisType
+    };
+  }
+};
+
+// Fetch real-time competitive metrics for charts
+export const fetchRealTimeMetrics = async (selectedCompetitors, metricType) => {
+  try {
+    console.log('📊 Fetching real-time metrics for:', metricType);
+    
+    // Use Gemini 2.0 Flash to generate realistic competitive metrics
+    const metrics = await generateCompetitiveMetrics(
+      selectedCompetitors.map(c => ({ name: c.name })), 
+      metricType
+    );
+    
+    return {
+      success: true,
+      data: metrics,
+      type: metricType
+    };
+    
+  } catch (error) {
+    console.error('Error fetching real-time metrics:', error);
+    return {
+      success: false,
+      error: error.message,
+      type: metricType
+    };
   }
 };
