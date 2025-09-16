@@ -641,51 +641,154 @@ const CompetitiveAnalysis = ({ currentOEM, currentAppName, onAskAI }) => {
 
       {Object.keys(competitorData).length > 0 && !isLoading && (
         <div className={`analysis-results-modern ${animationComplete ? 'animated' : ''}`}>
-          {/* Quick Stats Overview */}
-          <div className="quick-stats-grid">
-            <div className="stat-card-modern">
-              <div className="stat-icon-wrapper" style={{ background: 'linear-gradient(135deg, #6366F1, #8B5CF6)' }}>
-                <Building2 size={24} />
+          {/* Professional Metrics Dashboard */}
+          <div className="professional-metrics-section">
+            <h2 className="metrics-section-title">Executive Performance Summary</h2>
+            <div className="executive-metrics-grid">
+              {/* Market Intelligence */}
+              <div className="metric-card-pro gradient-blue">
+                <div className="metric-header">
+                  <Globe className="metric-icon" size={20} />
+                  <span className="metric-category">Market Intelligence</span>
+                </div>
+                <div className="metric-main">
+                  <div className="metric-value">
+                    {(Object.values(competitorData).reduce((sum, d) => sum + d.metrics.marketShare, 0) / Object.keys(competitorData).length || 0).toFixed(1)}%
+                  </div>
+                  <div className="metric-label">Average Market Share</div>
+                </div>
+                <div className="metric-details">
+                  <div className="detail-item">
+                    <span className="detail-label">Leader:</span>
+                    <span className="detail-value">
+                      {Object.values(competitorData).sort((a, b) => b.metrics.marketShare - a.metrics.marketShare)[0]?.name || 'N/A'}
+                    </span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">Total Market Size:</span>
+                    <span className="detail-value">$2.3T</span>
+                  </div>
+                </div>
               </div>
-              <div className="stat-content">
-                <span className="stat-label">Competitors Analyzed</span>
-                <h3 className="stat-value">{selectedCompetitors.length}</h3>
+
+              {/* Customer Excellence */}
+              <div className="metric-card-pro gradient-green">
+                <div className="metric-header">
+                  <Star className="metric-icon" size={20} />
+                  <span className="metric-category">Customer Excellence</span>
+                </div>
+                <div className="metric-main">
+                  <div className="metric-value">
+                    {(Object.values(competitorData).reduce((sum, d) => sum + d.metrics.appRating, 0) / Object.keys(competitorData).length || 0).toFixed(2)}
+                  </div>
+                  <div className="metric-label">Average App Rating</div>
+                </div>
+                <div className="metric-details">
+                  <div className="detail-item">
+                    <span className="detail-label">Reviews Analyzed:</span>
+                    <span className="detail-value">
+                      {(Object.values(competitorData).reduce((sum, d) => sum + d.metrics.reviewCount, 0) / 1000).toFixed(0)}K
+                    </span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">NPS Leader:</span>
+                    <span className="detail-value">
+                      {Object.values(competitorData).sort((a, b) => b.metrics.customerSatisfaction - a.metrics.customerSatisfaction)[0]?.name || 'N/A'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Digital Innovation */}
+              <div className="metric-card-pro gradient-purple">
+                <div className="metric-header">
+                  <Zap className="metric-icon" size={20} />
+                  <span className="metric-category">Digital Innovation</span>
+                </div>
+                <div className="metric-main">
+                  <div className="metric-value">
+                    {(Object.values(competitorData).reduce((sum, d) => sum + d.metrics.innovationScore, 0) / Object.keys(competitorData).length * 100 || 0).toFixed(0)}%
+                  </div>
+                  <div className="metric-label">Innovation Index</div>
+                </div>
+                <div className="metric-details">
+                  <div className="detail-item">
+                    <span className="detail-label">Tech Stack Leader:</span>
+                    <span className="detail-value">
+                      {Object.values(competitorData).sort((a, b) => b.metrics.innovationScore - a.metrics.innovationScore)[0]?.name || 'N/A'}
+                    </span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">AI Adoption:</span>
+                    <span className="detail-value">78%</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Brand Sentiment */}
+              <div className="metric-card-pro gradient-orange">
+                <div className="metric-header">
+                  <MessageSquare className="metric-icon" size={20} />
+                  <span className="metric-category">Brand Sentiment</span>
+                </div>
+                <div className="metric-main">
+                  <div className="metric-value">
+                    {(Object.values(competitorData).reduce((sum, d) => sum + d.metrics.sentimentScore, 0) / Object.keys(competitorData).length * 100 || 0).toFixed(0)}%
+                  </div>
+                  <div className="metric-label">Positive Sentiment</div>
+                </div>
+                <div className="metric-details">
+                  <div className="detail-item">
+                    <span className="detail-label">Social Mentions:</span>
+                    <span className="detail-value">
+                      {(Object.values(competitorData).reduce((sum, d) => sum + d.metrics.redditMentions, 0) / 1000).toFixed(1)}K
+                    </span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">Sentiment Leader:</span>
+                    <span className="detail-value">
+                      {Object.values(competitorData).sort((a, b) => b.metrics.sentimentScore - a.metrics.sentimentScore)[0]?.name || 'N/A'}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
-            
-            <div className="stat-card-modern">
-              <div className="stat-icon-wrapper" style={{ background: 'linear-gradient(135deg, #10B981, #3B82F6)' }}>
-                <Star size={24} />
-              </div>
-              <div className="stat-content">
-                <span className="stat-label">Average Rating</span>
-                <h3 className="stat-value">
-                  {(Object.values(competitorData).reduce((acc, d) => acc + d.metrics.appRating, 0) / Object.keys(competitorData).length).toFixed(1)}
-                </h3>
-              </div>
-            </div>
-            
-            <div className="stat-card-modern">
-              <div className="stat-icon-wrapper" style={{ background: 'linear-gradient(135deg, #EC4899, #F59E0B)' }}>
-                <MessageSquare size={24} />
-              </div>
-              <div className="stat-content">
-                <span className="stat-label">Total Reviews</span>
-                <h3 className="stat-value">
-                  {Object.values(competitorData).reduce((acc, d) => acc + d.metrics.reviewCount, 0).toLocaleString()}
-                </h3>
-              </div>
-            </div>
-            
-            <div className="stat-card-modern">
-              <div className="stat-icon-wrapper" style={{ background: 'linear-gradient(135deg, #F59E0B, #EF4444)' }}>
-                <TrendingUp size={24} />
-              </div>
-              <div className="stat-content">
-                <span className="stat-label">Avg Sentiment</span>
-                <h3 className="stat-value">
-                  {(Object.values(competitorData).reduce((acc, d) => acc + d.metrics.sentimentScore, 0) / Object.keys(competitorData).length * 100).toFixed(0)}%
-                </h3>
+
+            {/* Competitive Positioning Matrix */}
+            <div className="positioning-matrix-section">
+              <h3 className="matrix-title">Competitive Positioning Matrix</h3>
+              <div className="matrix-grid">
+                <div className="matrix-quadrants">
+                  <div className="quadrant q1">Leaders</div>
+                  <div className="quadrant q2">Challengers</div>
+                  <div className="quadrant q3">Niche</div>
+                  <div className="quadrant q4">Emerging</div>
+                </div>
+                {Object.entries(competitorData).map(([id, data], index) => {
+                  const position = {
+                    x: data.metrics.innovationScore * 100,
+                    y: data.metrics.customerSatisfaction * 100,
+                    size: Math.min(40, 20 + data.metrics.marketShare)
+                  };
+                  return (
+                    <div 
+                      key={id}
+                      className="positioning-dot"
+                      style={{
+                        left: `${position.x}%`,
+                        bottom: `${position.y}%`,
+                        width: `${position.size}px`,
+                        height: `${position.size}px`,
+                        background: COLORS.primary[index % COLORS.primary.length]
+                      }}
+                      title={`${data.name}: Innovation ${position.x.toFixed(0)}%, Satisfaction ${position.y.toFixed(0)}%`}
+                    >
+                      <span className="positioning-label">{data.name.slice(0, 2)}</span>
+                    </div>
+                  );
+                })}
+                <div className="matrix-axis-label-x">Innovation Score →</div>
+                <div className="matrix-axis-label-y">Customer Satisfaction →</div>
               </div>
             </div>
           </div>

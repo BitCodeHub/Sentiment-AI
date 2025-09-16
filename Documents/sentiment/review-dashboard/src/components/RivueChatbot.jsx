@@ -150,6 +150,8 @@ const RivueChatbot = ({ competitors, userApp, analysisType, isOpen, onClose, con
   if (!isOpen) return null;
 
   return (
+    <>
+      <div className="chatbot-backdrop" onClick={onClose} />
     <div className="rivue-chatbot-container">
       <div className="chatbot-header">
         <div className="header-left">
@@ -249,6 +251,7 @@ const RivueChatbot = ({ competitors, userApp, analysisType, isOpen, onClose, con
         </p>
       </div>
     </div>
+    </>
   );
 };
 
