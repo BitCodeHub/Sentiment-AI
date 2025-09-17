@@ -4,17 +4,18 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background-color: #f7f7f8;
+  background-color: #0a0f1e;
   overflow: hidden;
 }
 
 /* Header */
 .rivue-chat-header {
-  background: white;
-  border-bottom: 1px solid #e5e5e7;
+  background: #1a1f2e;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   position: sticky;
   top: 0;
   z-index: 100;
+  backdrop-filter: blur(10px);
 }
 
 .header-container {
@@ -31,10 +32,10 @@
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
-  background: transparent;
-  border: 1px solid #e5e5e7;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
-  color: #1a1a1a;
+  color: #e2e8f0;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -42,8 +43,8 @@
 }
 
 .back-button:hover {
-  background: #f5f5f7;
-  border-color: #d1d1d6;
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .header-center {
@@ -70,13 +71,13 @@
 .header-title h1 {
   font-size: 20px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: #e2e8f0;
   margin: 0;
 }
 
 .header-subtitle {
   font-size: 14px;
-  color: #86868b;
+  color: #94a3b8;
   margin: 0;
 }
 
@@ -90,10 +91,11 @@
   align-items: center;
   gap: 6px;
   padding: 8px 16px;
-  background: #f5f5f7;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 20px;
   font-size: 13px;
-  color: #1a1a1a;
+  color: #e2e8f0;
 }
 
 .stat-badge svg {
@@ -132,12 +134,12 @@
 }
 
 .messages-area::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.1);
   border-radius: 4px;
 }
 
 .messages-area::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(255, 255, 255, 0.2);
 }
 
 /* Example Prompts */
@@ -160,7 +162,7 @@
 .example-prompts h2 {
   font-size: 18px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: #e2e8f0;
   margin-bottom: 20px;
   text-align: center;
 }
@@ -176,17 +178,19 @@
   align-items: flex-start;
   gap: 16px;
   padding: 20px;
-  background: white;
-  border: 1px solid #e5e5e7;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s;
   text-align: left;
+  backdrop-filter: blur(10px);
 }
 
 .example-prompt-card:hover {
-  border-color: #6366F1;
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.1);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: #3b82f6;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
   transform: translateY(-2px);
 }
 
@@ -205,13 +209,13 @@
 .prompt-content h3 {
   font-size: 15px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: #e2e8f0;
   margin: 0 0 4px 0;
 }
 
 .prompt-content p {
   font-size: 13px;
-  color: #86868b;
+  color: #94a3b8;
   margin: 0;
   line-height: 1.5;
 }
@@ -268,7 +272,7 @@
 }
 
 .user-avatar {
-  background: #1a1a1a;
+  background: #3b82f6;
   color: white;
 }
 
@@ -277,20 +281,22 @@
 }
 
 .message-text {
-  background: white;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   padding: 12px 16px;
   border-radius: 16px;
   font-size: 15px;
   line-height: 1.6;
-  color: #1a1a1a;
+  color: #e2e8f0;
   white-space: pre-wrap;
   word-wrap: break-word;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 .message-wrapper.user .message-text {
-  background: #007AFF;
+  background: #3b82f6;
   color: white;
+  border-color: #3b82f6;
 }
 
 /* Typing Indicator */
@@ -298,15 +304,16 @@
   display: flex;
   gap: 4px;
   padding: 16px 20px;
-  background: white;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 16px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 .typing-indicator span {
   width: 8px;
   height: 8px;
-  background: #86868b;
+  background: #94a3b8;
   border-radius: 50%;
   animation: typingBounce 1.4s ease-in-out infinite;
 }
@@ -349,18 +356,18 @@
   justify-content: center;
   width: 28px;
   height: 28px;
-  background: transparent;
-  border: 1px solid #e5e5e7;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 6px;
-  color: #86868b;
+  color: #94a3b8;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .action-button:hover {
-  background: #f5f5f7;
-  color: #1a1a1a;
-  border-color: #d1d1d6;
+  background: rgba(255, 255, 255, 0.1);
+  color: #e2e8f0;
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .message-sources {
@@ -369,14 +376,15 @@
   gap: 6px;
   margin-top: 6px;
   font-size: 12px;
-  color: #86868b;
+  color: #94a3b8;
 }
 
 /* Input Area */
 .rivue-chat-input {
-  background: white;
-  border-top: 1px solid #e5e5e7;
+  background: #1a1f2e;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
   padding: 16px 0;
+  backdrop-filter: blur(10px);
 }
 
 .input-container {
@@ -391,8 +399,8 @@
 .chat-textarea {
   flex: 1;
   padding: 12px 16px;
-  background: #f5f5f7;
-  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 20px;
   font-size: 15px;
   line-height: 1.5;
@@ -402,12 +410,18 @@
   max-height: 120px;
   overflow-y: auto;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #e2e8f0;
+  caret-color: #3b82f6;
+}
+
+.chat-textarea::placeholder {
+  color: #64748b;
 }
 
 .chat-textarea:focus {
-  background: white;
-  border-color: #6366F1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .send-button {
@@ -457,7 +471,7 @@
   align-items: center;
   gap: 6px;
   font-size: 12px;
-  color: #86868b;
+  color: #64748b;
   margin: 0;
 }
 

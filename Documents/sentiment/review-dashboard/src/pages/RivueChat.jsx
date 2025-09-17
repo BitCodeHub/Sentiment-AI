@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
-  ArrowLeft, Send, Bot, User, Sparkles, Globe, 
+  ArrowLeft, Send, Bot, User, Globe, 
   Hash, TrendingUp, Building2, Car, Shield, Zap,
   Copy, ThumbsUp, ThumbsDown, RefreshCw, Loader2
 } from 'lucide-react';
@@ -323,12 +323,6 @@ What would you like to know about the automotive industry?`,
               <Send size={20} />
             )}
           </button>
-        </div>
-        <div className="input-footer">
-          <p>
-            <Sparkles size={12} />
-            Powered by Gemini 2.5 Flash with real-time web data
-          </p>
         </div>
       </div>
     </div>
