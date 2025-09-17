@@ -376,42 +376,43 @@ export const answerOEMQuestion = async (question, competitors, context = {}) => 
     
     // Extract visualization data if present
     let visualizationData = null;
+    let cleanAnswer = answer;
     const vizMatch = answer.match(/<<<VISUALIZATION>>>([\s\S]*?)>>>VISUALIZATION/);
     if (vizMatch) {
       try {
         visualizationData = JSON.parse(vizMatch[1]);
         // Remove the visualization JSON from the answer text
-        answer = answer.replace(/<<<VISUALIZATION>>>[\s\S]*?>>>VISUALIZATION/, '').trim();
+        cleanAnswer = answer.replace(/<<<VISUALIZATION>>>[\s\S]*?>>>VISUALIZATION/, '').trim();
       } catch (e) {
         console.error('Failed to parse visualization data:', e);
       }
     }
     
     // Generate dynamic sources based on content
-    const sources = generateDynamicSources(answer);
+    const sources = generateDynamicSources(cleanAnswer);
     
-    const result = {
+    const responseData = {
       success: true,
-      answer,
+      answer: cleanAnswer,
       timestamp: new Date().toISOString(),
       sources,
-      confidence: calculateConfidence(answer),
+      confidence: calculateConfidence(cleanAnswer),
       topics
     };
     
     // Add visualization data if present
     if (visualizationData) {
       if (visualizationData.type === 'chart') {
-        result.chartData = visualizationData.chartData;
-        result.chartType = visualizationData.chartType;
-        result.chartTitle = visualizationData.chartTitle;
+        responseData.chartData = visualizationData.chartData;
+        responseData.chartType = visualizationData.chartType;
+        responseData.chartTitle = visualizationData.chartTitle;
       } else if (visualizationData.type === 'table') {
-        result.tableData = visualizationData.tableData;
-        result.tableTitle = visualizationData.tableTitle;
+        responseData.tableData = visualizationData.tableData;
+        responseData.tableTitle = visualizationData.tableTitle;
       }
     }
     
-    return result;
+    return responseData;
     
   } catch (error) {
     console.error('❌ [Rivue Chatbot] Error:', error);
