@@ -5,6 +5,7 @@ import Dashboard from './components/Dashboard';
 import EnhancedDashboard from './components/EnhancedDashboard';
 import TopicDetailView from './components/TopicDetailView';
 import ChatPage from './components/ChatPage';
+import RivueChat from './pages/RivueChat';
 import ErrorBoundary from './components/ErrorBoundary';
 import RateLimitNotification from './components/RateLimitNotification';
 import { parseExcelFile, aggregateData, parseAndTransformData } from './utils/excelParser';
@@ -190,6 +191,8 @@ function App() {
           <Route path="/chat" element={
             data ? <ChatPage reviewData={filterReviewsByDateRange(data.reviews || [], dateRange)} /> : <Navigate to="/" />
           } />
+          
+          <Route path="/rivue-chat" element={<RivueChat />} />
         </Routes>
       </div>
     </Router>

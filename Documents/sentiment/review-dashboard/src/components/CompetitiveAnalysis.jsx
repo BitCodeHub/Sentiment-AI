@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   BarChart, Bar, LineChart, Line, RadarChart, Radar, PolarGrid, 
   PolarAngleAxis, PolarRadiusAxis, XAxis, YAxis, CartesianGrid, 
@@ -24,7 +25,6 @@ import {
   getComprehensiveCompetitiveData,
   fetchRealTimeMetrics
 } from '../services/competitiveAnalysisService';
-import RivueChatbot from './RivueChatbot';
 import './CompetitiveAnalysis.css';
 
 const COLORS = {
@@ -46,6 +46,7 @@ const COLORS = {
 };
 
 const CompetitiveAnalysis = ({ currentOEM, currentAppName, onAskAI }) => {
+  const navigate = useNavigate();
   const [selectedCompetitors, setSelectedCompetitors] = useState([]);
   const [competitorData, setCompetitorData] = useState({});
   const [isLoading, setIsLoading] = useState(false);
@@ -57,7 +58,6 @@ const CompetitiveAnalysis = ({ currentOEM, currentAppName, onAskAI }) => {
   const [selectedMetric, setSelectedMetric] = useState('overall');
   const [hoveredCompetitor, setHoveredCompetitor] = useState(null);
   const [animationComplete, setAnimationComplete] = useState(false);
-  const [showRivueChatbot, setShowRivueChatbot] = useState(false);
   const [deepAnalysisData, setDeepAnalysisData] = useState({});
   const [metricsData, setMetricsData] = useState({});
   const [isLoadingMetrics, setIsLoadingMetrics] = useState(false);
@@ -1312,33 +1312,30 @@ const CompetitiveAnalysis = ({ currentOEM, currentAppName, onAskAI }) => {
       {selectedCompetitors.length > 0 && (
         <button 
           className="rivue-chatbot-trigger"
-          onClick={() => setShowRivueChatbot(true)}
+          onClick={() => {
+            navigate('/rivue-chat', {
+              state: {
+                competitors: selectedCompetitors.map(id => {
+                  const oem = getOEMById(id);
+                  return {
+                    id,
+                    name: oem.name,
+                    brands: oem.brands,
+                    country: oem.country,
+                    categories: oem.categories,
+                    specialties: oem.specialties
+                  };
+                }),
+                userApp: currentAppName || 'Your App'
+              }
+            });
+          }}
         >
           <Bot size={20} />
           <span>Ask Rivue AI</span>
           <span className="chatbot-badge">New</span>
         </button>
       )}
-      
-      {/* Rivue Chatbot Component */}
-      <RivueChatbot 
-        competitors={selectedCompetitors.map(id => {
-          const oem = getOEMById(id);
-          return {
-            id,
-            name: oem.name,
-            brands: oem.brands,
-            country: oem.country,
-            categories: oem.categories,
-            specialties: oem.specialties
-          };
-        })}
-        userApp={currentAppName || 'Your App'}
-        analysisType={selectedMetric}
-        isOpen={showRivueChatbot}
-        onClose={() => setShowRivueChatbot(false)}
-        context="competitive"
-      />
     </div>
   );
 };
