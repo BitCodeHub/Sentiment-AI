@@ -266,6 +266,12 @@ export const answerOEMQuestion = async (question, competitors, context = {}) => 
   try {
     console.log('💬 [Rivue Chatbot] Processing question:', question);
     
+    // Check if user is asking for visualizations
+    const visualizationKeywords = ['chart', 'graph', 'table', 'visualize', 'show', 'display', 'pie', 'bar', 'line', 'trend', 'comparison', 'compare', 'excel', 'data'];
+    const wantsVisualization = visualizationKeywords.some(keyword => 
+      question.toLowerCase().includes(keyword)
+    );
+    
     // Build enhanced context with conversation history
     const sessionId = context.sessionId || 'default';
     const conversationHistory = conversationMemory.get(sessionId) || [];
@@ -309,6 +315,41 @@ export const answerOEMQuestion = async (question, competitors, context = {}) => 
       ${conversationHistory.length > 0 ? conversationHistory.map(h => h.topics).flat().filter(Boolean).join(', ') : 'General automotive insights'}
       
       Provide a comprehensive, data-rich response that demonstrates real-time market intelligence.
+      
+      IMPORTANT: If the user is asking for data visualization (charts, graphs, tables), structure your response as follows:
+      1. First provide a brief text explanation
+      2. Then include a JSON block marked with <<<VISUALIZATION>>> and >>>VISUALIZATION tags
+      3. The JSON should specify either chartData or tableData
+      
+      Chart JSON format:
+      <<<VISUALIZATION>>>
+      {
+        "type": "chart",
+        "chartType": "bar|line|pie|area|radar|composed",
+        "chartTitle": "Chart Title",
+        "chartData": {
+          "data": [{"name": "...", "value": 123}, ...],
+          "xKey": "name",
+          "bars": [{"key": "value", "color": "#3b82f6"}],
+          // or for line charts:
+          "lines": [{"key": "value", "color": "#3b82f6"}],
+          // or for pie charts:
+          "valueKey": "value"
+        }
+      }
+      >>>VISUALIZATION
+      
+      Table JSON format:
+      <<<VISUALIZATION>>>
+      {
+        "type": "table",
+        "tableTitle": "Table Title",
+        "tableData": {
+          "headers": ["Column1", "Column2", ...],
+          "rows": [["data1", "data2", ...], ...]
+        }
+      }
+      >>>VISUALIZATION
     `;
 
     const result = await model.generateContent(chatPrompt);
@@ -333,10 +374,23 @@ export const answerOEMQuestion = async (question, competitors, context = {}) => 
     
     conversationMemory.set(sessionId, conversationHistory);
     
+    // Extract visualization data if present
+    let visualizationData = null;
+    const vizMatch = answer.match(/<<<VISUALIZATION>>>([\s\S]*?)>>>VISUALIZATION/);
+    if (vizMatch) {
+      try {
+        visualizationData = JSON.parse(vizMatch[1]);
+        // Remove the visualization JSON from the answer text
+        answer = answer.replace(/<<<VISUALIZATION>>>[\s\S]*?>>>VISUALIZATION/, '').trim();
+      } catch (e) {
+        console.error('Failed to parse visualization data:', e);
+      }
+    }
+    
     // Generate dynamic sources based on content
     const sources = generateDynamicSources(answer);
     
-    return {
+    const result = {
       success: true,
       answer,
       timestamp: new Date().toISOString(),
@@ -344,6 +398,20 @@ export const answerOEMQuestion = async (question, competitors, context = {}) => 
       confidence: calculateConfidence(answer),
       topics
     };
+    
+    // Add visualization data if present
+    if (visualizationData) {
+      if (visualizationData.type === 'chart') {
+        result.chartData = visualizationData.chartData;
+        result.chartType = visualizationData.chartType;
+        result.chartTitle = visualizationData.chartTitle;
+      } else if (visualizationData.type === 'table') {
+        result.tableData = visualizationData.tableData;
+        result.tableTitle = visualizationData.tableTitle;
+      }
+    }
+    
+    return result;
     
   } catch (error) {
     console.error('❌ [Rivue Chatbot] Error:', error);

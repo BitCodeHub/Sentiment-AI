@@ -3,9 +3,12 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   ArrowLeft, Send, Bot, User, Globe, 
   Hash, TrendingUp, Building2, Car, Shield, Zap,
-  Copy, ThumbsUp, ThumbsDown, RefreshCw, Loader2
+  Copy, ThumbsUp, ThumbsDown, RefreshCw, Loader2,
+  BarChart3, PieChart, Table, FileSpreadsheet
 } from 'lucide-react';
 import { answerOEMQuestion, performDeepOEMAnalysis } from '../services/geminiOEMAnalysis';
+import ChatChart from '../components/ChatChart';
+import ChatTable from '../components/ChatTable';
 import './RivueChat.css';
 
 const RivueChat = () => {
@@ -21,14 +24,16 @@ const RivueChat = () => {
     {
       id: 'welcome',
       type: 'bot',
-      content: `Hi! I'm Rivue, your automotive industry AI assistant. I have real-time access to comprehensive data about the automotive market, including:
+      content: `Hi! I'm Rivue, your automotive industry AI assistant. I have real-time access to comprehensive data about the automotive market and can provide:
 
-• Market trends and analysis
-• Competitor intelligence
-• Customer sentiment and reviews
-• Technology innovations
-• Sales and financial data
-• Industry news and developments
+• Market trends and analysis with visual charts
+• Competitor intelligence with comparison tables
+• Customer sentiment dashboards and pie charts
+• Technology innovation reports with data visualizations
+• Sales and financial data in Excel-style tables
+• Industry news and developments with trend graphs
+
+I can create bar charts, line graphs, pie charts, tables, and other visualizations to help you understand the data better.
 
 What would you like to know about the automotive industry?`,
       timestamp: new Date()
@@ -55,24 +60,24 @@ What would you like to know about the automotive industry?`,
   // Example prompts
   const examplePrompts = [
     {
+      icon: <BarChart3 size={20} />,
+      title: "Market Share Chart",
+      prompt: "Show me a bar chart of EV market share by OEM for 2025"
+    },
+    {
+      icon: <Table size={20} />,
+      title: "Competitor Comparison", 
+      prompt: "Create a comparison table of Tesla, Ford, and GM's key metrics"
+    },
+    {
+      icon: <PieChart size={20} />,
+      title: "Customer Sentiment",
+      prompt: "Show customer satisfaction ratings as a pie chart for top 5 OEMs"
+    },
+    {
       icon: <TrendingUp size={20} />,
-      title: "Market Analysis",
-      prompt: "What are the latest EV market trends and which OEMs are leading?"
-    },
-    {
-      icon: <Building2 size={20} />,
-      title: "Competitor Deep Dive", 
-      prompt: "Compare Tesla, Ford, and Toyota's digital innovation strategies"
-    },
-    {
-      icon: <Shield size={20} />,
-      title: "Customer Insights",
-      prompt: "What are customers saying about connected car features across brands?"
-    },
-    {
-      icon: <Zap size={20} />,
-      title: "Technology Trends",
-      prompt: "How are OEMs implementing AI and autonomous driving technologies?"
+      title: "Sales Trend Analysis",
+      prompt: "Display monthly EV sales trends for 2024-2025 as a line chart"
     }
   ];
 
@@ -118,7 +123,12 @@ What would you like to know about the automotive industry?`,
         content: response.answer,
         sources: response.sources || ['Real-time market data', 'Industry reports', 'OEM financial statements'],
         timestamp: new Date(),
-        confidence: response.confidence || 0.9
+        confidence: response.confidence || 0.9,
+        chartData: response.chartData || null,
+        chartType: response.chartType || null,
+        chartTitle: response.chartTitle || null,
+        tableData: response.tableData || null,
+        tableTitle: response.tableTitle || null
       };
 
       // Update conversation context for learning
@@ -257,6 +267,21 @@ What would you like to know about the automotive industry?`,
                     ) : (
                       <>
                         <div className="message-text">{message.content}</div>
+                        
+                        {message.chartData && (
+                          <ChatChart 
+                            chartData={message.chartData}
+                            chartType={message.chartType}
+                            title={message.chartTitle}
+                          />
+                        )}
+                        
+                        {message.tableData && (
+                          <ChatTable 
+                            data={message.tableData}
+                            title={message.tableTitle}
+                          />
+                        )}
                         
                         {message.type === 'bot' && message.content !== 'typing' && (
                           <div className="message-actions">
