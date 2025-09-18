@@ -407,6 +407,7 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
       }
 
       setIsCategorizingComplete(true);
+      console.log('[ReviewDisplay] Categorization complete. Total categorized:', categorized.length);
     } catch (error) {
       console.error('Analysis error:', error);
       // Fallback to intelligent categorization for ALL reviews
@@ -589,7 +590,8 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
   };
 
   // Ensure we only show reviews that are in the current filtered set
-  const reviewsToShow = categorizedReviews.slice(0, reviews.length);
+  // Only limit to reviews.length if categorization is complete to avoid cutting off reviews during categorization
+  const reviewsToShow = isCategorizingComplete ? categorizedReviews.slice(0, reviews.length) : categorizedReviews;
   
   // Deduplicate reviews before filtering to ensure no duplicates are shown
   const deduplicatedReviews = (() => {
@@ -666,10 +668,24 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
            passesDateFilter;
   });
 
+  // Debug logging to understand filtering
+  useEffect(() => {
+    if (!loading && categorizedReviews.length > 0) {
+      console.log('[ReviewDisplay] Debug Info:', {
+        totalReviews: reviews.length,
+        categorizedReviews: categorizedReviews.length,
+        reviewsToShow: reviewsToShow.length,
+        deduplicatedReviews: deduplicatedReviews.length,
+        filteredReviews: filteredReviews.length,
+        selectedCategories: selectedCategories,
+        isCategorizingComplete: isCategorizingComplete
+      });
+    }
+  }, [categorizedReviews.length, filteredReviews.length, selectedCategories, isCategorizingComplete]);
+
   const getCategoryCount = (category) => {
     // Only count from the categorized reviews that are actually in the current filtered set
-    return categorizedReviews
-      .slice(0, reviews.length) // Ensure we don't count more than the filtered reviews
+    return reviewsToShow
       .filter(r => 
         r.primaryCategory === category || (Array.isArray(r.categories) && r.categories.includes(category))
       ).length;
@@ -969,25 +985,11 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
             </div>
           </div>
         ) : filteredReviews.slice(0, Math.min(displayedReviews, filteredReviews.length)).map((review, index) => {
-          // Double-check that this review is actually from the current filtered set
-          const reviewDate = review.date || review.Date || review['Review Date'];
-          const reviewContent = review.content || review['Review Text'] || review.Body || '';
-          
-          // Find if this review exists in the original filtered reviews
-          const isInFilteredSet = reviews.some(r => {
-            const rDate = r.date || r.Date || r['Review Date'];
-            const rContent = r.content || r['Review Text'] || r.Body || '';
-            return rDate === reviewDate && rContent === reviewContent;
-          });
-          
-          // Only render if the review is actually in the filtered set
-          if (!isInFilteredSet) return null;
-          
           const isExpanded = expandedReviews.has(index);
           const isMobile = window.innerWidth <= 768;
           
           return (
-          <div key={index} className={`review-card ${review.severity} ${isExpanded ? 'expanded' : ''}`}>
+          <div key={`review-${index}-${review.date}`} className={`review-card ${review.severity} ${isExpanded ? 'expanded' : ''}`}>
             <div className="review-header">
               <div className="review-rating">
                 <span className="stars">{formatStars(review.rating || review.Rating || 0)}</span>
