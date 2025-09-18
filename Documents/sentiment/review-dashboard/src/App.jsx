@@ -177,18 +177,35 @@ function AppContent() {
   };
 
 
+  const { isAuthenticated, loading } = useAuth();
+
+  // Show loading spinner while checking authentication
+  if (loading) {
+    return (
+      <div className="app-loading">
+        <div className="spinner"></div>
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
   return (
     <Router>
       <div className="app">
         <RateLimitNotification />
         <Routes>
-          {/* Login Route */}
-          <Route path="/login" element={
-            <Login onSuccess={() => window.location.href = '/'} />
+          {/* Add an index route that handles initial redirect */}
+          <Route index element={
+            isAuthenticated ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />
           } />
           
-          {/* Protected Routes */}
-          <Route path="/" element={
+          {/* Login Route */}
+          <Route path="/login" element={
+            isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login onSuccess={() => window.location.href = '/dashboard'} />
+          } />
+          
+          {/* Dashboard Route */}
+          <Route path="/dashboard" element={
             <ProtectedRoute>
               {!data ? (
                 <UploadPage 
@@ -212,13 +229,13 @@ function AppContent() {
           
           <Route path="/topic/:topicName" element={
             <ProtectedRoute>
-              {data ? <TopicDetailView data={data} /> : <Navigate to="/" />}
+              {data ? <TopicDetailView data={data} /> : <Navigate to="/dashboard" />}
             </ProtectedRoute>
           } />
           
           <Route path="/chat" element={
             <ProtectedRoute>
-              {data ? <ChatPage reviewData={filterReviewsByDateRange(data.reviews || [], dateRange)} /> : <Navigate to="/" />}
+              {data ? <ChatPage reviewData={filterReviewsByDateRange(data.reviews || [], dateRange)} /> : <Navigate to="/dashboard" />}
             </ProtectedRoute>
           } />
           

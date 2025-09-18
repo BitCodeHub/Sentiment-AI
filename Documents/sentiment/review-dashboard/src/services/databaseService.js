@@ -59,6 +59,9 @@ class LocalStorageDB {
     const sessionToken = btoa(`${email}:${Date.now()}`);
     this.sessions[sessionToken] = user.id;
     this.saveSessions();
+    
+    // Save session token to localStorage
+    localStorage.setItem('review_session_token', sessionToken);
 
     return { 
       user: { ...user, password: undefined }, 
@@ -70,15 +73,30 @@ class LocalStorageDB {
   async signOut(sessionToken) {
     delete this.sessions[sessionToken];
     this.saveSessions();
+    localStorage.removeItem('review_session_token');
     return { error: null };
   }
 
+  async signInAsGuest() {
+    const guestEmail = `guest_${Date.now()}@example.com`;
+    const guestPassword = 'guest123';
+    const guestName = `Guest User`;
+    
+    await this.createUser(guestEmail, guestPassword, guestName);
+    return this.signIn(guestEmail, guestPassword);
+  }
+
   async getSession(sessionToken) {
-    const userId = this.sessions[sessionToken];
-    if (!userId) {
+    // If no token provided, check localStorage for current session
+    if (!sessionToken) {
+      sessionToken = localStorage.getItem('review_session_token');
+    }
+    
+    if (!sessionToken || !this.sessions[sessionToken]) {
       return { user: null, error: 'Invalid session' };
     }
 
+    const userId = this.sessions[sessionToken];
     const user = this.users.find(u => u.id === userId);
     return { 
       user: user ? { ...user, password: undefined } : null, 
@@ -185,11 +203,11 @@ export const db = {
 
   // Guest login
   async signInAsGuest() {
-    const guestEmail = `guest_${Date.now()}@example.com`;
-    const guestPassword = 'guest123';
-    const guestName = `Guest User ${Math.floor(Math.random() * 1000)}`;
-    
     if (isProduction && supabase) {
+      const guestEmail = `guest_${Date.now()}@example.com`;
+      const guestPassword = 'guest123';
+      const guestName = `Guest User ${Math.floor(Math.random() * 1000)}`;
+      
       // For production, create a temporary guest account
       const { data, error } = await supabase.auth.signUp({
         email: guestEmail,
@@ -202,8 +220,7 @@ export const db = {
     }
     
     // For local development
-    await localDB.createUser(guestEmail, guestPassword, guestName);
-    return localDB.signIn(guestEmail, guestPassword);
+    return localDB.signInAsGuest();
   },
 
   // Review assignments
@@ -274,6 +291,8 @@ export const db = {
   // Save session to localStorage
   saveSession(session) {
     if (session) {
+      // Store the session token for localStorage-based auth
+      localStorage.setItem('review_session_token', session.access_token || session);
       localStorage.setItem('user_session', session.access_token || session);
       if (session.user) {
         localStorage.setItem('current_user', JSON.stringify(session.user));
@@ -283,6 +302,7 @@ export const db = {
 
   // Clear session from localStorage
   clearSession() {
+    localStorage.removeItem('review_session_token');
     localStorage.removeItem('user_session');
     localStorage.removeItem('current_user');
   },
