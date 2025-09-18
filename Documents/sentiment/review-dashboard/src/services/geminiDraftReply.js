@@ -13,13 +13,47 @@ const cleanJsonResponse = (text) => {
   return text;
 };
 
+// Extract key topics from review content for better context
+const extractKeyTopics = (content) => {
+  if (!content) return [];
+  
+  const topics = [];
+  const lowerContent = content.toLowerCase();
+  
+  // Technical issues
+  if (/crash|freeze|hang|stuck|slow|lag/i.test(content)) topics.push('performance issues');
+  if (/login|sign in|password|authenticate|account/i.test(content)) topics.push('authentication');
+  if (/connect|sync|network|offline|wifi|bluetooth/i.test(content)) topics.push('connectivity');
+  if (/bug|error|broken|fix|issue|problem/i.test(content)) topics.push('technical problems');
+  
+  // Feature-related
+  if (/feature|add|want|need|should|could|wish/i.test(content)) topics.push('feature request');
+  if (/ui|ux|design|interface|layout|button|screen/i.test(content)) topics.push('UI/UX');
+  if (/pay|charge|subscription|billing|price|cost/i.test(content)) topics.push('payment/billing');
+  
+  // Service-related
+  if (/support|help|contact|response|customer service/i.test(content)) topics.push('customer service');
+  if (/update|version|latest|new|change/i.test(content)) topics.push('app updates');
+  
+  // Positive indicators
+  if (/love|great|excellent|perfect|amazing|awesome|best/i.test(content)) topics.push('positive experience');
+  if (/easy|simple|intuitive|fast|quick|smooth/i.test(content)) topics.push('ease of use');
+  
+  return [...new Set(topics)]; // Remove duplicates
+};
+
 // Generate a unique cache key for a review
 const generateCacheKey = (review) => {
+  const content = review.content || review.text || '';
+  const contentHash = content.substring(0, 50); // Use first 50 chars for uniqueness
+  const timestamp = review.date || review.Date || '';
+  
   const key = {
-    content: review.content || review.text || '',
-    rating: review.rating,
+    contentHash,
+    rating: review.rating || review.Rating,
     sentiment: review.sentiment,
-    source: review.source || 'unknown'
+    timestamp,
+    randomSeed: Math.floor(Date.now() / 300000) // Changes every 5 minutes
   };
   return `draft_reply_${JSON.stringify(key)}`;
 };
@@ -48,43 +82,75 @@ export const generateDraftReply = async (review) => {
       /^(nothing works|app sucks|doesn't work|bad|terrible|worst|hate it|useless|garbage)$/i.test(reviewContent.trim())
     );
     
-    const prompt = `You are a professional customer service representative responding to app reviews. Generate a concise, empathetic reply to this review.
+    // Extract key topics/issues from review content
+    const extractedTopics = extractKeyTopics(reviewContent);
+    const hasSpecificIssue = extractedTopics.length > 0;
+    
+    const prompt = `You are a skilled customer service representative crafting personalized, intelligent responses to app reviews. Generate a unique, contextual reply that directly addresses the reviewer's specific feedback.
 
 Review Details:
 - Content: "${reviewContent}"
 - Rating: ${rating}/5
-- Detected Sentiment: ${sentiment}
-- Issue Categories: ${issueCategories.join(', ') || 'None detected'}
+- Sentiment: ${sentiment}
+- Key Topics: ${extractedTopics.join(', ') || 'general feedback'}
+- Issue Categories: ${issueCategories.join(', ') || 'none'}
 - Platform: ${source}
+- Review Type: ${isVagueNegative ? 'VAGUE NEGATIVE' : hasSpecificIssue ? 'SPECIFIC ISSUE' : rating >= 4 ? 'POSITIVE' : 'NEUTRAL'}
 
-Guidelines:
-1. Keep replies 2-3 sentences maximum
-2. Be professional, empathetic, and solution-oriented
-3. For vague negative reviews (${isVagueNegative ? 'THIS IS ONE' : 'not applicable'}):
-   - Acknowledge their frustration
-   - Ask for specific details about what's not working
-   - Offer direct support channel
-4. For specific issues:
-   - Acknowledge the specific problem mentioned
-   - Express empathy
-   - Offer to help resolve it
-5. For positive reviews:
-   - Thank them genuinely
-   - Highlight what they appreciated
-   - Keep it brief and authentic
-6. Never be defensive or dismissive
-7. Don't make promises you can't keep
-8. Use active voice and personal tone ("I" or "We")
+CRITICAL INSTRUCTIONS:
+1. Create a UNIQUE response - avoid generic templates
+2. Reference specific details from their review
+3. Match their communication style (formal/casual)
+4. Keep it 2-3 sentences maximum
+5. Be creative and vary your approach
+
+Response Strategies by Type:
+
+FOR VAGUE NEGATIVE (like "${reviewContent}"):
+- Start with empathy using varied phrases
+- Ask for SPECIFIC details about their issue
+- Suggest the most relevant support channel
+- Examples of varied openings:
+  • "I hear your frustration..."
+  • "That sounds really frustrating..."
+  • "I'm truly sorry you're experiencing difficulties..."
+  • "This isn't the experience we want for you..."
+
+FOR SPECIFIC ISSUES:
+- Acknowledge the EXACT problem they mentioned
+- Show you understand the impact
+- Offer a specific next step
+- Reference their specific pain points
+- Examples:
+  • For login issues: "The login problems you're describing with [specific detail] shouldn't be happening..."
+  • For crashes: "App crashes during [their mentioned action] are unacceptable..."
+  • For connectivity: "Connection issues with [their device/network] can be incredibly frustrating..."
+
+FOR POSITIVE REVIEWS:
+- Thank them genuinely and specifically
+- Reference what they loved
+- Keep it authentic and varied
+- Examples:
+  • "Your kind words about [specific feature] made our day!"
+  • "So glad [specific thing] is working well for you!"
+  • "Thrilled to hear [specific praise point]!"
+
+TONE VARIATIONS:
+- Use different emotional approaches
+- Vary sentence structure and length
+- Include relevant emojis occasionally (but sparingly)
+- Match urgency to their frustration level
 
 Provide your response in JSON format:
 {
-  "reply": "Your draft reply text here",
-  "tone": "empathetic|grateful|apologetic|supportive",
-  "suggestedAction": "investigate|escalate|thank|request_details",
-  "priority": "high|medium|low"
+  "reply": "Your unique, contextual reply addressing their specific feedback",
+  "tone": "empathetic|grateful|apologetic|supportive|encouraging|understanding",
+  "suggestedAction": "investigate|escalate|thank|request_details|offer_help|celebrate",
+  "priority": "critical|high|medium|low",
+  "confidence": 0.0-1.0
 }
 
-IMPORTANT: Return only valid JSON without any markdown formatting or additional text.`;
+IMPORTANT: Return only valid JSON. Make each response unique and directly relevant to THIS specific review.`;
 
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     const result = await model.generateContent(prompt);
@@ -135,36 +201,88 @@ IMPORTANT: Return only valid JSON without any markdown formatting or additional 
   }
 };
 
-// Fallback reply templates when API fails
+// Varied fallback responses for different scenarios
+const fallbackResponses = {
+  positiveVariations: [
+    "Your wonderful review made our day! We're so glad you're loving the app.",
+    "Thank you for the amazing feedback! It's users like you who inspire us to keep improving.",
+    "We're thrilled to hear about your positive experience! Your support motivates our entire team.",
+    "Your kind words mean the world to us! We're delighted the app is working well for you.",
+    "So happy to hear you're enjoying the app! Thank you for taking the time to share this."
+  ],
+  vagueNegativeVariations: [
+    "I hear your frustration, and I'd really like to help. Could you tell me more about what specific issues you're facing?",
+    "That sounds incredibly frustrating! To help resolve this quickly, could you share what exactly isn't working?",
+    "I'm truly sorry you're having this experience. What specific problems are you encountering so we can fix them?",
+    "This isn't the experience we want for you. Could you provide more details about what's going wrong?",
+    "I understand how disappointing this must be. What particular features or functions are giving you trouble?"
+  ],
+  specificNegativeVariations: [
+    "I sincerely apologize for these issues you're experiencing. Let me connect you with our support team who can help resolve this right away.",
+    "Thank you for detailing these problems - this helps us improve. I'll escalate this to our technical team immediately.",
+    "I'm really sorry about these difficulties. Our support team specializes in resolving exactly these types of issues - let me get you connected.",
+    "These problems you've described shouldn't be happening. I'll make sure our team investigates this urgently.",
+    "I understand how frustrating these issues must be. Let's get this resolved - our support team will reach out to help."
+  ],
+  neutralVariations: [
+    "Thanks for sharing your thoughts! Your feedback helps us understand how to make the app even better.",
+    "We appreciate your honest review. Is there anything specific we could improve to earn that 5-star experience?",
+    "Thank you for the constructive feedback. We're always looking to improve - what would make this a better experience for you?",
+    "Your insights are valuable to us. If you have any specific suggestions, we'd love to hear them!",
+    "Thanks for taking the time to review. We'd love to know what would make the app perfect for your needs."
+  ]
+};
+
+// Fallback reply generator with variations
 const getFallbackReply = (review) => {
   const rating = review.rating || 0;
   const content = review.content || review.text || '';
+  const topics = extractKeyTopics(content);
   
   let reply, tone, action, priority;
   
+  // Use random selection for variety
+  const randomIndex = (arr) => Math.floor(Math.random() * arr.length);
+  
   if (rating >= 4) {
     // Positive review
-    reply = "Thank you for your wonderful feedback! We're thrilled to hear you're enjoying the app. Your support means everything to us.";
+    reply = fallbackResponses.positiveVariations[randomIndex(fallbackResponses.positiveVariations)];
     tone = 'grateful';
     action = 'thank';
     priority = 'low';
+    
+    // Add topic reference if available
+    if (topics.includes('ease of use')) {
+      reply = reply.replace('the app', 'how easy the app is to use');
+    } else if (topics.includes('positive experience')) {
+      reply = reply.replace('the app', 'your experience with the app');
+    }
   } else if (rating <= 2) {
     if (content.length < 50 || /^(nothing works|app sucks|doesn't work|bad|terrible|worst|hate it|useless|garbage)$/i.test(content.trim())) {
       // Vague negative
-      reply = "I'm sorry to hear you're having trouble with the app. Could you please share more details about what's not working? We'd love to help resolve this for you.";
+      reply = fallbackResponses.vagueNegativeVariations[randomIndex(fallbackResponses.vagueNegativeVariations)];
       tone = 'empathetic';
       action = 'request_details';
       priority = 'high';
     } else {
       // Specific negative
-      reply = "Thank you for bringing this to our attention. I understand your frustration, and I'd like to help resolve this issue. Please contact our support team for immediate assistance.";
+      reply = fallbackResponses.specificNegativeVariations[randomIndex(fallbackResponses.specificNegativeVariations)];
       tone = 'apologetic';
       action = 'escalate';
       priority = 'high';
+      
+      // Customize based on detected topics
+      if (topics.includes('authentication')) {
+        reply = reply.replace('these issues', 'the login issues');
+      } else if (topics.includes('performance issues')) {
+        reply = reply.replace('these issues', 'the performance problems');
+      } else if (topics.includes('connectivity')) {
+        reply = reply.replace('these issues', 'the connection problems');
+      }
     }
   } else {
     // Neutral review
-    reply = "Thank you for your feedback. We appreciate you taking the time to share your experience. If there's anything specific we can improve, please let us know.";
+    reply = fallbackResponses.neutralVariations[randomIndex(fallbackResponses.neutralVariations)];
     tone = 'supportive';
     action = 'investigate';
     priority = 'medium';
@@ -179,6 +297,7 @@ const getFallbackReply = (review) => {
     reviewRating: rating,
     reviewSentiment: review.sentiment || 'Unknown',
     isVagueNegative: rating <= 2 && content.length < 50,
+    detectedTopics: topics,
     isFallback: true
   };
 };

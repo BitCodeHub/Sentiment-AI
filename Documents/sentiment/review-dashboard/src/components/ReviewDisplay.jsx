@@ -1378,18 +1378,18 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
       )}
       
       {/* Reply Modal */}
-      {showReplyModal && selectedReviewForReply && (
-        <ReplyModal
-          review={selectedReviewForReply}
-          onClose={() => {
-            setShowReplyModal(false);
-            setSelectedReviewForReply(null);
-            setEditingReply(null);
-          }}
-          onSubmit={handleReplySubmit}
-          existingReply={editingReply}
-        />
-      )}
+      <ReplyModal
+        isOpen={showReplyModal}
+        review={selectedReviewForReply}
+        onClose={() => {
+          setShowReplyModal(false);
+          setSelectedReviewForReply(null);
+          setEditingReply(null);
+        }}
+        onSubmit={handleReplySubmit}
+        existingReply={editingReply}
+        developerInfo={developerInfo}
+      />
     </div>
   );
 };

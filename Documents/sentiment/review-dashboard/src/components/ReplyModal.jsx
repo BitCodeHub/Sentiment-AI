@@ -86,14 +86,14 @@ const ReplyModal = ({ isOpen, onClose, review, onSubmit, developerInfo, existing
           {/* Review Context */}
           <div className="review-context">
             <div className="review-context-header">
-              <span className="review-author">{review.author}</span>
+              <span className="review-author">{review?.author || review?.Author || 'Anonymous'}</span>
               <div className="review-rating">
                 {[...Array(5)].map((_, i) => (
-                  <span key={i} className={i < review.rating ? 'star filled' : 'star'}>★</span>
+                  <span key={i} className={i < (review?.rating || review?.Rating || 0) ? 'star filled' : 'star'}>★</span>
                 ))}
               </div>
             </div>
-            <p className="review-content">{review.content}</p>
+            <p className="review-content">{review?.content || review?.['Review Text'] || review?.Body || ''}</p>
           </div>
 
           {/* Reply Templates */}
