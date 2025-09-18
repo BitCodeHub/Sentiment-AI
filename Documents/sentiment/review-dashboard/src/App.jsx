@@ -8,11 +8,29 @@ import ChatPage from './components/ChatPage';
 import RivueChat from './pages/RivueChat';
 import ErrorBoundary from './components/ErrorBoundary';
 import RateLimitNotification from './components/RateLimitNotification';
+import Login from './components/Login';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { parseExcelFile, aggregateData, parseAndTransformData } from './utils/excelParser';
 import { downloadSampleExcel } from './utils/sampleDataGenerator';
 import './App.css';
 
-function App() {
+// Protected route wrapper component
+const ProtectedRoute = ({ children }) => {
+  const { isAuthenticated, loading } = useAuth();
+  
+  if (loading) {
+    return (
+      <div className="loading-container">
+        <div className="spinner"></div>
+        <p>Loading...</p>
+      </div>
+    );
+  }
+  
+  return isAuthenticated ? children : <Navigate to="/login" />;
+};
+
+function AppContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
@@ -164,38 +182,63 @@ function App() {
       <div className="app">
         <RateLimitNotification />
         <Routes>
+          {/* Login Route */}
+          <Route path="/login" element={
+            <Login onSuccess={() => window.location.href = '/'} />
+          } />
+          
+          {/* Protected Routes */}
           <Route path="/" element={
-            !data ? (
-              <UploadPage 
-                onFileUpload={handleFileUpload}
-                onAppleImport={handleAppleImport}
-                isLoading={isLoading}
-                error={error}
-              />
-            ) : (
-              <ErrorBoundary>
-                <EnhancedDashboard 
-                  data={data} 
-                  onUpdateData={setData}
-                  onFetchReviews={handleAppleImport}
-                  onDateRangeChange={setDateRange}
+            <ProtectedRoute>
+              {!data ? (
+                <UploadPage 
+                  onFileUpload={handleFileUpload}
+                  onAppleImport={handleAppleImport}
+                  isLoading={isLoading}
+                  error={error}
                 />
-              </ErrorBoundary>
-            )
+              ) : (
+                <ErrorBoundary>
+                  <EnhancedDashboard 
+                    data={data} 
+                    onUpdateData={setData}
+                    onFetchReviews={handleAppleImport}
+                    onDateRangeChange={setDateRange}
+                  />
+                </ErrorBoundary>
+              )}
+            </ProtectedRoute>
           } />
           
           <Route path="/topic/:topicName" element={
-            data ? <TopicDetailView data={data} /> : <Navigate to="/" />
+            <ProtectedRoute>
+              {data ? <TopicDetailView data={data} /> : <Navigate to="/" />}
+            </ProtectedRoute>
           } />
           
           <Route path="/chat" element={
-            data ? <ChatPage reviewData={filterReviewsByDateRange(data.reviews || [], dateRange)} /> : <Navigate to="/" />
+            <ProtectedRoute>
+              {data ? <ChatPage reviewData={filterReviewsByDateRange(data.reviews || [], dateRange)} /> : <Navigate to="/" />}
+            </ProtectedRoute>
           } />
           
-          <Route path="/rivue-chat" element={<RivueChat />} />
+          <Route path="/rivue-chat" element={
+            <ProtectedRoute>
+              <RivueChat />
+            </ProtectedRoute>
+          } />
         </Routes>
       </div>
     </Router>
+  );
+}
+
+// Main App component with AuthProvider
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 

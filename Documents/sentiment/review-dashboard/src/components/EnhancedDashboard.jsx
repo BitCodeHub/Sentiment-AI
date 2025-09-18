@@ -38,6 +38,7 @@ import IntelligenceBriefingHandler from './IntelligenceBriefingHandler';
 import CompetitiveAnalysis from './CompetitiveAnalysis';
 import appleAppStoreBrowserService from '../services/appleAppStoreBrowser';
 import { parseAndTransformData, aggregateData } from '../utils/excelParser';
+import UserHeader from './UserHeader';
 import './EnhancedDashboard.css';
 
 const TABLEAU_COLORS = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'];
@@ -821,8 +822,11 @@ const EnhancedDashboard = ({ data, isLoading, onFetchReviews, onDateRangeChange,
 
   return (
     <div className="modern-dashboard with-sidebar">
+      {/* User Header */}
+      <UserHeader />
+      
       {/* Tableau-Style Top Toolbar */}
-      <div className="tableau-toolbar">
+      <div className="tableau-toolbar" style={{ marginTop: '60px' }}>
         <div className="toolbar-section toolbar-left">
           <button className="toolbar-btn" title="Refresh Data" onClick={() => window.location.reload()}>
             <RefreshCw size={18} />

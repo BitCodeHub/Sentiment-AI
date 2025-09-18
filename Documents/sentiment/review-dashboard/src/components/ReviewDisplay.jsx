@@ -23,6 +23,9 @@ import {
   canReplyToReview 
 } from '../services/replyService';
 import { generateDraftReply, clearDraftReplyCache } from '../services/geminiDraftReply';
+import AssignmentDropdown from './AssignmentDropdown';
+import { useAuth } from '../contexts/AuthContext';
+import { db } from '../services/databaseService';
 
 const categoryConfig = {
   'Technical Issues': {
@@ -73,6 +76,7 @@ const categoryConfig = {
 };
 
 const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
+  const { user } = useAuth();
   const [categorizedReviews, setCategorizedReviews] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState([]);
@@ -101,6 +105,10 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
   const [hoveredReviewId, setHoveredReviewId] = useState(null);
   const [draftGenerationTimeout, setDraftGenerationTimeout] = useState(null);
   
+  // Assignment states
+  const [assignments, setAssignments] = useState({});
+  const [loadingAssignments, setLoadingAssignments] = useState(true);
+  
   // Advanced filter states
   const [categoryFilter, setCategoryFilter] = useState('');
   const [severityFilter, setSeverityFilter] = useState('');
@@ -124,14 +132,43 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
     return () => clearTimeout(timer);
   }, [searchTerm]);
   
-  // Load replies on component mount and clear draft cache
+  // Load replies and assignments on component mount
   useEffect(() => {
     const replies = getAllReplies();
     setLocalReplies(replies);
     
     // Clear draft reply cache to ensure new "we" format is used
     clearDraftReplyCache();
+    
+    // Load assignments
+    loadAssignments();
   }, []);
+  
+  const loadAssignments = async () => {
+    setLoadingAssignments(true);
+    try {
+      const { assignments: allAssignments, error } = await db.getAssignments();
+      if (!error && allAssignments) {
+        // Create a map of reviewId -> assignment for quick lookup
+        const assignmentMap = {};
+        allAssignments.forEach(assignment => {
+          assignmentMap[assignment.review_id || assignment.reviewId] = assignment;
+        });
+        setAssignments(assignmentMap);
+      }
+    } catch (error) {
+      console.error('Error loading assignments:', error);
+    } finally {
+      setLoadingAssignments(false);
+    }
+  };
+  
+  const handleAssignment = async (reviewId, assignment) => {
+    setAssignments(prev => ({
+      ...prev,
+      [reviewId]: assignment
+    }));
+  };
 
   // Reply handlers
   const handleAuthChange = (authData) => {
@@ -1238,17 +1275,28 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
                   </>
                 )}
               </div>
-              {/* Reply Button */}
-              {!hasReply && (
-                <button 
-                  className="reply-button"
-                  onClick={() => handleReplyClickWithDraft(review)}
-                  title={developerInfo ? "Reply to this review" : "Sign in to reply"}
-                >
-                  <Reply size={14} />
-                  <span>{developerInfo ? "Reply" : "Sign in to Reply"}</span>
-                </button>
-              )}
+              <div className="review-actions">
+                {/* Assignment Dropdown */}
+                {user && (
+                  <AssignmentDropdown
+                    review={review}
+                    currentAssignment={assignments[reviewId]}
+                    onAssign={(assignment) => handleAssignment(reviewId, assignment)}
+                  />
+                )}
+                
+                {/* Reply Button */}
+                {!hasReply && (
+                  <button 
+                    className="reply-button"
+                    onClick={() => handleReplyClickWithDraft(review)}
+                    title={developerInfo ? "Reply to this review" : "Sign in to reply"}
+                  >
+                    <Reply size={14} />
+                    <span>{developerInfo ? "Reply" : "Sign in to Reply"}</span>
+                  </button>
+                )}
+              </div>
             </div>
             
             {/* AI Draft Reply Preview */}
