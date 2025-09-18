@@ -103,6 +103,7 @@ CRITICAL INSTRUCTIONS:
 3. Match their communication style (formal/casual)
 4. Keep it 2-3 sentences maximum
 5. Be creative and vary your approach
+6. ALWAYS use "we" instead of "I" - represent the team, not an individual
 
 Response Strategies by Type:
 
@@ -111,9 +112,9 @@ FOR VAGUE NEGATIVE (like "${reviewContent}"):
 - Ask for SPECIFIC details about their issue
 - Suggest the most relevant support channel
 - Examples of varied openings:
-  • "I hear your frustration..."
-  • "That sounds really frustrating..."
-  • "I'm truly sorry you're experiencing difficulties..."
+  • "We hear your frustration..."
+  • "That sounds really frustrating, and we want to help..."
+  • "We're truly sorry you're experiencing difficulties..."
   • "This isn't the experience we want for you..."
 
 FOR SPECIFIC ISSUES:
@@ -122,9 +123,9 @@ FOR SPECIFIC ISSUES:
 - Offer a specific next step
 - Reference their specific pain points
 - Examples:
-  • For login issues: "The login problems you're describing with [specific detail] shouldn't be happening..."
-  • For crashes: "App crashes during [their mentioned action] are unacceptable..."
-  • For connectivity: "Connection issues with [their device/network] can be incredibly frustrating..."
+  • For login issues: "The login problems you're describing with [specific detail] shouldn't be happening, and we want to fix this..."
+  • For crashes: "App crashes during [their mentioned action] are unacceptable, and we're taking this seriously..."
+  • For connectivity: "Connection issues with [their device/network] can be incredibly frustrating - we understand..."
 
 FOR POSITIVE REVIEWS:
 - Thank them genuinely and specifically
@@ -132,14 +133,15 @@ FOR POSITIVE REVIEWS:
 - Keep it authentic and varied
 - Examples:
   • "Your kind words about [specific feature] made our day!"
-  • "So glad [specific thing] is working well for you!"
-  • "Thrilled to hear [specific praise point]!"
+  • "We're so glad [specific thing] is working well for you!"
+  • "We're thrilled to hear [specific praise point]!"
 
 TONE VARIATIONS:
 - Use different emotional approaches
 - Vary sentence structure and length
 - Include relevant emojis occasionally (but sparingly)
 - Match urgency to their frustration level
+- Always speak as "we" representing the company/team
 
 Provide your response in JSON format:
 {
@@ -150,7 +152,7 @@ Provide your response in JSON format:
   "confidence": 0.0-1.0
 }
 
-IMPORTANT: Return only valid JSON. Make each response unique and directly relevant to THIS specific review.`;
+IMPORTANT: Return only valid JSON. Make each response unique and directly relevant to THIS specific review. NEVER use "I" - always use "we" or rephrase to avoid first person singular.`;
 
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     const result = await model.generateContent(prompt);
@@ -211,18 +213,18 @@ const fallbackResponses = {
     "So happy to hear you're enjoying the app! Thank you for taking the time to share this."
   ],
   vagueNegativeVariations: [
-    "I hear your frustration, and I'd really like to help. Could you tell me more about what specific issues you're facing?",
+    "We hear your frustration, and we'd really like to help. Could you tell us more about what specific issues you're facing?",
     "That sounds incredibly frustrating! To help resolve this quickly, could you share what exactly isn't working?",
-    "I'm truly sorry you're having this experience. What specific problems are you encountering so we can fix them?",
+    "We're truly sorry you're having this experience. What specific problems are you encountering so we can fix them?",
     "This isn't the experience we want for you. Could you provide more details about what's going wrong?",
-    "I understand how disappointing this must be. What particular features or functions are giving you trouble?"
+    "We understand how disappointing this must be. What particular features or functions are giving you trouble?"
   ],
   specificNegativeVariations: [
-    "I sincerely apologize for these issues you're experiencing. Let me connect you with our support team who can help resolve this right away.",
-    "Thank you for detailing these problems - this helps us improve. I'll escalate this to our technical team immediately.",
-    "I'm really sorry about these difficulties. Our support team specializes in resolving exactly these types of issues - let me get you connected.",
-    "These problems you've described shouldn't be happening. I'll make sure our team investigates this urgently.",
-    "I understand how frustrating these issues must be. Let's get this resolved - our support team will reach out to help."
+    "We sincerely apologize for these issues you're experiencing. Let us connect you with our support team who can help resolve this right away.",
+    "Thank you for detailing these problems - this helps us improve. We'll escalate this to our technical team immediately.",
+    "We're really sorry about these difficulties. Our support team specializes in resolving exactly these types of issues - let us get you connected.",
+    "These problems you've described shouldn't be happening. We'll make sure our team investigates this urgently.",
+    "We understand how frustrating these issues must be. Let's get this resolved - our support team will reach out to help."
   ],
   neutralVariations: [
     "Thanks for sharing your thoughts! Your feedback helps us understand how to make the app even better.",

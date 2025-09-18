@@ -22,7 +22,7 @@ import {
   deleteReply,
   canReplyToReview 
 } from '../services/replyService';
-import { generateDraftReply } from '../services/geminiDraftReply';
+import { generateDraftReply, clearDraftReplyCache } from '../services/geminiDraftReply';
 
 const categoryConfig = {
   'Technical Issues': {
@@ -124,10 +124,13 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
     return () => clearTimeout(timer);
   }, [searchTerm]);
   
-  // Load replies on component mount
+  // Load replies on component mount and clear draft cache
   useEffect(() => {
     const replies = getAllReplies();
     setLocalReplies(replies);
+    
+    // Clear draft reply cache to ensure new "we" format is used
+    clearDraftReplyCache();
   }, []);
 
   // Reply handlers
