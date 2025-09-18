@@ -1,22 +1,29 @@
 import React, { useState } from 'react';
-import { X, Send, MessageSquare, AlertCircle } from 'lucide-react';
+import { X, Send, MessageSquare, AlertCircle, Sparkles } from 'lucide-react';
 import './ReplyModal.css';
 
 const ReplyModal = ({ isOpen, onClose, review, onSubmit, developerInfo, existingReply }) => {
-  const [replyText, setReplyText] = useState(existingReply?.content || '');
+  const [replyText, setReplyText] = useState(existingReply?.content || review?.draftReply || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [charCount, setCharCount] = useState(existingReply?.content?.length || 0);
+  const [charCount, setCharCount] = useState(existingReply?.content?.length || review?.draftReply?.length || 0);
   const maxChars = 1000; // Apple's limit for developer responses
+  const [showDraftIndicator, setShowDraftIndicator] = useState(!!review?.draftReply && !existingReply);
 
   React.useEffect(() => {
     if (existingReply) {
       setReplyText(existingReply.content);
       setCharCount(existingReply.content.length);
+      setShowDraftIndicator(false);
+    } else if (review?.draftReply) {
+      setReplyText(review.draftReply);
+      setCharCount(review.draftReply.length);
+      setShowDraftIndicator(true);
     } else {
       setReplyText('');
       setCharCount(0);
+      setShowDraftIndicator(false);
     }
-  }, [existingReply]);
+  }, [existingReply, review?.draftReply]);
 
   if (!isOpen) return null;
 
@@ -25,6 +32,10 @@ const ReplyModal = ({ isOpen, onClose, review, onSubmit, developerInfo, existing
     if (text.length <= maxChars) {
       setReplyText(text);
       setCharCount(text.length);
+      // Hide draft indicator when user starts editing
+      if (showDraftIndicator && text !== review?.draftReply) {
+        setShowDraftIndicator(false);
+      }
     }
   };
 
@@ -104,7 +115,15 @@ const ReplyModal = ({ isOpen, onClose, review, onSubmit, developerInfo, existing
           {/* Reply Form */}
           <form onSubmit={handleSubmit} className="reply-form">
             <div className="form-group">
-              <label htmlFor="reply">Your Response</label>
+              <label htmlFor="reply">
+                Your Response
+                {showDraftIndicator && (
+                  <span className="ai-draft-indicator">
+                    <Sparkles size={14} />
+                    AI Draft
+                  </span>
+                )}
+              </label>
               <textarea
                 id="reply"
                 className="reply-textarea"

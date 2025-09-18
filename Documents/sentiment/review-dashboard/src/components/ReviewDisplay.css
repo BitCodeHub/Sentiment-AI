@@ -833,6 +833,119 @@
   color: #92400e;
 }
 
+/* AI Draft Reply Preview */
+.draft-reply-preview {
+  margin-top: 12px;
+  padding: 16px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);
+  border: 1px solid rgba(99, 102, 241, 0.15);
+  border-radius: 12px;
+  position: relative;
+  animation: fadeIn 0.3s ease;
+}
+
+.draft-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #6366f1;
+  font-size: 13px;
+}
+
+.draft-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  color: #6366f1;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.draft-header svg {
+  color: #8b5cf6;
+}
+
+.draft-tone {
+  margin-left: auto;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+  background: rgba(139, 92, 246, 0.1);
+  color: #8b5cf6;
+}
+
+.draft-tone.empathetic {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+}
+
+.draft-tone.apologetic {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.draft-tone.grateful {
+  background: rgba(251, 191, 36, 0.1);
+  color: #fbbf24;
+}
+
+.draft-text {
+  color: #374151;
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 0;
+  font-style: italic;
+}
+
+.draft-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  font-size: 12px;
+}
+
+.draft-hint {
+  color: #6b7280;
+  font-style: italic;
+}
+
+.draft-priority {
+  padding: 2px 8px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.draft-priority.high {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.draft-priority.medium {
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+}
+
+.draft-priority.low {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Developer Response Section */
 .review-developer-response {
   margin-top: 16px;
@@ -1219,6 +1332,27 @@
       visibility: visible;
       transform: translateY(0);
     }
+  }
+  
+  /* Mobile Draft Preview */
+  .draft-reply-preview {
+    margin-top: 8px;
+    padding: 12px;
+  }
+  
+  .draft-header {
+    font-size: 12px;
+  }
+  
+  .draft-text {
+    font-size: 13px;
+  }
+  
+  .draft-footer {
+    font-size: 11px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
   }
 
   .review-categories {

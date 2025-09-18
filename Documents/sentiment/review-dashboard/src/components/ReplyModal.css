@@ -148,11 +148,45 @@
 }
 
 .form-group label {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   color: #94a3b8;
   font-size: 14px;
   font-weight: 500;
   margin-bottom: 8px;
+}
+
+/* AI Draft Indicator */
+.ai-draft-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(99, 102, 241, 0.15) 100%);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  border-radius: 12px;
+  color: #a78bfa;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+.ai-draft-indicator svg {
+  width: 12px;
+  height: 12px;
+  color: #c4b5fd;
+}
+
+@keyframes shimmer {
+  0%, 100% {
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
 .reply-textarea {

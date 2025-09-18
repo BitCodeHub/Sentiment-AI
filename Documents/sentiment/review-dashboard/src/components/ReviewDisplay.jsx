@@ -9,7 +9,7 @@ import {
   Bug, Zap, Wifi, Shield, CreditCard, Users,
   Palette, Heart, AlertTriangle, TrendingUp,
   Siren, Flag, ThumbsDown, CheckCircle, X,
-  Clock, Reply, MessageSquare
+  Clock, Reply, MessageSquare, Sparkles
 } from 'lucide-react';
 import './ReviewDisplay.css';
 import DeveloperAuth from './DeveloperAuth';
@@ -22,6 +22,7 @@ import {
   deleteReply,
   canReplyToReview 
 } from '../services/replyService';
+import { generateDraftReply } from '../services/geminiDraftReply';
 
 const categoryConfig = {
   'Technical Issues': {
@@ -93,6 +94,12 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
   const [selectedReviewForReply, setSelectedReviewForReply] = useState(null);
   const [localReplies, setLocalReplies] = useState({});
   const [editingReply, setEditingReply] = useState(null);
+  
+  // AI Draft Reply states
+  const [draftReplies, setDraftReplies] = useState({});
+  const [loadingDrafts, setLoadingDrafts] = useState({});
+  const [hoveredReviewId, setHoveredReviewId] = useState(null);
+  const [draftGenerationTimeout, setDraftGenerationTimeout] = useState(null);
   
   // Advanced filter states
   const [categoryFilter, setCategoryFilter] = useState('');
@@ -183,6 +190,77 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
     const author = review.author || review.Author || 'unknown';
     const rating = review.rating || review.Rating || 0;
     return `${date}_${author}_${rating}`.replace(/[^a-zA-Z0-9_-]/g, '_');
+  };
+  
+  // AI Draft Reply handlers
+  const handleReviewHover = async (review, reviewId) => {
+    // Don't generate draft if there's already a reply
+    const hasExistingReply = localReplies[reviewId] || review.response || review['Developer Response'];
+    if (hasExistingReply) return;
+    
+    // Don't generate if we already have a draft
+    if (draftReplies[reviewId]) {
+      setHoveredReviewId(reviewId);
+      return;
+    }
+    
+    // Clear any existing timeout
+    if (draftGenerationTimeout) {
+      clearTimeout(draftGenerationTimeout);
+    }
+    
+    // Set timeout to generate draft after 500ms hover
+    const timeout = setTimeout(async () => {
+      setHoveredReviewId(reviewId);
+      setLoadingDrafts(prev => ({ ...prev, [reviewId]: true }));
+      
+      try {
+        const draftResponse = await generateDraftReply(review);
+        setDraftReplies(prev => ({
+          ...prev,
+          [reviewId]: draftResponse
+        }));
+      } catch (error) {
+        console.error('Error generating draft reply:', error);
+      } finally {
+        setLoadingDrafts(prev => ({ ...prev, [reviewId]: false }));
+      }
+    }, 500);
+    
+    setDraftGenerationTimeout(timeout);
+  };
+  
+  const handleReviewLeave = () => {
+    // Clear timeout if leaving before draft generation
+    if (draftGenerationTimeout) {
+      clearTimeout(draftGenerationTimeout);
+      setDraftGenerationTimeout(null);
+    }
+    setHoveredReviewId(null);
+  };
+  
+  // Use draft reply when clicking reply button
+  const handleReplyClickWithDraft = (review) => {
+    const reviewId = generateReviewId(review);
+    const draft = draftReplies[reviewId];
+    
+    if (!developerInfo) {
+      setShowAuthModal(true);
+      return;
+    }
+
+    const replyCheck = canReplyToReview({ id: reviewId });
+    if (!replyCheck.canReply) {
+      alert(replyCheck.reason);
+      return;
+    }
+
+    setSelectedReviewForReply({ 
+      ...review, 
+      id: reviewId,
+      draftReply: draft?.reply || ''
+    });
+    setShowReplyModal(true);
   };
 
   // Helper function to detect OS from device info
@@ -1078,7 +1156,12 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
           const hasReply = localReplies[reviewId] || review.response || review['Developer Response'];
           
           return (
-          <div key={`review-${index}-${review.date}`} className={`review-card ${review.severity} ${isExpanded ? 'expanded' : ''}`}>
+          <div 
+            key={`review-${index}-${review.date}`} 
+            className={`review-card ${review.severity} ${isExpanded ? 'expanded' : ''}`}
+            onMouseEnter={() => handleReviewHover(review, reviewId)}
+            onMouseLeave={handleReviewLeave}
+          >
             <div className="review-header">
               <div className="review-rating">
                 <span className="stars">{formatStars(review.rating || review.Rating || 0)}</span>
@@ -1116,7 +1199,7 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
               {!hasReply && (
                 <button 
                   className="reply-button"
-                  onClick={() => handleReplyClick(review)}
+                  onClick={() => handleReplyClickWithDraft(review)}
                   title="Reply to this review"
                 >
                   <Reply size={14} />
@@ -1124,6 +1207,39 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
                 </button>
               )}
             </div>
+            
+            {/* AI Draft Reply Preview */}
+            {!hasReply && hoveredReviewId === reviewId && (
+              <div className="draft-reply-preview">
+                {loadingDrafts[reviewId] ? (
+                  <div className="draft-loading">
+                    <RefreshCw size={14} className="spin" />
+                    <span>Generating reply draft...</span>
+                  </div>
+                ) : draftReplies[reviewId] ? (
+                  <>
+                    <div className="draft-header">
+                      <Sparkles size={14} />
+                      <span>AI Draft Reply</span>
+                      {draftReplies[reviewId].tone && (
+                        <span className={`draft-tone ${draftReplies[reviewId].tone}`}>
+                          {draftReplies[reviewId].tone}
+                        </span>
+                      )}
+                    </div>
+                    <p className="draft-text">{draftReplies[reviewId].reply}</p>
+                    <div className="draft-footer">
+                      <span className="draft-hint">Click reply button to edit and send</span>
+                      {draftReplies[reviewId].priority && (
+                        <span className={`draft-priority ${draftReplies[reviewId].priority}`}>
+                          {draftReplies[reviewId].priority} priority
+                        </span>
+                      )}
+                    </div>
+                  </>
+                ) : null}
+              </div>
+            )}
 
             <div className="review-content">
               <p>{highlightSearchTerm(review.content || review['Review Text'] || review.Body || '')}</p>
