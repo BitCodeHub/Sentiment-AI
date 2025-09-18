@@ -606,6 +606,7 @@
 .review-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 16px;
   margin-bottom: 12px;
 }
@@ -660,6 +661,47 @@
 .review-region {
   color: #6b7280;
   font-size: 12px;
+}
+
+/* Reply Button */
+.review-card .reply-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 20px;
+  color: #6366f1;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(4px);
+  position: relative;
+  z-index: 1;
+}
+
+/* Show reply button on review card hover */
+.review-card:hover .reply-button {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  transition-delay: 0.1s;
+}
+
+.review-card .reply-button:hover {
+  background: rgba(99, 102, 241, 0.2);
+  border-color: rgba(99, 102, 241, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
+}
+
+.review-card .reply-button:active {
+  transform: translateY(0);
 }
 
 /* Review Content */
@@ -789,6 +831,39 @@
   border-radius: 8px;
   font-size: 12px;
   color: #92400e;
+}
+
+/* Developer Response Section */
+.review-developer-response {
+  margin-top: 16px;
+  padding: 16px;
+  background: rgba(99, 102, 241, 0.05);
+  border: 1px solid rgba(99, 102, 241, 0.1);
+  border-radius: 12px;
+  position: relative;
+}
+
+.response-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  color: #6366f1;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.response-text {
+  color: #374151;
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.response-timestamp {
+  margin-top: 12px;
+  font-size: 12px;
+  color: #6b7280;
 }
 
 /* Loading and Empty States */
@@ -1135,6 +1210,15 @@
   /* Mobile Review Footer */
   .review-footer {
     gap: 8px;
+  }
+  
+  /* Mobile Reply Button - Always visible on touch devices */
+  @media (hover: none) and (pointer: coarse) {
+    .review-card .reply-button {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
   }
 
   .review-categories {

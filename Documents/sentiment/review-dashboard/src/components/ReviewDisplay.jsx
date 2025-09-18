@@ -9,9 +9,19 @@ import {
   Bug, Zap, Wifi, Shield, CreditCard, Users,
   Palette, Heart, AlertTriangle, TrendingUp,
   Siren, Flag, ThumbsDown, CheckCircle, X,
-  Clock
+  Clock, Reply, MessageSquare
 } from 'lucide-react';
 import './ReviewDisplay.css';
+import DeveloperAuth from './DeveloperAuth';
+import ReplyModal from './ReplyModal';
+import { 
+  getAllReplies, 
+  getReplyForReview, 
+  saveReply, 
+  updateReply,
+  deleteReply,
+  canReplyToReview 
+} from '../services/replyService';
 
 const categoryConfig = {
   'Technical Issues': {
@@ -76,6 +86,14 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
   const [expandedReviews, setExpandedReviews] = useState(new Set()); // For mobile review content expansion
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false); // For mobile advanced filters
   
+  // Reply functionality states
+  const [developerInfo, setDeveloperInfo] = useState(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showReplyModal, setShowReplyModal] = useState(false);
+  const [selectedReviewForReply, setSelectedReviewForReply] = useState(null);
+  const [localReplies, setLocalReplies] = useState({});
+  const [editingReply, setEditingReply] = useState(null);
+  
   // Advanced filter states
   const [categoryFilter, setCategoryFilter] = useState('');
   const [severityFilter, setSeverityFilter] = useState('');
@@ -98,6 +116,74 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
     
     return () => clearTimeout(timer);
   }, [searchTerm]);
+  
+  // Load replies on component mount
+  useEffect(() => {
+    const replies = getAllReplies();
+    setLocalReplies(replies);
+  }, []);
+
+  // Reply handlers
+  const handleAuthChange = (authData) => {
+    setDeveloperInfo(authData);
+  };
+
+  const handleReplyClick = (review) => {
+    if (!developerInfo) {
+      setShowAuthModal(true);
+      return;
+    }
+
+    const reviewId = generateReviewId(review);
+    const replyCheck = canReplyToReview({ id: reviewId });
+    if (!replyCheck.canReply) {
+      alert(replyCheck.reason);
+      return;
+    }
+
+    setSelectedReviewForReply({ ...review, id: reviewId });
+    setShowReplyModal(true);
+  };
+
+  const handleReplySubmit = async (reviewId, content) => {
+    try {
+      let result;
+      
+      if (editingReply) {
+        // Update existing reply
+        result = await updateReply(reviewId, content);
+      } else {
+        // Create new reply
+        const replyData = {
+          content,
+          author: developerInfo.name,
+          authorEmail: developerInfo.email
+        };
+        result = await saveReply(reviewId, replyData);
+      }
+      
+      // Update local state
+      setLocalReplies(prev => ({
+        ...prev,
+        [reviewId]: result
+      }));
+
+      setShowReplyModal(false);
+      setSelectedReviewForReply(null);
+      setEditingReply(null);
+    } catch (error) {
+      console.error('Error submitting reply:', error);
+      alert('Failed to submit reply. Please try again.');
+    }
+  };
+  
+  // Generate unique review ID
+  const generateReviewId = (review) => {
+    const date = review.date || review.Date || new Date().toISOString();
+    const author = review.author || review.Author || 'unknown';
+    const rating = review.rating || review.Rating || 0;
+    return `${date}_${author}_${rating}`.replace(/[^a-zA-Z0-9_-]/g, '_');
+  };
 
   // Helper function to detect OS from device info
   const getOperatingSystem = (review) => {
@@ -988,6 +1074,9 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
           const isExpanded = expandedReviews.has(index);
           const isMobile = window.innerWidth <= 768;
           
+          const reviewId = generateReviewId(review);
+          const hasReply = localReplies[reviewId] || review.response || review['Developer Response'];
+          
           return (
           <div key={`review-${index}-${review.date}`} className={`review-card ${review.severity} ${isExpanded ? 'expanded' : ''}`}>
             <div className="review-header">
@@ -1023,6 +1112,17 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
                   </>
                 )}
               </div>
+              {/* Reply Button */}
+              {!hasReply && (
+                <button 
+                  className="reply-button"
+                  onClick={() => handleReplyClick(review)}
+                  title="Reply to this review"
+                >
+                  <Reply size={14} />
+                  <span>Reply</span>
+                </button>
+              )}
             </div>
 
             <div className="review-content">
@@ -1073,6 +1173,28 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
                 </div>
               )}
             </div>
+            
+            {/* Developer Reply Section */}
+            {hasReply && (
+              <div className="review-developer-response">
+                <div className="response-header">
+                  <MessageSquare size={16} />
+                  <span>Developer Response</span>
+                </div>
+                <p className="response-text">
+                  {localReplies[reviewId]?.content || review.response || review['Developer Response']}
+                </p>
+                {localReplies[reviewId] && (
+                  <div className="response-timestamp">
+                    {new Date(localReplies[reviewId].timestamp).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric'
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           );
         })}
@@ -1129,6 +1251,28 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
           <RefreshCw size={16} className="spin" />
           <span>Categorizing reviews... {categorizeProgress}% ({Math.min(categorizedReviews.length, reviews.length)}/{reviews.length})</span>
         </div>
+      )}
+      
+      {/* Developer Auth Modal */}
+      {showAuthModal && (
+        <DeveloperAuth
+          onClose={() => setShowAuthModal(false)}
+          onAuthChange={handleAuthChange}
+        />
+      )}
+      
+      {/* Reply Modal */}
+      {showReplyModal && selectedReviewForReply && (
+        <ReplyModal
+          review={selectedReviewForReply}
+          onClose={() => {
+            setShowReplyModal(false);
+            setSelectedReviewForReply(null);
+            setEditingReply(null);
+          }}
+          onSubmit={handleReplySubmit}
+          existingReply={editingReply}
+        />
       )}
     </div>
   );
