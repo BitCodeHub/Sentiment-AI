@@ -21,7 +21,7 @@ import {
   Filler
 } from 'chart.js';
 import { Line, Bar, Doughnut, Pie } from 'react-chartjs-2';
-import ReviewList from './ReviewList';
+import ReviewListWithReplies from './ReviewListWithReplies';
 import KeywordCloud from './KeywordCloud';
 
 // Register ChartJS components
@@ -271,7 +271,7 @@ const Dashboard = ({ data }) => {
       {/* Recent Reviews */}
       <div className="card reviews-card">
         <h2>Recent Reviews</h2>
-        <ReviewList reviews={data.reviews.slice(0, 10)} />
+        <ReviewListWithReplies reviews={data.reviews.slice(0, 10)} />
       </div>
     </div>
   );
