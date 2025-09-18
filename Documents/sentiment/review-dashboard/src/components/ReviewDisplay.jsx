@@ -245,13 +245,53 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
     const draft = draftReplies[reviewId];
     
     if (!developerInfo) {
+      // Show auth modal with a clear message
+      console.log('Authentication required to reply to reviews');
       setShowAuthModal(true);
+      
+      // Optional: Show a temporary message (you can add a toast library later)
+      const message = document.createElement('div');
+      message.textContent = 'Please sign in with your Apple Developer account to reply to reviews';
+      message.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #1f2937;
+        color: white;
+        padding: 16px 24px;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        z-index: 9999;
+        animation: slideUp 0.3s ease;
+      `;
+      document.body.appendChild(message);
+      setTimeout(() => message.remove(), 3000);
+      
       return;
     }
 
     const replyCheck = canReplyToReview({ id: reviewId });
     if (!replyCheck.canReply) {
-      alert(replyCheck.reason);
+      // Show a clearer error message instead of alert
+      const message = document.createElement('div');
+      message.textContent = replyCheck.reason || 'Cannot reply to this review';
+      message.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #dc2626;
+        color: white;
+        padding: 16px 24px;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        z-index: 9999;
+        animation: slideUp 0.3s ease;
+      `;
+      document.body.appendChild(message);
+      setTimeout(() => message.remove(), 3000);
+      
       return;
     }
 
@@ -1200,10 +1240,10 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
                 <button 
                   className="reply-button"
                   onClick={() => handleReplyClickWithDraft(review)}
-                  title="Reply to this review"
+                  title={developerInfo ? "Reply to this review" : "Sign in to reply"}
                 >
                   <Reply size={14} />
-                  <span>Reply</span>
+                  <span>{developerInfo ? "Reply" : "Sign in to Reply"}</span>
                 </button>
               )}
             </div>
@@ -1372,6 +1412,7 @@ const ReviewDisplay = ({ reviews, searchTerm = '' }) => {
       {/* Developer Auth Modal */}
       {showAuthModal && (
         <DeveloperAuth
+          isOpen={showAuthModal}
           onClose={() => setShowAuthModal(false)}
           onAuthChange={handleAuthChange}
         />

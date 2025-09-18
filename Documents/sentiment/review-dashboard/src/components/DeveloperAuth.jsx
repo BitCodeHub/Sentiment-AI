@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Lock, LogOut, Shield, X } from 'lucide-react';
+import { User, Lock, LogOut, Shield, X, MessageSquare } from 'lucide-react';
 import './DeveloperAuth.css';
 
 const DeveloperAuth = ({ onAuthChange, isOpen, onClose }) => {
