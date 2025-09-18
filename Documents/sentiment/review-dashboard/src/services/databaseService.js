@@ -194,9 +194,9 @@ export const db = {
   async getSession() {
     if (isProduction && supabase) {
       const { data: { session }, error } = await supabase.auth.getSession();
-      return { session, error };
+      return { user: session?.user || null, session, error };
     }
-    const sessionToken = localStorage.getItem('user_session');
+    const sessionToken = localStorage.getItem('review_session_token');
     if (!sessionToken) return { user: null, error: 'No session' };
     return localDB.getSession(sessionToken);
   },

@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Authentication</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f9fafb;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #1f2937;
+            margin-bottom: 10px;
+        }
+        .info {
+            background: #f0f9ff;
+            border: 1px solid #3b82f6;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+        }
+        .warning {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+        }
+        .data-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f9fafb;
+            border-radius: 6px;
+            border: 1px solid #e5e7eb;
+        }
+        .data-section h3 {
+            margin-top: 0;
+            color: #374151;
+        }
+        pre {
+            background: #1f2937;
+            color: #f3f4f6;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 5px;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+        button.danger {
+            background: #ef4444;
+        }
+        button.danger:hover {
+            background: #dc2626;
+        }
+        button.success {
+            background: #10b981;
+        }
+        button.success:hover {
+            background: #059669;
+        }
+        .button-group {
+            margin: 20px 0;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        code {
+            background: #f3f4f6;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Authentication Debug Tool</h1>
+        
+        <div class="info">
+            <strong>Can't see the login page?</strong> This tool will help you clear your session data and access the login/signup page.
+        </div>
+
+        <div class="data-section">
+            <h3>Current Session Data</h3>
+            <pre id="sessionData">Loading...</pre>
+        </div>
+
+        <div class="button-group">
+            <button onclick="clearSession()" class="danger">🗑️ Clear Session Data</button>
+            <button onclick="checkSession()" class="success">🔄 Refresh Session Info</button>
+            <button onclick="goToLogin()">🚪 Go to Login Page</button>
+            <button onclick="goToApp()">🏠 Go to App</button>
+        </div>
+
+        <div class="warning">
+            <strong>Quick Keyboard Shortcut:</strong> Press <code>Ctrl+Shift+L</code> (or <code>Cmd+Shift+L</code> on Mac) anywhere in the app to force logout.
+        </div>
+
+        <div class="data-section">
+            <h3>Test Accounts</h3>
+            <p>Use these credentials to test the login:</p>
+            <ul>
+                <li>Email: <code>admin@example.com</code> / Password: <code>admin123</code></li>
+                <li>Email: <code>john@example.com</code> / Password: <code>john123</code></li>
+                <li>Email: <code>jane@example.com</code> / Password: <code>jane123</code></li>
+                <li>Or click "Continue as Guest" for quick access</li>
+            </ul>
+        </div>
+
+        <div id="message"></div>
+    </div>
+
+    <script>
+        function displaySession() {
+            const data = {
+                'Session Token': localStorage.getItem('review_session_token'),
+                'User Session': localStorage.getItem('user_session'),
+                'Current User': localStorage.getItem('current_user'),
+                'Registered Users': localStorage.getItem('review_users'),
+                'Active Sessions': localStorage.getItem('user_sessions'),
+                'Assignments': localStorage.getItem('review_assignments')
+            };
+
+            let output = 'LocalStorage Authentication Data:\n' + '='.repeat(50) + '\n\n';
+            
+            for (const [key, value] of Object.entries(data)) {
+                if (value) {
+                    try {
+                        const parsed = JSON.parse(value);
+                        output += `${key}: ${JSON.stringify(parsed, null, 2)}\n\n`;
+                    } catch {
+                        output += `${key}: ${value}\n\n`;
+                    }
+                } else {
+                    output += `${key}: (empty)\n\n`;
+                }
+            }
+
+            document.getElementById('sessionData').textContent = output;
+        }
+
+        function clearSession() {
+            const keys = [
+                'review_session_token',
+                'user_session',
+                'current_user',
+                'review_users',
+                'user_sessions',
+                'review_assignments'
+            ];
+
+            keys.forEach(key => {
+                localStorage.removeItem(key);
+            });
+
+            showMessage('✅ All session data cleared! Redirecting to login...', 'success');
+            displaySession();
+
+            setTimeout(() => {
+                window.location.href = '/login';
+            }, 1500);
+        }
+
+        function checkSession() {
+            displaySession();
+            showMessage('✅ Session data refreshed!', 'success');
+        }
+
+        function goToLogin() {
+            window.location.href = '/login';
+        }
+
+        function goToApp() {
+            window.location.href = '/';
+        }
+
+        function showMessage(text, type = 'info') {
+            const messageEl = document.getElementById('message');
+            messageEl.innerHTML = `<div class="${type}" style="margin-top: 20px;">${text}</div>`;
+            setTimeout(() => {
+                messageEl.innerHTML = '';
+            }, 5000);
+        }
+
+        // Display session data on load
+        displaySession();
+
+        // Also log to console
+        console.log('🔐 Authentication Debug Tool Loaded');
+        console.log('To manually clear session, run: localStorage.clear(); location.reload();');
+    </script>
+</body>
+</html>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import UploadPage from './components/UploadPage';
 import Dashboard from './components/Dashboard';
@@ -35,6 +35,7 @@ function AppContent() {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const [dateRange, setDateRange] = useState({ start: null, end: null });
+  const { signOut } = useAuth();
 
   const handleFileUpload = async (file) => {
     setIsLoading(true);
@@ -177,7 +178,19 @@ function AppContent() {
   };
 
 
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, signOut } = useAuth();
+
+  // Add keyboard shortcut to force logout (Ctrl/Cmd + Shift + L)
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'L') {
+        signOut();
+        window.location.href = '/login';
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [signOut]);
 
   // Show loading spinner while checking authentication
   if (loading) {

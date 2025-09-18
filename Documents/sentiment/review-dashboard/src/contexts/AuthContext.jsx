@@ -26,9 +26,16 @@ export const AuthProvider = ({ children }) => {
       const { user: sessionUser, error } = await db.getSession();
       if (sessionUser) {
         setUser(sessionUser);
+      } else {
+        // Clear any stale session data if no valid user found
+        db.clearSession();
+        setUser(null);
       }
     } catch (error) {
       console.error('Session check error:', error);
+      // On error, clear session and ensure user sees login page
+      db.clearSession();
+      setUser(null);
     } finally {
       setLoading(false);
     }
