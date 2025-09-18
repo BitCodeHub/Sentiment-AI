@@ -114,7 +114,7 @@ export const canReplyToReview = (review) => {
   // 2. Already has a local reply
   // 3. Review is too old (Apple has time limits)
   
-  if (review.response) {
+  if (review.response || review['Developer Response']) {
     return { canReply: false, reason: 'This review already has a developer response' };
   }
   

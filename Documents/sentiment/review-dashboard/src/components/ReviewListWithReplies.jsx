@@ -121,7 +121,7 @@ const ReviewListWithReplies = ({ reviews }) => {
         {reviews.map((review) => {
           const rating = parseInt(review.rating) || parseInt(review.Rating) || 0;
           const localReply = localReplies[review.id];
-          const hasAnyReply = review.response || localReply;
+          const hasAnyReply = review.response || review['Developer Response'] || localReply;
           
           // Process OS info (same as original)
           const osInfo = (() => {
@@ -296,14 +296,14 @@ const ReviewListWithReplies = ({ reviews }) => {
               </div>
               
               {/* Developer Response - Apple's official response */}
-              {review.response && (
+              {(review.response || review['Developer Response']) && (
                 <div className="review-developer-response official">
                   <div className="response-header">
                     <MessageSquare size={14} />
                     <span>Developer Response</span>
                     <span className="response-badge">Official</span>
                   </div>
-                  <p className="response-content">{review.response}</p>
+                  <p className="response-content">{review.response || review['Developer Response']}</p>
                 </div>
               )}
               

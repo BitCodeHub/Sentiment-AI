@@ -182,13 +182,13 @@ const ReviewList = ({ reviews }) => {
             </div>
             
             {/* Developer Response if exists */}
-            {review.response && (
+            {(review.response || review['Developer Response']) && (
               <div className="review-developer-response">
                 <div className="response-header">
                   <MessageSquare size={14} />
                   <span>Developer Response</span>
                 </div>
-                <p className="response-content">{review.response}</p>
+                <p className="response-content">{review.response || review['Developer Response']}</p>
               </div>
             )}
           </div>
