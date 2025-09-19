@@ -1,17 +1,16 @@
 services:
-  # Frontend Service
+  # Frontend Service - Static Site
   - type: web
     name: sentiment-review-dashboard
-    runtime: node
-    repo: https://github.com/BitCodeHub/Sentiment-AI
-    branch: main
-    rootDir: Documents/sentiment/review-dashboard
-    buildCommand: npm ci && npm run build
-    startCommand: npx serve -s dist -p $PORT
-    healthCheckPath: /health.html
+    env: static
+    buildCommand: cd Documents/sentiment/review-dashboard && npm install && npm run build
+    staticPublishPath: Documents/sentiment/review-dashboard/dist
+    buildFilter:
+      paths:
+      - Documents/sentiment/review-dashboard/**
     envVars:
       - key: NODE_VERSION
-        value: 22.16.0
+        value: 20.11.1
       - key: VITE_OPENAI_API_KEY
         sync: false
       - key: VITE_REDDIT_API_ENDPOINT
@@ -22,32 +21,37 @@ services:
         sync: false
       - key: VITE_API_ENDPOINT
         value: https://sentiment-review-backend.onrender.com
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
 
-  # Backend Service
+  # Backend Service - Node.js
   - type: web
     name: sentiment-review-backend
-    runtime: node
-    repo: https://github.com/BitCodeHub/Sentiment-AI
-    branch: main
-    rootDir: Documents/sentiment/review-dashboard/backend
-    buildCommand: npm ci
-    startCommand: npm run start:production
+    env: node
+    region: oregon
+    buildCommand: cd Documents/sentiment/review-dashboard/backend && npm install
+    startCommand: cd Documents/sentiment/review-dashboard/backend && node server-production.js
+    buildFilter:
+      paths:
+      - Documents/sentiment/review-dashboard/backend/**
     healthCheckPath: /health
     envVars:
       - key: NODE_VERSION
-        value: 22.16.0
+        value: 20.11.1
       - key: NODE_ENV
         value: production
       - key: PORT
-        value: 3001
+        generateValue: true
       
       # Apple API Credentials
       - key: APPLE_APP1_ID
-        value: 893514610
+        value: "893514610"
       - key: APPLE_APP1_NAME
         value: myHyundai with Bluelink
       - key: APPLE_APP2_ID
-        value: 867941329
+        value: "867941329"
       - key: APPLE_APP2_NAME
         value: Genesis Intelligent Assistant
       - key: APPLE_ISSUER_ID
@@ -75,6 +79,6 @@ services:
         
       # Rate Limiting
       - key: RATE_LIMIT_WINDOW_MS
-        value: 900000
+        value: "900000"
       - key: RATE_LIMIT_MAX
-        value: 100
+        value: "100"
