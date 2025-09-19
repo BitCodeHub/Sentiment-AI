@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: sentiment-review-dashboard
+    env: static
+    buildCommand: cd Documents/sentiment/review-dashboard && npm install --legacy-peer-deps && npm run build
+    staticPublishPath: Documents/sentiment/review-dashboard/dist
+    envVars:
+      - key: NODE_VERSION
+        value: 18.19.1
+      - key: VITE_OPENAI_API_KEY
+        sync: false
+      - key: VITE_REDDIT_API_ENDPOINT
+        value: https://sentiment-review-backend.onrender.com/api/reddit
+      - key: VITE_APPLE_API_ENDPOINT
+        value: https://sentiment-review-backend.onrender.com/api/apple-reviews
+      - key: VITE_GEMINI_API_KEY
+        sync: false
