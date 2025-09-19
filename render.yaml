@@ -82,3 +82,9 @@ services:
         value: "900000"
       - key: RATE_LIMIT_MAX
         value: "100"
+        
+      # Database Configuration
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true

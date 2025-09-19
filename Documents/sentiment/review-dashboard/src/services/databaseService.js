@@ -1,8 +1,41 @@
-// Database service with localStorage fallback
-// No external database dependencies for frontend deployment
+// Database service that uses backend API endpoints
+// Falls back to localStorage when API is not available
 
 // Check environment
 const isProduction = import.meta.env.PROD || false;
+const API_BASE_URL = import.meta.env.VITE_API_ENDPOINT || 'http://localhost:3001';
+
+// Helper function to make API calls
+async function apiCall(endpoint, method = 'GET', body = null) {
+  const token = localStorage.getItem('review_session_token');
+  const headers = {
+    'Content-Type': 'application/json',
+  };
+  
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  
+  try {
+    const response = await fetch(`${API_BASE_URL}/api${endpoint}`, {
+      method,
+      headers,
+      body: body ? JSON.stringify(body) : null,
+      credentials: 'include'
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error || 'API request failed');
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('API call failed:', error);
+    throw error;
+  }
+}
 
 // Local storage fallback for development
 class LocalStorageDB {
@@ -152,49 +185,122 @@ const localDB = new LocalStorageDB();
 export const db = {
   // User authentication
   async signUp(email, password, name) {
-    return localDB.createUser(email, password, name);
+    try {
+      const response = await apiCall('/auth/signup', 'POST', { email, password, name });
+      if (response.session?.access_token) {
+        localStorage.setItem('review_session_token', response.session.access_token);
+        localStorage.setItem('current_user', JSON.stringify(response.user));
+      }
+      return { user: response.user, error: null };
+    } catch (error) {
+      console.log('API signup failed, falling back to localStorage');
+      return localDB.createUser(email, password, name);
+    }
   },
 
   async signIn(email, password) {
-    return localDB.signIn(email, password);
+    try {
+      const response = await apiCall('/auth/signin', 'POST', { email, password });
+      if (response.session?.access_token) {
+        localStorage.setItem('review_session_token', response.session.access_token);
+        localStorage.setItem('current_user', JSON.stringify(response.user));
+      }
+      return { user: response.user, error: null };
+    } catch (error) {
+      console.log('API signin failed, falling back to localStorage');
+      return localDB.signIn(email, password);
+    }
   },
 
   async signOut() {
-    const session = localStorage.getItem('user_session');
-    return localDB.signOut(session);
+    try {
+      await apiCall('/auth/signout', 'POST');
+      localStorage.removeItem('review_session_token');
+      localStorage.removeItem('current_user');
+      return { error: null };
+    } catch (error) {
+      console.log('API signout failed, clearing local session');
+      const session = localStorage.getItem('user_session');
+      return localDB.signOut(session);
+    }
   },
 
   async getSession() {
-    const sessionToken = localStorage.getItem('review_session_token');
-    if (!sessionToken) return { user: null, error: 'No session' };
-    return localDB.getSession(sessionToken);
+    try {
+      const response = await apiCall('/auth/session');
+      return { user: response.user, error: null };
+    } catch (error) {
+      console.log('API session check failed, falling back to localStorage');
+      const sessionToken = localStorage.getItem('review_session_token');
+      if (!sessionToken) return { user: null, error: 'No session' };
+      return localDB.getSession(sessionToken);
+    }
   },
 
   // Guest login
   async signInAsGuest() {
-    return localDB.signInAsGuest();
+    try {
+      const response = await apiCall('/auth/signin-guest', 'POST');
+      if (response.session?.access_token) {
+        localStorage.setItem('review_session_token', response.session.access_token);
+        localStorage.setItem('current_user', JSON.stringify(response.user));
+      }
+      return { user: response.user, error: null };
+    } catch (error) {
+      console.log('API guest signin failed, falling back to localStorage');
+      return localDB.signInAsGuest();
+    }
   },
 
   // Review assignments
   async createAssignment(reviewId, assignedToEmail, notes = '') {
-    const session = await this.getSession();
-    if (!session.user) {
-      return { assignment: null, error: 'Not authenticated' };
+    try {
+      const response = await apiCall('/assignments', 'POST', {
+        reviewId,
+        assignedToEmail,
+        notes
+      });
+      return { assignment: response.assignment, error: null };
+    } catch (error) {
+      console.log('API assignment creation failed, falling back to localStorage');
+      const session = await this.getSession();
+      if (!session.user) {
+        return { assignment: null, error: 'Not authenticated' };
+      }
+      return localDB.createAssignment(reviewId, assignedToEmail, session.user.email, notes);
     }
-    return localDB.createAssignment(reviewId, assignedToEmail, session.user.email, notes);
   },
 
   async getAssignments(userEmail = null) {
-    return localDB.getAssignments(userEmail);
+    try {
+      const params = userEmail ? `?assignedTo=${userEmail}` : '';
+      const response = await apiCall(`/assignments${params}`);
+      return { assignments: response.assignments, error: null };
+    } catch (error) {
+      console.log('API get assignments failed, falling back to localStorage');
+      return localDB.getAssignments(userEmail);
+    }
   },
 
   async updateAssignmentStatus(assignmentId, status) {
-    return localDB.updateAssignment(assignmentId, { status });
+    try {
+      const response = await apiCall(`/assignments/${assignmentId}`, 'PATCH', { status });
+      return { assignment: response.assignment, error: null };
+    } catch (error) {
+      console.log('API update assignment failed, falling back to localStorage');
+      return localDB.updateAssignment(assignmentId, { status });
+    }
   },
 
   // Team members
   async getTeamMembers() {
-    return localDB.getAllUsers();
+    try {
+      const response = await apiCall('/auth/users');
+      return { users: response.users, error: null };
+    } catch (error) {
+      console.log('API get team members failed, falling back to localStorage');
+      return localDB.getAllUsers();
+    }
   },
 
   // Save session to localStorage

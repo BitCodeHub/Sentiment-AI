@@ -11,6 +11,16 @@ const multer = require('multer');
 console.log('Multer loaded');
 require('dotenv').config();
 console.log('Dotenv loaded');
+
+// Initialize database connection
+const { pool, checkConnection, initializeDatabase } = require('./db/connection');
+console.log('Database connection loaded');
+
+// Authentication routes
+const authRoutes = require('./routes/auth');
+console.log('Auth routes loaded');
+const assignmentRoutes = require('./routes/assignments');
+console.log('Assignment routes loaded');
 const cacheService = require('./services/cacheService');
 console.log('Cache service loaded');
 const redditService = require('./services/redditService');
@@ -69,6 +79,10 @@ app.options('*', (req, res, next) => {
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Mount authentication routes
+app.use('/api/auth', authRoutes.router);
+app.use('/api/assignments', assignmentRoutes);
 
 // Configure multer for file uploads
 const upload = multer({ 
@@ -1951,9 +1965,27 @@ app.delete('/api/competitors/cache/:appId?', async (req, res) => {
   }
 });
 
-// Start server
+// Initialize database and start server
 console.log('About to start server on port:', PORT);
-app.listen(PORT, () => {
+
+// Initialize database before starting server
+async function startServer() {
+  try {
+    // Check database connection
+    const isConnected = await checkConnection();
+    if (isConnected) {
+      console.log('[Database] Connection successful');
+      // Initialize schema
+      await initializeDatabase();
+    } else {
+      console.log('[Database] WARNING: Database not connected. Running without database features.');
+    }
+  } catch (error) {
+    console.error('[Database] Failed to initialize:', error);
+    console.log('[Database] Continuing without database features...');
+  }
+  
+  app.listen(PORT, () => {
   console.log('\n=== Server Started Successfully ===');
   console.log(`Apple App Store API server running on port ${PORT}`);
   console.log(`Frontend should connect to: http://localhost:${PORT}/api/apple-reviews`);
@@ -1996,3 +2028,7 @@ app.listen(PORT, () => {
   console.error('Server startup error:', err);
   process.exit(1);
 });
+}
+
+// Start the server
+startServer();
