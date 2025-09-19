@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import FileUpload from './FileUpload';
 import AppleImport from './AppleImport';
+import UserHeader from './UserHeader';
 import './UploadPage.css';
 
 const features = [
@@ -109,6 +110,9 @@ const UploadPage = ({ onFileUpload, onAppleImport, isLoading, error }) => {
 
   return (
     <div className="upload-page">
+      {/* User Header with Login */}
+      <UserHeader />
+      
       {/* Background Effects */}
       <div className="background-effects">
         <div className="gradient-orb orb-1" />

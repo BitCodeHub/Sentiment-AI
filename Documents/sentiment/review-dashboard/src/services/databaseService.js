@@ -1,12 +1,16 @@
-// Database service for Render.com PostgreSQL
+// Database service with PostgreSQL support for Render.com
 import { createClient } from '@supabase/supabase-js';
 
-// Initialize Supabase client (we'll use Supabase for easier integration with Render)
+// Check if we have PostgreSQL database URL (for Render.com)
+const databaseUrl = import.meta.env.VITE_DATABASE_URL || '';
+const usePostgres = !!databaseUrl;
+
+// Initialize Supabase client as fallback
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
-// For development, we'll use localStorage as fallback
-const isProduction = supabaseUrl && supabaseAnonKey;
+// Determine if we're in production (either PostgreSQL or Supabase)
+const isProduction = usePostgres || (supabaseUrl && supabaseAnonKey);
 
 export const supabase = isProduction ? createClient(supabaseUrl, supabaseAnonKey) : null;
 

@@ -8,7 +8,7 @@ import ChatPage from './components/ChatPage';
 import RivueChat from './pages/RivueChat';
 import ErrorBoundary from './components/ErrorBoundary';
 import RateLimitNotification from './components/RateLimitNotification';
-import Login from './components/Login';
+import LoginDropdown from './components/LoginDropdown';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { parseExcelFile, aggregateData, parseAndTransformData } from './utils/excelParser';
 import { downloadSampleExcel } from './utils/sampleDataGenerator';
@@ -27,7 +27,7 @@ const ProtectedRoute = ({ children }) => {
     );
   }
   
-  return isAuthenticated ? children : <Navigate to="/login" />;
+  return isAuthenticated ? children : <Navigate to="/" />;
 };
 
 function AppContent() {
@@ -207,48 +207,36 @@ function AppContent() {
       <div className="app">
         <RateLimitNotification />
         <Routes>
-          {/* Add an index route that handles initial redirect */}
-          <Route index element={
-            isAuthenticated ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />
-          } />
-          
-          {/* Login Route */}
-          <Route path="/login" element={
-            isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login onSuccess={() => window.location.href = '/dashboard'} />
-          } />
-          
-          {/* Dashboard Route */}
-          <Route path="/dashboard" element={
-            <ProtectedRoute>
-              {!data ? (
-                <UploadPage 
-                  onFileUpload={handleFileUpload}
-                  onAppleImport={handleAppleImport}
-                  isLoading={isLoading}
-                  error={error}
+          {/* Main Route - Shows landing page or dashboard based on data */}
+          <Route path="/" element={
+            !data ? (
+              <UploadPage 
+                onFileUpload={handleFileUpload}
+                onAppleImport={handleAppleImport}
+                isLoading={isLoading}
+                error={error}
+              />
+            ) : (
+              <ErrorBoundary>
+                <EnhancedDashboard 
+                  data={data} 
+                  onUpdateData={setData}
+                  onFetchReviews={handleAppleImport}
+                  onDateRangeChange={setDateRange}
                 />
-              ) : (
-                <ErrorBoundary>
-                  <EnhancedDashboard 
-                    data={data} 
-                    onUpdateData={setData}
-                    onFetchReviews={handleAppleImport}
-                    onDateRangeChange={setDateRange}
-                  />
-                </ErrorBoundary>
-              )}
-            </ProtectedRoute>
+              </ErrorBoundary>
+            )
           } />
           
           <Route path="/topic/:topicName" element={
             <ProtectedRoute>
-              {data ? <TopicDetailView data={data} /> : <Navigate to="/dashboard" />}
+              {data ? <TopicDetailView data={data} /> : <Navigate to="/" />}
             </ProtectedRoute>
           } />
           
           <Route path="/chat" element={
             <ProtectedRoute>
-              {data ? <ChatPage reviewData={filterReviewsByDateRange(data.reviews || [], dateRange)} /> : <Navigate to="/dashboard" />}
+              {data ? <ChatPage reviewData={filterReviewsByDateRange(data.reviews || [], dateRange)} /> : <Navigate to="/" />}
             </ProtectedRoute>
           } />
           

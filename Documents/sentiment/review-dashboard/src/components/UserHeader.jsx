@@ -1,13 +1,17 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { User, LogOut, Bell, Settings } from 'lucide-react';
+import LoginDropdown from './LoginDropdown';
 import './UserHeader.css';
 
 const UserHeader = () => {
   const { user, signOut } = useAuth();
   const [showDropdown, setShowDropdown] = useState(false);
 
-  if (!user) return null;
+  // If user is not logged in, show LoginDropdown instead
+  if (!user) {
+    return <LoginDropdown />;
+  }
 
   const getUserInitials = () => {
     if (user.name) {

@@ -1,15 +1,12 @@
 /* User Header Styles */
 .user-header {
-  position: fixed;
-  top: 0;
-  right: 0;
+  position: absolute;
+  top: 20px;
+  right: 20px;
   display: flex;
   align-items: center;
   gap: 24px;
-  padding: 16px 32px;
-  background: white;
-  border-bottom: 1px solid #e5e7eb;
-  z-index: 100;
+  z-index: 1000;
 }
 
 .user-info {
