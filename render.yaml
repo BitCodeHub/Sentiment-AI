@@ -1,14 +1,10 @@
 services:
-  # Frontend Service - Static Site
+  # Frontend Service
   - type: web
     name: sentiment-review-dashboard
     env: static
-    rootDir: Documents/sentiment/review-dashboard
     buildCommand: npm install --legacy-peer-deps && npm run build
     staticPublishPath: ./dist
-    buildFilter:
-      paths:
-      - Documents/sentiment/review-dashboard/**
     envVars:
       - key: NODE_VERSION
         value: 20.11.1
@@ -30,17 +26,14 @@ services:
         name: X-Content-Type-Options
         value: nosniff
 
-  # Backend Service - Node.js
+  # Backend Service
   - type: web
     name: sentiment-review-backend
     env: node
     region: oregon
-    rootDir: Documents/sentiment/review-dashboard/backend
+    rootDir: backend
     buildCommand: npm install --legacy-peer-deps
     startCommand: node server-production.js
-    buildFilter:
-      paths:
-      - Documents/sentiment/review-dashboard/backend/**
     healthCheckPath: /health
     envVars:
       - key: NODE_VERSION
