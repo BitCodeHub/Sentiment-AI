@@ -178,7 +178,7 @@ function AppContent() {
   };
 
 
-  const { isAuthenticated, loading, signOut } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
 
   // Add keyboard shortcut to force logout (Ctrl/Cmd + Shift + L)
   useEffect(() => {

@@ -18,6 +18,8 @@ services:
         value: https://sentiment-review-backend.onrender.com/api/reddit
       - key: VITE_APPLE_API_ENDPOINT
         value: https://sentiment-review-backend.onrender.com/api/apple-reviews
+      - key: VITE_GEMINI_API_KEY
+        sync: false
 
   # Backend Service
   - type: web

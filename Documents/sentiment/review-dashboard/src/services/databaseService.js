@@ -1,18 +1,8 @@
-// Database service with PostgreSQL support for Render.com
-import { createClient } from '@supabase/supabase-js';
+// Database service with localStorage fallback
+// No external database dependencies for frontend deployment
 
-// Check if we have PostgreSQL database URL (for Render.com)
-const databaseUrl = import.meta.env.VITE_DATABASE_URL || '';
-const usePostgres = !!databaseUrl;
-
-// Initialize Supabase client as fallback
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-
-// Determine if we're in production (either PostgreSQL or Supabase)
-const isProduction = usePostgres || (supabaseUrl && supabaseAnonKey);
-
-export const supabase = isProduction ? createClient(supabaseUrl, supabaseAnonKey) : null;
+// Check environment
+const isProduction = import.meta.env.PROD || false;
 
 // Local storage fallback for development
 class LocalStorageDB {
@@ -162,44 +152,19 @@ const localDB = new LocalStorageDB();
 export const db = {
   // User authentication
   async signUp(email, password, name) {
-    if (isProduction && supabase) {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: { name }
-        }
-      });
-      return { user: data?.user, error };
-    }
     return localDB.createUser(email, password, name);
   },
 
   async signIn(email, password) {
-    if (isProduction && supabase) {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
-      return { user: data?.user, session: data?.session, error };
-    }
     return localDB.signIn(email, password);
   },
 
   async signOut() {
-    if (isProduction && supabase) {
-      const { error } = await supabase.auth.signOut();
-      return { error };
-    }
     const session = localStorage.getItem('user_session');
     return localDB.signOut(session);
   },
 
   async getSession() {
-    if (isProduction && supabase) {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      return { user: session?.user || null, session, error };
-    }
     const sessionToken = localStorage.getItem('review_session_token');
     if (!sessionToken) return { user: null, error: 'No session' };
     return localDB.getSession(sessionToken);
@@ -207,23 +172,6 @@ export const db = {
 
   // Guest login
   async signInAsGuest() {
-    if (isProduction && supabase) {
-      const guestEmail = `guest_${Date.now()}@example.com`;
-      const guestPassword = 'guest123';
-      const guestName = `Guest User ${Math.floor(Math.random() * 1000)}`;
-      
-      // For production, create a temporary guest account
-      const { data, error } = await supabase.auth.signUp({
-        email: guestEmail,
-        password: guestPassword,
-        options: {
-          data: { name: guestName, isGuest: true }
-        }
-      });
-      return { user: data?.user, session: data?.session, error };
-    }
-    
-    // For local development
     return localDB.signInAsGuest();
   },
 
@@ -233,62 +181,19 @@ export const db = {
     if (!session.user) {
       return { assignment: null, error: 'Not authenticated' };
     }
-
-    if (isProduction && supabase) {
-      const { data, error } = await supabase
-        .from('assignments')
-        .insert({
-          review_id: reviewId,
-          assigned_to: assignedToEmail,
-          assigned_by: session.user.email,
-          notes,
-          status: 'pending'
-        })
-        .select()
-        .single();
-      return { assignment: data, error };
-    }
-
     return localDB.createAssignment(reviewId, assignedToEmail, session.user.email, notes);
   },
 
   async getAssignments(userEmail = null) {
-    if (isProduction && supabase) {
-      let query = supabase.from('assignments').select('*');
-      if (userEmail) {
-        query = query.or(`assigned_to.eq.${userEmail},assigned_by.eq.${userEmail}`);
-      }
-      const { data, error } = await query.order('created_at', { ascending: false });
-      return { assignments: data || [], error };
-    }
-
     return localDB.getAssignments(userEmail);
   },
 
   async updateAssignmentStatus(assignmentId, status) {
-    if (isProduction && supabase) {
-      const { data, error } = await supabase
-        .from('assignments')
-        .update({ status, updated_at: new Date().toISOString() })
-        .eq('id', assignmentId)
-        .select()
-        .single();
-      return { assignment: data, error };
-    }
-
     return localDB.updateAssignment(assignmentId, { status });
   },
 
   // Team members
   async getTeamMembers() {
-    if (isProduction && supabase) {
-      const { data, error } = await supabase
-        .from('users')
-        .select('id, email, name, role')
-        .order('name');
-      return { users: data || [], error };
-    }
-
     return localDB.getAllUsers();
   },
 
