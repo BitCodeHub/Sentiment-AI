@@ -1,10 +1,80 @@
 services:
+  # Frontend Service
   - type: web
-    name: review-dashboard
-    env: node
-    buildCommand: npm install && npm run build
-    startCommand: npx serve -s dist -l 3000
-    publishDir: dist
+    name: sentiment-review-dashboard
+    runtime: node
+    repo: https://github.com/BitCodeHub/Sentiment-AI
+    branch: main
+    rootDir: ./
+    buildCommand: npm ci && npm run build
+    startCommand: npx serve -s dist -p $PORT
+    healthCheckPath: /
     envVars:
       - key: NODE_VERSION
         value: 22.16.0
+      - key: VITE_OPENAI_API_KEY
+        sync: false
+      - key: VITE_REDDIT_API_ENDPOINT
+        value: https://sentiment-review-backend.onrender.com/api/reddit
+      - key: VITE_APPLE_API_ENDPOINT
+        value: https://sentiment-review-backend.onrender.com/api/apple-reviews
+      - key: VITE_GEMINI_API_KEY
+        sync: false
+      - key: VITE_API_ENDPOINT
+        value: https://sentiment-review-backend.onrender.com
+
+  # Backend Service
+  - type: web
+    name: sentiment-review-backend
+    runtime: node
+    repo: https://github.com/BitCodeHub/Sentiment-AI
+    branch: main
+    rootDir: backend
+    buildCommand: npm ci
+    startCommand: npm run start:production
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: 22.16.0
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      
+      # Apple API Credentials
+      - key: APPLE_APP1_ID
+        value: 893514610
+      - key: APPLE_APP1_NAME
+        value: myHyundai with Bluelink
+      - key: APPLE_APP2_ID
+        value: 867941329
+      - key: APPLE_APP2_NAME
+        value: Genesis Intelligent Assistant
+      - key: APPLE_ISSUER_ID
+        sync: false
+      - key: APPLE_KEY_ID
+        sync: false
+      - key: APPLE_PRIVATE_KEY_BASE64
+        sync: false
+      
+      # Reddit API Credentials
+      - key: REDDIT_CLIENT_ID
+        sync: false
+      - key: REDDIT_CLIENT_SECRET
+        sync: false
+      - key: REDDIT_USER_AGENT
+        value: ReviewDashboard/1.0.0
+      
+      # CORS Configuration
+      - key: FRONTEND_URL
+        value: https://sentiment-review-dashboard.onrender.com
+      
+      # Redis (optional)
+      - key: REDIS_URL
+        sync: false
+        
+      # Rate Limiting
+      - key: RATE_LIMIT_WINDOW_MS
+        value: 900000
+      - key: RATE_LIMIT_MAX
+        value: 100

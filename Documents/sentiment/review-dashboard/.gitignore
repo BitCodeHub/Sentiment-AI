@@ -27,3 +27,20 @@ dist-ssr
 .env
 .env.local
 .env.*.local
+
+# Private keys and certificates
+*.p8
+*.pem
+*.key
+AuthKey_*
+ApiKey_*
+
+# Python and shell scripts for development
+encode-p8-key.py
+encode-p8-key.sh
+commit-model-fix.sh
+
+# Development files
+dev.log
+CHECK_PRIVATE_KEY.md
+VERIFY_KEY_ID.md
