@@ -11,6 +11,17 @@ const multer = require('multer');
 console.log('Multer loaded');
 require('dotenv').config();
 console.log('Dotenv loaded');
+
+// Initialize database connection
+const { pool, checkConnection, initializeDatabase } = require('./db/connection');
+console.log('Database connection loaded');
+
+// Authentication routes
+const authRoutes = require('./routes/auth');
+console.log('Auth routes loaded');
+const assignmentRoutes = require('./routes/assignments');
+console.log('Assignment routes loaded');
+
 const cacheService = require('./services/cacheService');
 console.log('Cache service loaded');
 const redditService = require('./services/redditService');
@@ -69,6 +80,10 @@ app.options('*', (req, res, next) => {
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Mount authentication routes
+app.use('/api/auth', authRoutes.router);
+app.use('/api/assignments', assignmentRoutes);
 
 // Configure multer for file uploads
 const upload = multer({ 
@@ -1243,11 +1258,20 @@ app.get('/health', (req, res) => {
 });
 
 // Detailed health check endpoint
-app.get('/api/health', (req, res) => {
+app.get('/api/health', async (req, res) => {
   console.log('[Health Check] Request received from:', req.headers.origin || req.headers.referer || 'unknown');
   
   // Get Reddit service status
   const redditStatus = redditService.getStatus();
+  
+  // Check database status
+  let databaseStatus = { connected: false, error: null };
+  try {
+    const isConnected = await checkConnection();
+    databaseStatus.connected = isConnected;
+  } catch (error) {
+    databaseStatus.error = error.message;
+  }
   
   res.json({ 
     status: 'ok', 
@@ -1264,9 +1288,51 @@ app.get('/api/health', (req, res) => {
       reddit: {
         status: redditStatus.configured ? 'configured' : 'not configured',
         details: redditStatus
+      },
+      database: {
+        status: databaseStatus.connected ? 'connected' : 'disconnected',
+        configured: !!process.env.DATABASE_URL,
+        error: databaseStatus.error
       }
     }
   });
+});
+
+// Database health check endpoint
+app.get('/api/db-health', async (req, res) => {
+  console.log('[Database Health] Checking database status...');
+  
+  try {
+    const isConnected = await checkConnection();
+    
+    // Try a simple query to verify database is working
+    let queryTest = { success: false, error: null };
+    if (isConnected) {
+      try {
+        const result = await pool.query('SELECT NOW()');
+        queryTest.success = true;
+        queryTest.currentTime = result.rows[0].now;
+      } catch (error) {
+        queryTest.error = error.message;
+      }
+    }
+    
+    res.json({ 
+      database: isConnected ? 'connected' : 'disconnected',
+      configured: !!process.env.DATABASE_URL,
+      hasUrl: !!process.env.DATABASE_URL,
+      timestamp: new Date().toISOString(),
+      queryTest
+    });
+  } catch (error) {
+    console.error('[Database Health] Error:', error);
+    res.status(500).json({ 
+      database: 'error',
+      error: error.message,
+      configured: !!process.env.DATABASE_URL,
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 // Test endpoint for debugging connectivity
@@ -1951,9 +2017,30 @@ app.delete('/api/competitors/cache/:appId?', async (req, res) => {
   }
 });
 
-// Start server
-console.log('About to start server on port:', PORT);
-app.listen(PORT, () => {
+// Start server with database initialization
+async function startServer() {
+  try {
+    // Try to connect to database
+    const isConnected = await checkConnection();
+    if (isConnected) {
+      console.log('[Database] Connection successful');
+      try {
+        await initializeDatabase();
+        console.log('[Database] Schema initialized');
+      } catch (dbError) {
+        console.error('[Database] Failed to initialize schema:', dbError);
+        console.log('[Database] Continuing without database features...');
+      }
+    } else {
+      console.log('[Database] WARNING: Database not connected. Running without database features.');
+    }
+  } catch (error) {
+    console.error('[Database] Failed to connect:', error);
+    console.log('[Database] Continuing without database features...');
+  }
+  
+  console.log('About to start server on port:', PORT);
+  app.listen(PORT, () => {
   console.log('\n=== Server Started Successfully ===');
   console.log(`Apple App Store API server running on port ${PORT}`);
   console.log(`Frontend should connect to: http://localhost:${PORT}/api/apple-reviews`);
@@ -1995,4 +2082,8 @@ app.listen(PORT, () => {
 }).on('error', (err) => {
   console.error('Server startup error:', err);
   process.exit(1);
-});
+  });
+}
+
+// Start the server
+startServer();
