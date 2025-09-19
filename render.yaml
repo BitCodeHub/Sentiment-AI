@@ -3,9 +3,9 @@ services:
   - type: web
     name: sentiment-review-dashboard
     env: static
-    rootDir: .
-    buildCommand: ./build-frontend.sh
-    staticPublishPath: Documents/sentiment/review-dashboard/dist
+    rootDir: Documents/sentiment/review-dashboard
+    buildCommand: npm install --legacy-peer-deps && npm run build
+    staticPublishPath: ./dist
     buildFilter:
       paths:
       - Documents/sentiment/review-dashboard/**
@@ -35,9 +35,9 @@ services:
     name: sentiment-review-backend
     env: node
     region: oregon
-    rootDir: .
-    buildCommand: ./build-backend.sh
-    startCommand: ./start-backend.sh
+    rootDir: Documents/sentiment/review-dashboard/backend
+    buildCommand: npm install --legacy-peer-deps
+    startCommand: node server-production.js
     buildFilter:
       paths:
       - Documents/sentiment/review-dashboard/backend/**
