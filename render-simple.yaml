@@ -1,0 +1,28 @@
+services:
+  # Frontend Service - Simplified
+  - type: web
+    name: sentiment-review-dashboard
+    env: static
+    buildCommand: npm ci --legacy-peer-deps && npm run build
+    staticPublishPath: dist
+    branch: main
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: NPM_VERSION
+        value: "10"
+
+  # Backend Service - Simplified  
+  - type: web
+    name: sentiment-review-backend
+    env: node
+    buildCommand: cd backend && npm ci --legacy-peer-deps
+    startCommand: cd backend && node server-production.js
+    branch: main
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: review-dashboard-db
+          property: connectionString
