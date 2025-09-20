@@ -193,19 +193,7 @@ const LoginDropdown = () => {
             </button>
           </form>
 
-          <div className="dropdown-divider">
-            <span>OR</span>
-          </div>
-
-          <button 
-            onClick={handleGuestLogin} 
-            className="guest-btn"
-            disabled={loading}
-            type="button"
-          >
-            <Users size={16} />
-            <span>Continue as Guest</span>
-          </button>
+          {/* Guest login removed - authentication required */}
 
           <div className="dropdown-footer">
             <p>

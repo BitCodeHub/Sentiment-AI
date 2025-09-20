@@ -163,53 +163,15 @@ router.post('/signin', async (req, res) => {
   }
 });
 
-// Guest Sign In endpoint
+// Guest Sign In endpoint - DISABLED
 router.post('/signin-guest', async (req, res) => {
-  console.log('[Auth] Guest signin request received');
+  console.log('[Auth] Guest signin request received - DENIED');
   
-  try {
-    const guestEmail = `guest_${Date.now()}@example.com`;
-    const guestName = `Guest User ${Math.floor(Math.random() * 1000)}`;
-    
-    // Create guest user
-    const result = await pool.query(
-      `INSERT INTO users (email, password_hash, name, role, is_guest) 
-       VALUES ($1, $2, $3, $4, $5) 
-       RETURNING id, email, name, role`,
-      [guestEmail, 'guest', guestName, 'guest', true]
-    );
-    
-    const guestUser = result.rows[0];
-    console.log('[Auth] Guest user created:', guestUser.id);
-    
-    // Generate token
-    const token = generateToken(guestUser.id);
-    
-    // Create session
-    await pool.query(
-      `INSERT INTO sessions (user_id, token, expires_at) 
-       VALUES ($1, $2, NOW() + INTERVAL '24 hours')`,
-      [guestUser.id, token]
-    );
-    
-    res.json({
-      success: true,
-      user: {
-        id: guestUser.id,
-        email: guestUser.email,
-        name: guestUser.name,
-        role: guestUser.role,
-        isGuest: true
-      },
-      session: { access_token: token }
-    });
-  } catch (error) {
-    console.error('[Auth] Guest signin error:', error);
-    res.status(500).json({
-      error: 'Failed to create guest session',
-      details: error.message
-    });
-  }
+  // Guest login is disabled - users must create an account
+  res.status(403).json({
+    error: 'Guest access is disabled',
+    details: 'Please create an account or sign in with existing credentials'
+  });
 });
 
 // Sign Out endpoint

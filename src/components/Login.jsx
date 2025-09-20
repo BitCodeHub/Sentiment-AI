@@ -151,18 +151,7 @@ const Login = ({ onSuccess }) => {
           </button>
         </form>
 
-        <div className="login-divider">
-          <span>OR</span>
-        </div>
-
-        <button 
-          onClick={handleGuestLogin} 
-          className="guest-btn"
-          disabled={loading}
-        >
-          <Users size={18} />
-          <span>Continue as Guest</span>
-        </button>
+        {/* Guest login removed - authentication required */}
 
         <div className="login-footer">
           <p>

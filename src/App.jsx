@@ -8,7 +8,7 @@ import ChatPage from './components/ChatPage';
 import RivueChat from './pages/RivueChat';
 import ErrorBoundary from './components/ErrorBoundary';
 import RateLimitNotification from './components/RateLimitNotification';
-import LoginDropdown from './components/LoginDropdown';
+import Login from './components/Login';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { parseExcelFile, aggregateData, parseAndTransformData } from './utils/excelParser';
 import { downloadSampleExcel } from './utils/sampleDataGenerator';
@@ -27,7 +27,7 @@ const ProtectedRoute = ({ children }) => {
     );
   }
   
-  return isAuthenticated ? children : <Navigate to="/" />;
+  return isAuthenticated ? children : <Navigate to="/login" />;
 };
 
 function AppContent() {
@@ -207,25 +207,32 @@ function AppContent() {
       <div className="app">
         <RateLimitNotification />
         <Routes>
-          {/* Main Route - Shows landing page or dashboard based on data */}
+          {/* Login Route */}
+          <Route path="/login" element={
+            isAuthenticated ? <Navigate to="/" /> : <Login onSuccess={() => window.location.href = '/'} />
+          } />
+          
+          {/* Protected Main Route - Shows landing page or dashboard based on data */}
           <Route path="/" element={
-            !data ? (
-              <UploadPage 
-                onFileUpload={handleFileUpload}
-                onAppleImport={handleAppleImport}
-                isLoading={isLoading}
-                error={error}
-              />
-            ) : (
-              <ErrorBoundary>
-                <EnhancedDashboard 
-                  data={data} 
-                  onUpdateData={setData}
-                  onFetchReviews={handleAppleImport}
-                  onDateRangeChange={setDateRange}
+            <ProtectedRoute>
+              {!data ? (
+                <UploadPage 
+                  onFileUpload={handleFileUpload}
+                  onAppleImport={handleAppleImport}
+                  isLoading={isLoading}
+                  error={error}
                 />
-              </ErrorBoundary>
-            )
+              ) : (
+                <ErrorBoundary>
+                  <EnhancedDashboard 
+                    data={data} 
+                    onUpdateData={setData}
+                    onFetchReviews={handleAppleImport}
+                    onDateRangeChange={setDateRange}
+                  />
+                </ErrorBoundary>
+              )}
+            </ProtectedRoute>
           } />
           
           <Route path="/topic/:topicName" element={
