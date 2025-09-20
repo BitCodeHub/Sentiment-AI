@@ -1,0 +1,20 @@
+services:
+  # Frontend Service with detailed debugging
+  - type: web
+    name: sentiment-review-dashboard
+    env: static
+    buildCommand: ./frontend-build.sh
+    staticPublishPath: ./dist
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: VITE_OPENAI_API_KEY
+        sync: false
+      - key: VITE_REDDIT_API_ENDPOINT
+        value: https://sentiment-review-backend.onrender.com/api/reddit
+      - key: VITE_APPLE_API_ENDPOINT
+        value: https://sentiment-review-backend.onrender.com/api/apple-reviews
+      - key: VITE_GEMINI_API_KEY
+        sync: false
+      - key: VITE_API_ENDPOINT
+        value: https://sentiment-review-backend.onrender.com

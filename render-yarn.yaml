@@ -1,0 +1,53 @@
+services:
+  # Frontend Service using Yarn
+  - type: web
+    name: sentiment-review-dashboard
+    env: static
+    buildCommand: yarn install --frozen-lockfile && yarn build
+    staticPublishPath: ./dist
+    envVars:
+      - key: NODE_VERSION
+        value: 20.11.1
+      - key: YARN_VERSION
+        value: 1.22.19
+      - key: VITE_OPENAI_API_KEY
+        sync: false
+      - key: VITE_REDDIT_API_ENDPOINT
+        value: https://sentiment-review-backend.onrender.com/api/reddit
+      - key: VITE_APPLE_API_ENDPOINT
+        value: https://sentiment-review-backend.onrender.com/api/apple-reviews
+      - key: VITE_GEMINI_API_KEY
+        sync: false
+      - key: VITE_API_ENDPOINT
+        value: https://sentiment-review-backend.onrender.com
+        
+  # Backend Service
+  - type: web
+    name: sentiment-review-backend
+    env: node
+    region: oregon
+    rootDir: backend
+    buildCommand: npm install --legacy-peer-deps
+    startCommand: node server-production.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: 20.11.1
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: review-dashboard-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: APPLE_ISSUER_ID
+        sync: false
+      - key: APPLE_KEY_ID
+        sync: false
+      - key: APPLE_PRIVATE_KEY_BASE64
+        sync: false
+      - key: REDDIT_CLIENT_ID
+        sync: false
+      - key: REDDIT_CLIENT_SECRET
+        sync: false
